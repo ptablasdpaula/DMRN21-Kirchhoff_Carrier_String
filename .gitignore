@@ -5,3 +5,11 @@
 # Python bytecode
 __pycache__/
 *.py[cod]
+
+# Notebook execution output
+.notebook-build/
+.ipynb_checkpoints/
+
+# OS metadata and generated experiment media
+.DS_Store
+output/
