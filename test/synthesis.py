@@ -25,6 +25,10 @@ def main():
     torch.testing.assert_close(old(theta,.003),explicit(theta,.003),rtol=0,atol=0)
     rows=modal_diagnostics(p,grid)
     assert len(rows)==8 and all(row['discrete_hz']>0 for row in rows)
+    overdamped=p.detach().clone();overdamped[4]=1e6
+    row=modal_diagnostics(overdamped,grid,count=1)[0]
+    assert row['continuous_hz'] is None and row['cents'] is None
+    assert 0 < row['continuous_decay'] < overdamped[4]
     print('Excitation, filtered output, six-coordinate gradients and linear diagnostics passed.')
 
 if __name__=='__main__':main()

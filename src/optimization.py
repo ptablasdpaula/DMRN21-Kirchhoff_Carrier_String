@@ -103,6 +103,8 @@ def save_result(path, result, renderer, target_parameters):
                    duration=renderer.duration,excitation=renderer.excitation,
                    loss=dict(name='STFTCumulativeEnergyLoss',source_commit=LOSS_COMMIT,
                              sample_rate=renderer.grid.sample_rate,n_fft=1024,hop_length=256,log_weighting=False),
-                   relative_error=((result['best_physical']-target_parameters)/target_parameters.clamp_min(1e-30)).tolist())
+                   absolute_error=(result['best_physical']-target_parameters).tolist(),
+                   relative_error=[float((estimate-truth)/truth) if truth != 0 else None
+                                   for estimate,truth in zip(result['best_physical'],target_parameters)])
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(json.dumps(payload,indent=2,allow_nan=False)+'\n')

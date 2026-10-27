@@ -58,7 +58,8 @@ def modal_diagnostics(values, grid, count=8):
     for mode in range(1,min(count,grid.intervals-1)+1):
         beta2=(mode*math.pi/L)**2
         decay=sigma0+sigma1*beta2
-        continuous=cmath.sqrt(complex(c2*beta2+K2*beta2**2-decay**2)).real/(2*math.pi)
+        continuous_pole=-decay+cmath.sqrt(complex(decay**2-c2*beta2-K2*beta2**2))
+        continuous=abs(continuous_pole.imag)/(2*math.pi)
         q2=(2/h*math.sin(mode*math.pi/(2*grid.intervals)))**2
         A=1+sigma0*k
         D=-2+(c2*q2+K2*q2*q2)*k*k+2*sigma1*k*q2
@@ -71,7 +72,7 @@ def modal_diagnostics(values, grid, count=8):
         numerical_decay=-math.log(abs(pole))/k if abs(pole)>0 else math.inf
         rows.append(dict(mode=mode,continuous_hz=continuous if continuous>0 else None,
                          discrete_hz=numerical, cents=1200*math.log2(numerical/continuous) if oscillatory and continuous>0 else None,
-                         continuous_decay=decay, discrete_decay=numerical_decay))
+                         continuous_decay=-continuous_pole.real, discrete_decay=numerical_decay))
     return rows
 
 

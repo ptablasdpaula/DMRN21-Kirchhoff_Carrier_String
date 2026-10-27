@@ -13,6 +13,8 @@ def main():
     torch.testing.assert_close(material_multipliers(values),torch.ones(8,dtype=torch.float64),rtol=1e-12,atol=1e-12)
     torch.testing.assert_close(box.decode(box.encode(values)),values,rtol=1e-12,atol=1e-14)
     assert torch.autograd.gradcheck(material_parameters,(values.requires_grad_(),))
+    for magnitude in (-1000.,1000.):
+        box.validate(box.decode(torch.full((6,),magnitude,dtype=torch.float64)))
     grid=GridConfig(box)
     assert grid.corner_score <= 1
     corner=[box.ranges[i][1] for i in [0,1,5]]

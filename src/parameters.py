@@ -68,6 +68,8 @@ class ParameterBox:
         # Log interpolation for positive parameters, linear interpolation for losses.
         fraction = unconstrained.sigmoid()
         positive = (low[:4].log() + fraction[:4]*(high[:4].log()-low[:4].log())).exp()
+        # Avoid a one-ulp exp(log(bound)) overshoot at saturated logits.
+        positive = positive.clamp(low[:4], high[:4])
         losses = low[4:] + fraction[4:]*(high[4:]-low[4:])
         return torch.cat((positive, losses))
 
