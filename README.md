@@ -112,6 +112,7 @@ pixi run numerics-check       # Linear closed form, energy and nonlinear gradien
 pixi run forward-check        # Native vs compiled dual and checkpointed reverse references
 pixi run notebook-check       # Teaching notebook and its Octave comparison
 pixi run recovery             # Four-second, six-parameter Adam and L-BFGS experiment
+pixi run python experiments/summarize_recovery.py  # Table and loss plots from saved fits
 ```
 
 Notebook fits save JSON to ignored `output/`; executed test notebooks and previews
