@@ -11,7 +11,7 @@ The listener is fixed at the midpoint, suppressing even spatial modes.
 
 Let μ=ρπr² and I=πr⁴/4. The six controls map to T=4μL²f₀² and
 E=BTL²/(π²I). The continuous small-amplitude modal frequencies are
-fₙ=n f₀√(1+Bn²). Density and length are fixed, not optimised. Positive B is required
+fₙ=n f₀√(1+Bn²). Density and length are fixed in perceptual mode. The optional direct-material mode instead exposes all eight native physical parameters, including density and length, without this mapping. Positive B is required
 by the bounded fitting layer; the reference linear-limit checks isolate the linear
 update separately. B=0 is not a finite log-coordinate endpoint.
 
@@ -32,7 +32,12 @@ For k=1/(fs·OF), c²=T/μ, K²=EI/μ, and H=(L/N)/1.01, the checked score is
 
 S_margin = (c²k² + 4σ₁k)/H² + 4K²k²/H⁴ ≤ 1.
 
-The maximum over a rectangular f₀,B,σ₁ range is its upper corner. Other controls
+The maximum over a rectangular f₀,B,σ₁ range is its upper corner.
+For direct material bounds, use rho_min, T_max, E_max, L_min and sigma1_max.
+The radius contribution has the form A/r²+C r²; convexity in r² means the maximum
+occurs at one of the two radius endpoints. Both are checked when selecting N and
+oversampling. If length is fitted, physical h=L/N varies continuously with length;
+N and k remain fixed, and this variation is included in the native derivatives. Other controls
 are absent from this score. The corresponding unadjusted score cannot simply be
 compared against 1/1.01²: bending carries a fourth-power margin.
 

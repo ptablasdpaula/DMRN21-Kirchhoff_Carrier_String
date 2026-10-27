@@ -5,6 +5,8 @@ import nbformat
 from nbclient import NotebookClient
 ROOT=Path(__file__).resolve().parents[1]
 checks='''
+assert workbench.coordinates.value=='material'
+workbench.coordinates.value='perceptual'
 workbench.duration.value=.04
 workbench.prepare()
 assert workbench.grid is not None
@@ -45,7 +47,39 @@ workbench.prepare();workbench.generate_target();workbench.generate_initial()
 workbench.max_steps['adam'].value=1
 workbench.run('adam')
 assert 'adam' in workbench.results
-print('Notebook ranges, sliders, independent fits, invalidation and plots passed.')
+# Switch to materials: old results disappear and the direct controls replace them.
+workbench.coordinates.value='material'
+assert workbench.grid is None and not workbench.results
+assert len(workbench.range_fields)==8
+assert workbench.density.layout.display=='none'
+workbench.prepare()
+assert workbench.grid is not None and len(workbench.target_fields)==8
+material_grid=workbench.grid
+workbench.generate_target();workbench.fill_initial(True);workbench.generate_initial()
+assert workbench.target is not None and workbench.initial is not None
+saved_initial=workbench.initial['physical'].clone()
+for checkbox in workbench.optimize_boxes:checkbox.value=False
+workbench.optimize_boxes[1].value=True
+workbench.optimize_boxes[5].value=True
+for name in ('adam','lbfgs'):
+    workbench.max_steps[name].value=2
+    workbench.run(name)
+    assert name in workbench.results
+    result=workbench.results[name]
+    torch.testing.assert_close(result['requested_initial'],saved_initial)
+    frozen=torch.tensor([True,False,True,True,True,False,True,True])
+    assert torch.equal(result['best_physical'][frozen],saved_initial[frozen])
+    assert workbench.grid is material_grid
+# Fitted length changes physical h continuously but never changes N or the rate.
+workbench.target_fields[4].value=1.1
+assert workbench.grid is material_grid and workbench.target is None
+workbench.generate_target()
+assert workbench.target is not None
+workbench.coordinates.value='perceptual'
+assert workbench.grid is None and len(workbench.range_fields)==6
+workbench.prepare();workbench.generate_target();workbench.generate_initial()
+assert workbench.target is not None
+print('Both coordinate systems: ranges, native synthesis, independent fits, freezing, switching and plots passed.')
 '''
 for name in ('synthesis','optimization'):
     notebook=nbformat.read(ROOT/f'notebooks/{name}.ipynb',as_version=4)

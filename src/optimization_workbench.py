@@ -7,29 +7,36 @@ import matplotlib.pyplot as plt
 import torch
 from IPython.display import Audio, HTML, display, clear_output
 from cels import STFTPower
-from .parameters import ParameterBox, reference_parameters, material_parameters, NAMES, UNITS
+from .parameters import ParameterBox, MaterialParameterBox, perceptual_from_material
 from .grid import GridConfig
 from .synthesis import Renderer, modal_diagnostics, nonlinear_strength
 from .optimization import fit, criterion_for, save_result
 
-LABELS=('Taut fundamental f₀','Inharmonicity B','Amplitude','Radius','Uniform loss σ₀','Frequency-dependent loss σ₁')
+PERCEPTUAL_LABELS=('Taut fundamental f₀','Inharmonicity B','Amplitude','Radius','Uniform loss σ₀','Frequency-dependent loss σ₁')
+
+MATERIAL_LABELS=('Density','Tension','Radius',"Young’s modulus",'Length','Amplitude','Uniform loss σ₀','Frequency-dependent loss σ₁')
 
 
 class OptimizationWorkbench:
-    def __init__(self):
+    def __init__(self, coordinate_system="perceptual"):
         self.grid=self.renderer=self.target=self.initial=self.criterion=None
         self.results={};self.busy=False;self.preparing=False;self.buttons=[]
-        box=ParameterBox()
+        self.coordinates=widgets.Dropdown(options=[('Direct material parameters','material'),('Fundamental / inharmonicity','perceptual')],
+            value=coordinate_system,description='Coordinates',layout=widgets.Layout(width='440px'))
+        box=MaterialParameterBox() if coordinate_system=='material' else ParameterBox()
+        self.labels=MATERIAL_LABELS if coordinate_system=='material' else PERCEPTUAL_LABELS
+        self.names,self.units=box.names,box.units
         self.range_fields=[(widgets.FloatText(value=low,layout=widgets.Layout(width='170px')),
                             widgets.FloatText(value=high,layout=widgets.Layout(width='170px'))) for low,high in box.ranges]
+        self.range_rows=widgets.VBox()
         self.sample_rate=widgets.BoundedIntText(value=44100,min=1000,max=384000,description='Output rate')
         self.duration=widgets.BoundedFloatText(value=4.,min=.001,max=60.,description='Duration (s)')
         self.max_oversampling=widgets.BoundedIntText(value=128,min=1,max=1024,description='Max factor')
-        self.density=widgets.FloatText(value=box.density,description='Fixed density')
-        self.length=widgets.FloatText(value=box.length,description='Fixed length')
+        self.density=widgets.FloatText(value=ParameterBox().density,description='Fixed density')
+        self.length=widgets.FloatText(value=ParameterBox().length,description='Fixed length')
         self.excitation=widgets.Dropdown(options=[('Eight sine modes','multimode'),('First mode (reference)','first_mode'),('Raised cosine','raised_cosine')],value='multimode',description='Excitation')
         self.target_fields=[];self.initial_fields=[]
-        self.optimize_boxes=[widgets.Checkbox(value=True,indent=False,layout=widgets.Layout(width='90px')) for _ in NAMES]
+        self.optimize_boxes=[widgets.Checkbox(value=True,indent=False,layout=widgets.Layout(width='90px')) for _ in self.names]
         self.target_rows=widgets.VBox([widgets.HTML('Prepare the parameter ranges first.')])
         self.initial_rows=widgets.VBox([widgets.HTML('Prepare the parameter ranges first.')])
         self.grid_output=widgets.Output();self.target_output=widgets.Output();self.initial_output=widgets.Output()
@@ -37,11 +44,14 @@ class OptimizationWorkbench:
         self.prediction_outputs={name:widgets.Output() for name in ('adam','lbfgs')}
         self.learning_rates={name:widgets.FloatText(value=lr,description='Learning rate') for name,lr in [('adam',.01),('lbfgs',1.)]}
         self.max_steps={name:widgets.BoundedIntText(value=500,min=1,max=10000,description='Max steps') for name in ('adam','lbfgs')}
-        for field in self.configuration_controls(): field.observe(self._configuration_changed,names='value')
+        for field in self.configuration_controls():
+            if field is not self.coordinates: field.observe(self._configuration_changed,names='value')
+        self.coordinates.observe(self._coordinates_changed,names='value')
+        self._update_range_rows()
         for field in self.optimize_boxes: field.observe(lambda _:self._clear_results(),names='value')
 
     def configuration_controls(self):
-        return [field for pair in self.range_fields for field in pair]+[self.sample_rate,self.duration,self.max_oversampling,self.density,self.length,self.excitation]
+        return [field for pair in self.range_fields for field in pair]+[self.coordinates,self.sample_rate,self.duration,self.max_oversampling,self.density,self.length,self.excitation]
 
     def _button(self,label,callback,style=''):
         button=widgets.Button(description=label,button_style=style,layout=widgets.Layout(width='auto'))
@@ -78,32 +88,56 @@ class OptimizationWorkbench:
         self.initial=None;self._clear_results()
         self._message(self.initial_output,'Generate the initial signal again. The prepared grid is unchanged.')
 
-    def ranges_panel(self):
+    def _update_range_rows(self):
         rows=[widgets.HTML('<b>Parameter ranges used for both sounds and the entire fit</b>')]
         rows.append(widgets.HBox([widgets.Label('Parameter',layout=widgets.Layout(width='240px')),widgets.Label('Minimum',layout=widgets.Layout(width='170px')),widgets.Label('Maximum')]))
-        for label,unit,pair in zip(LABELS,UNITS,self.range_fields):
+        for label,unit,pair in zip(self.labels,self.units,self.range_fields):
             rows.append(widgets.HBox([widgets.Label(f'{label} ({unit})',layout=widgets.Layout(width='240px')),*pair]))
-        return widgets.VBox(rows+[widgets.HBox([self.sample_rate,self.duration,self.max_oversampling]),
+        self.range_rows.children=rows
+        for field in (self.density,self.length):
+            field.layout.display='none' if self.coordinates.value=='material' else ''
+
+    def _coordinates_changed(self,_):
+        self._configuration_changed(None)
+        box=MaterialParameterBox() if self.coordinates.value=='material' else ParameterBox()
+        self.labels=MATERIAL_LABELS if self.coordinates.value=='material' else PERCEPTUAL_LABELS
+        self.names,self.units=box.names,box.units
+        self.range_fields=[(widgets.FloatText(value=low,layout=widgets.Layout(width='170px')),
+                            widgets.FloatText(value=high,layout=widgets.Layout(width='170px'))) for low,high in box.ranges]
+        for pair in self.range_fields:
+            for field in pair:field.observe(self._configuration_changed,names='value')
+        self.optimize_boxes=[widgets.Checkbox(value=True,indent=False,layout=widgets.Layout(width='90px')) for _ in self.names]
+        for field in self.optimize_boxes:field.observe(lambda _:self._clear_results(),names='value')
+        self.target_fields=[];self.initial_fields=[]
+        self.target_rows.children=[widgets.HTML('Coordinate system changed. Prepare the ranges again.')]
+        self.initial_rows.children=[widgets.HTML('Prepare the ranges again.')]
+        self._update_range_rows()
+        self._message(self.grid_output,'Coordinate system changed; ranges reset to reference defaults. Apply ranges / prepare grid.')
+
+    def ranges_panel(self):
+        return widgets.VBox([self.coordinates,self.range_rows,widgets.HBox([self.sample_rate,self.duration,self.max_oversampling]),
             widgets.HBox([self.density,self.length]),self.excitation,
             self._button('Apply ranges / prepare grid',lambda _:self.prepare(),'primary'),self.grid_output])
 
     def _rows(self,fields,mask=False):
         return [widgets.HBox([widgets.Label(label,layout=widgets.Layout(width='240px')),field]+([check] if mask else []))
-                for label,field,check in zip(LABELS,fields,self.optimize_boxes)]
+                for label,field,check in zip(self.labels,fields,self.optimize_boxes)]
 
     def prepare(self):
         self._configuration_changed(None)
         try:
-            box=ParameterBox(tuple((a.value,b.value) for a,b in self.range_fields),self.density.value,self.length.value)
+            ranges=tuple((a.value,b.value) for a,b in self.range_fields)
+            box=(MaterialParameterBox(ranges) if self.coordinates.value=='material' else
+                 ParameterBox(ranges,self.density.value,self.length.value))
             grid=GridConfig(box,self.sample_rate.value,self.max_oversampling.value)
             renderer=Renderer(grid,self.duration.value,self.excitation.value)
-            low,high=box.bounds();defaults=reference_parameters().clamp(low,high)
+            low,high=box.bounds();defaults=box.defaults().clamp(low,high)
             initial=box.perturb(defaults)
             self.preparing=True
             def sliders(values,callback):
                 fields=[]
                 for i,(value,(lo,hi)) in enumerate(zip(values.tolist(),box.ranges)):
-                    if i<4:
+                    if i<box.positive_count:
                         control=widgets.FloatLogSlider(value=value,base=10,min=math.log10(lo),max=math.log10(hi),step=.001,
                             readout_format='.6g',continuous_update=False,layout=widgets.Layout(width='430px'))
                     else:
@@ -122,7 +156,7 @@ class OptimizationWorkbench:
         finally:self.preparing=False
 
     def target_panel(self):
-        return widgets.VBox([widgets.HTML('Choose target values. Checkboxes select the six fitting parameters.'),self.target_rows,
+        return widgets.VBox([widgets.HTML('Choose target values. Checked parameters are fitted; unchecked parameters keep their initial values.'),self.target_rows,
             self._button('Generate target / synthesis',lambda _:self.generate_target(),'primary'),self.target_output])
 
     def fill_initial(self,perturb=False):
@@ -178,10 +212,11 @@ class OptimizationWorkbench:
             if signal is None:continue
             with output:
                 clear_output(wait=True)
-                p=signal['physical'];physical=material_parameters(p,self.grid.box.density,self.grid.box.length)
-                print(f"{name}: f₀={p[0]:.6g} Hz; linear f₁={p[0]*torch.sqrt(1+p[1]):.6g} Hz; T={physical[1]:.6g} N; E={physical[3]:.6g} Pa")
-                print(f'First-mode nonlinear-strength indicator B(a/r)²={nonlinear_strength(p):.6g}; this is not an accuracy bound for the chosen excitation.')
-                print(f'Current stability utilisation: {self.grid.score(p[0],p[1],p[5]):.6f}. '+('CeL: '+str(signal['loss']) if name=='Initial' else ''))
+                p=signal['physical'];physical=self.grid.box.to_material(p)
+                derived=perceptual_from_material(physical)
+                print(f"{name}: derived f₀={derived[0]:.6g} Hz; linear f₁={derived[0]*torch.sqrt(1+derived[1]):.6g} Hz; T={physical[1]:.6g} N; E={physical[3]:.6g} Pa")
+                print(f'First-mode nonlinear-strength indicator B(a/r)²={nonlinear_strength(derived):.6g}; this is not an accuracy bound for the chosen excitation.')
+                print(f'Current stability utilisation: {self.grid.score_values(p):.6f}. '+('CeL: '+str(signal['loss']) if name=='Initial' else ''))
                 display(Audio((signal['audio']*self._gain()).numpy(),rate=self.grid.sample_rate,normalize=False))
                 rows=modal_diagnostics(p,self.grid)
                 def fmt(value):return 'nonoscillatory' if value is None else f'{value:.5g}'
@@ -215,7 +250,7 @@ class OptimizationWorkbench:
                 result['verified_loss']=self.criterion(result['audio']).item()
                 if not math.isclose(result['verified_loss'],result['best_loss'],rel_tol=1e-6,abs_tol=1e-10):raise RuntimeError('Best checkpoint verification failed.')
                 self.results[name]=result
-                path=Path('output')/f'notebook_{name}.json'
+                path=Path('output')/f'notebook_{self.grid.box.coordinate_system}_{name}.json'
                 save_result(path,result,self.renderer,self.target['physical'])
                 print(f"{result['iterations']} steps; {result['seconds']:.1f} s. {result['stop_reason']}\nHistory saved to {path.resolve()}")
                 if not torch.equal(result['effective_initial'],result['requested_initial']):
@@ -239,8 +274,8 @@ class OptimizationWorkbench:
             print(f"{name.upper()} best CeL: {result['best_loss']:.8g}. {result['stop_reason']}")
             display(Audio((result['audio']*self._gain()).numpy(),rate=self.target['settings']['sample_rate'],normalize=False))
             rows=''.join('<tr>'+''.join(f'<td style="padding:4px 12px">{value}</td>' for value in
-                [html.escape(LABELS[i]),f'{self.target["physical"][i]:.7g}',f'{self.initial["physical"][i]:.7g}',
-                 f'{result["best_physical"][i]:.7g}','Yes' if result['mask'][i] else 'Fixed'])+'</tr>' for i in range(6))
+                [html.escape(self.labels[i]),f'{self.target["physical"][i]:.7g}',f'{self.initial["physical"][i]:.7g}',
+                 f'{result["best_physical"][i]:.7g}','Yes' if result['mask'][i] else 'Fixed'])+'</tr>' for i in range(len(self.names)))
             display(HTML('<table><tr><th>Parameter</th><th>Target</th><th>Initial</th><th>Prediction</th><th>Optimised</th></tr>'+rows+'</table>'))
             fig,axes=plt.subplots(1,2,figsize=(11,3.3),layout='constrained')
             for key,r in self.results.items():

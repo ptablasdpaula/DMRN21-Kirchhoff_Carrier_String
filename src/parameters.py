@@ -1,7 +1,7 @@
-"""Perceptual coordinates and bounded optimisation variables.
+"""Direct material or perceptual coordinates with bounded optimisation variables.
 
 f0 is the tension-only fundamental; f1 = f0*sqrt(1+B) includes linear stiffness.
-Density and length are fixed. All tensors use physical units, CPU float64.
+Only perceptual mode fixes density and length. All tensors use physical units, CPU float64.
 """
 from dataclasses import dataclass
 import math
@@ -34,56 +34,120 @@ def material_multipliers(values, density=reference.material_density, length=refe
     return material_parameters(values, density, length) / nominal_parameters()
 
 
-@dataclass(frozen=True)
-class ParameterBox:
-    ranges: tuple = ((60., 100.), (1e-5, 1e-3), (.0005, .003),
-                     (.9*reference.radius, 1.1*reference.radius), (0., 2.), (0., .001))
-    density: float = reference.material_density
-    length: float = reference.length
-
-    def __post_init__(self):
+class BoundedParameters:
+    """Common bounds and transforms; each coordinate system supplies its map."""
+    def _validate_ranges(self):
         object.__setattr__(self, 'ranges', tuple(tuple(float(v) for v in pair) for pair in self.ranges))
-        if len(self.ranges) != 6 or any(len(pair) != 2 for pair in self.ranges):
-            raise ValueError('Supply one lower/upper pair for each of the six parameters.')
+        if len(self.ranges) != len(self.names) or any(len(pair) != 2 for pair in self.ranges):
+            raise ValueError(f'Supply one lower/upper pair for each of {len(self.names)} parameters.')
         for i, (low, high) in enumerate(self.ranges):
             if not (math.isfinite(low) and math.isfinite(high) and low < high):
-                raise ValueError(f'{NAMES[i]} needs finite, increasing bounds.')
-            if low < 0 or (i < 4 and low == 0):
-                raise ValueError('f0, B, amplitude and radius must be positive; losses may be zero.')
-        if not all(math.isfinite(x) and x > 0 for x in (self.density, self.length)):
-            raise ValueError('Fixed density and length must be positive and finite.')
+                raise ValueError(f'{self.names[i]} needs finite, increasing bounds.')
+            if low < 0 or (i < self.positive_count and low == 0):
+                raise ValueError('Physical parameters must be positive; losses may be zero.')
 
     def bounds(self):
         return torch.tensor(self.ranges, dtype=torch.float64).unbind(dim=1)
 
     def validate(self, values):
         low, high = self.bounds()
-        if values.shape != (6,) or values.dtype != torch.float64 or values.device.type != 'cpu':
-            raise ValueError('Parameters must be a six-element CPU float64 tensor.')
+        if values.shape != (len(self.names),) or values.dtype != torch.float64 or values.device.type != 'cpu':
+            raise ValueError(f'Parameters must be a {len(self.names)}-element CPU float64 tensor.')
         if not bool(torch.isfinite(values).all()) or not bool(((values >= low) & (values <= high)).all()):
             raise ValueError('Parameters must be finite and inside the prepared box.')
 
     def decode(self, unconstrained):
-        low, high = self.bounds()
-        # Log interpolation for positive parameters, linear interpolation for losses.
+        low, high = self.bounds(); n = self.positive_count
         fraction = unconstrained.sigmoid()
-        positive = (low[:4].log() + fraction[:4]*(high[:4].log()-low[:4].log())).exp()
-        # Avoid a one-ulp exp(log(bound)) overshoot at saturated logits.
-        positive = positive.clamp(low[:4], high[:4])
-        losses = low[4:] + fraction[4:]*(high[4:]-low[4:])
+        positive = (low[:n].log() + fraction[:n]*(high[:n].log()-low[:n].log())).exp()
+        positive = positive.clamp(low[:n], high[:n])
+        losses = low[n:] + fraction[n:]*(high[n:]-low[n:])
         return torch.cat((positive, losses))
 
     def encode(self, values):
         self.validate(values)
-        low, high = self.bounds()
-        fraction = torch.cat(((values[:4].log()-low[:4].log())/(high[:4].log()-low[:4].log()),
-                              (values[4:]-low[4:])/(high[4:]-low[4:])))
-        # Finite logits cannot represent endpoints. Nudge selected endpoint starts
-        # inside by one millionth of their coordinate range; frozen entries stay exact.
+        low, high = self.bounds(); n = self.positive_count
+        fraction = torch.cat(((values[:n].log()-low[:n].log())/(high[:n].log()-low[:n].log()),
+                              (values[n:]-low[n:])/(high[n:]-low[n:])))
+        # Selected endpoint starts move inward for finite logits; frozen values stay exact.
         return torch.logit(fraction.clamp(1e-6, 1-1e-6))
 
     def perturb(self, target):
         self.validate(target)
         low, high = self.bounds()
-        signs = target.new_tensor([1., -1., 1., -1., 1., -1.])
+        signs = target.new_tensor([1. if i%2==0 else -1. for i in range(len(self.names))])
         return (target * torch.exp(signs * math.log(1.1))).clamp(low, high)
+
+
+@dataclass(frozen=True)
+class ParameterBox(BoundedParameters):
+    ranges: tuple = ((60., 100.), (1e-5, 1e-3), (.0005, .003),
+                     (.9*reference.radius, 1.1*reference.radius), (0., 2.), (0., .001))
+    density: float = reference.material_density
+    length: float = reference.length
+    names = NAMES
+    units = UNITS
+    positive_count = 4
+    coordinate_system = 'perceptual'
+
+    def __post_init__(self):
+        self._validate_ranges()
+        if not all(math.isfinite(x) and x > 0 for x in (self.density, self.length)):
+            raise ValueError('Fixed density and length must be positive and finite.')
+
+    def defaults(self):
+        return reference_parameters()
+
+    def to_material(self, values):
+        return material_parameters(values, self.density, self.length)
+
+    def stability_cases(self):
+        f0, B, sigma1 = self.ranges[0][1], self.ranges[1][1], self.ranges[5][1]
+        c = 2*self.length*f0
+        return [(c, c*self.length*math.sqrt(B)/math.pi, sigma1, self.length)]
+
+    @property
+    def length_range(self):
+        return (self.length, self.length)
+
+
+@dataclass(frozen=True)
+class MaterialParameterBox(BoundedParameters):
+    """Direct physical controls in the native kernel's parameter order."""
+    ranges: tuple = tuple((.8*v, 1.2*v) for v in (
+        reference.material_density, reference.tension, reference.radius,
+        reference.young_modulus, reference.length, reference.amplitude)) + ((0.,2.), (0.,.001))
+    names = ('material_density','tension','radius','young_modulus','length','amplitude','sigma_0','sigma_1')
+    units = ('kg/m³','N','m','Pa','m','m','1/s','m²/s')
+    positive_count = 6
+    coordinate_system = 'material'
+
+    def __post_init__(self):
+        self._validate_ranges()
+
+    def defaults(self):
+        return nominal_parameters()
+
+    def to_material(self, values):
+        # No f0/B map in either synthesis or fitting.
+        return values
+
+    @property
+    def length_range(self):
+        return self.ranges[4]
+
+    def stability_cases(self):
+        # Score is maximised by rho_min, T_max, E_max, L_min, sigma1_max.
+        # Radius enters as A/r² + C*r², convex in r²: check BOTH endpoints.
+        rho=self.ranges[0][0]; tension=self.ranges[1][1]
+        modulus=self.ranges[3][1]; length=self.ranges[4][0]; sigma1=self.ranges[7][1]
+        return [(math.sqrt(tension/(rho*math.pi*r*r)), math.sqrt(modulus*r*r/(4*rho)), sigma1, length)
+                for r in self.ranges[2]]
+
+
+def perceptual_from_material(values):
+    """Derived diagnostics only; material-mode synthesis never calls this map."""
+    rho,tension,radius,modulus,length,amplitude,sigma0,sigma1=values.unbind()
+    c=torch.sqrt(tension/(rho*math.pi*radius**2))
+    B=math.pi**2*modulus*(math.pi*radius**4/4)/(tension*length**2)
+    return torch.stack((c/(2*length),B,amplitude,radius,sigma0,sigma1))

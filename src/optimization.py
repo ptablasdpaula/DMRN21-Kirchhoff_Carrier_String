@@ -6,7 +6,6 @@ from dataclasses import asdict
 from pathlib import Path
 import torch
 from cels import STFTCumulativeEnergyLoss
-from .parameters import NAMES
 
 LOSS_COMMIT = '9fdbd60f5b67def8dd8884a006541e0ca4dbbf0d'
 
@@ -24,7 +23,7 @@ def should_stop(history):
     return (before-history[-1]['best_loss'])/max(before,1e-30) < .1
 
 
-def fit(renderer, target, initial, mask=(True,)*6, optimizer_name='adam',
+def fit(renderer, target, initial, mask=None, optimizer_name='adam',
         learning_rate=None, max_steps=500, progress=None, criterion=None):
     """First-order fit in bounded coordinates. No adaptive grid or feasibility loop.
 
@@ -33,8 +32,9 @@ def fit(renderer, target, initial, mask=(True,)*6, optimizer_name='adam',
     """
     box=renderer.grid.box
     box.validate(initial)
-    if len(mask)!=6 or optimizer_name not in ('adam','lbfgs'):
-        raise ValueError('Use a six-element selection mask and adam or lbfgs.')
+    if mask is None: mask=(True,)*len(box.names)
+    if len(mask)!=len(box.names) or optimizer_name not in ('adam','lbfgs'):
+        raise ValueError(f'Use a {len(box.names)}-element selection mask and adam or lbfgs.')
     if not isinstance(max_steps,int) or max_steps < 0:
         raise ValueError('Maximum iterations must be a nonnegative integer.')
     learning_rate = (.01 if optimizer_name=='adam' else 1.) if learning_rate is None else learning_rate
@@ -99,7 +99,7 @@ def fit(renderer, target, initial, mask=(True,)*6, optimizer_name='adam',
 def save_result(path, result, renderer, target_parameters):
     """Portable experiment evidence without embedding audio or executable objects."""
     payload={k:(v.tolist() if isinstance(v,torch.Tensor) else v) for k,v in result.items() if k!='audio'}
-    payload.update(parameter_names=NAMES,target=target_parameters.tolist(),grid=asdict(renderer.grid),
+    payload.update(coordinate_system=renderer.grid.box.coordinate_system,parameter_names=renderer.grid.box.names,target=target_parameters.tolist(),grid=asdict(renderer.grid),
                    duration=renderer.duration,excitation=renderer.excitation,
                    loss=dict(name='STFTCumulativeEnergyLoss',source_commit=LOSS_COMMIT,
                              sample_rate=renderer.grid.sample_rate,n_fft=1024,hop_length=256,log_weighting=False),

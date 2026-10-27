@@ -35,8 +35,15 @@ The synthesis and optimisation notebooks share production modules under `src/`.
 
 ## One parameter box, one grid
 
-The six coordinates are **f₀, B, amplitude, radius, σ₀ and σ₁**. Density and length
-are fixed. Here f₀ is the tension-only fundamental; the small-amplitude first-mode
+The optimisation notebook starts in **Direct material parameters** mode: density,
+tension, radius, Young’s modulus, length, amplitude, σ₀ and σ₁. Both synthesis
+and fitting use these physical values directly. Check or uncheck each parameter
+to optimise it or hold its initial value constant.
+
+The **Coordinates** selector also offers the existing perceptual mode, whose six
+coordinates are **f₀, B, amplitude, radius, σ₀ and σ₁**, with density and length
+fixed. Switching modes resets ranges and invalidates previous audio/results;
+prepare the ranges again before synthesis. Here f₀ is the tension-only fundamental; the small-amplitude first-mode
 frequency including stiffness is **f₁ = f₀ √(1+B)**. Tension and Young’s modulus
 are derived from these coordinates, not independently fitted.
 
@@ -49,7 +56,11 @@ are derived from these coordinates, not independently fitted.
 4. Keep the grid and internal rate fixed for every target, initial and fitted
    parameter vector inside the box. Filter before returning audio at the output rate.
 
-The default box selects **×3, 132,300 Hz internally and 176 intervals**. Editing
+The perceptual default box selects **×3, 132,300 Hz internally and 176 intervals**.
+Material mode computes its own grid over its editable physical ranges; it checks
+both radius endpoints at the worst density, tension, modulus, length and loss bounds.
+When length varies, interval count and time step stay fixed while physical spacing
+changes smoothly as h=L/N. Editing
 ranges or render settings invalidates prepared audio and results; moving parameter
 sliders inside the box leaves the discretisation unchanged. Resource limits reject
 expensive configurations instead of silently reducing spatial resolution.
@@ -105,6 +116,7 @@ result = fit(renderer, target, box.perturb(truth), optimizer_name="adam")
 ```sh
 pixi run test                 # Native/PyTorch comparison with the actual Octave reference
 pixi run parameters-check     # Parameter map, exact corner bound, minimal OF / maximal N
+pixi run material-check        # Direct materials, corner bounds, gradients and both optimizers
 pixi run synthesis-check      # Excitations, filtered output and six-coordinate gradients
 pixi run optimization-check   # Bounded fits, frozen parameters and patience
 pixi run workbench-check      # Both notebooks in fresh kernels; controls and plots

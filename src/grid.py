@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 import math
 from . import kc_string as reference
-from .parameters import ParameterBox
+from .parameters import ParameterBox, MaterialParameterBox
 
 
 def reference_intervals():
@@ -13,7 +13,7 @@ def reference_intervals():
 
 @dataclass(frozen=True)
 class GridConfig:
-    box: ParameterBox = field(default_factory=ParameterBox)
+    box: ParameterBox | MaterialParameterBox = field(default_factory=ParameterBox)
     sample_rate: int = 44100
     max_oversampling: int = 128
     max_intervals: int = 4096
@@ -27,12 +27,10 @@ class GridConfig:
             if not isinstance(value, int) or isinstance(value, bool) or value < 1:
                 raise ValueError(f'{name} must be a positive integer.')
         minimum = reference_intervals()
-        f0, B, sigma1 = self.box.ranges[0][1], self.box.ranges[1][1], self.box.ranges[5][1]
-        c = 2*self.box.length*f0
-        K = c*self.box.length*math.sqrt(B)/math.pi
+        cases = self.box.stability_cases()
         for factor in range(1, self.max_oversampling+1):
-            h = 1.01 * reference.minimum_grid_spacing(1/(self.sample_rate*factor), c, K, sigma1)
-            intervals = 2*math.floor(self.box.length/h/2)
+            intervals = min(2*math.floor(length/(1.01*reference.minimum_grid_spacing(
+                1/(self.sample_rate*factor), c, K, sigma1))/2) for c,K,sigma1,length in cases)
             if intervals >= minimum:
                 if intervals > self.max_intervals:
                     raise ValueError(f'Grid requires {intervals} intervals, above limit {self.max_intervals}.')
@@ -51,9 +49,12 @@ class GridConfig:
 
     @property
     def spacing(self):
-        return self.box.length/self.intervals
+        """Minimum spacing over the box; actual material-mode spacing is L/N."""
+        return self.box.length_range[0]/self.intervals
 
     def score(self, f0, B, sigma1, *, intervals=None, oversampling=None):
+        if self.box.coordinate_system != 'perceptual':
+            raise ValueError('Use score_values with direct material coordinates.')
         N = self.intervals if intervals is None else intervals
         factor = self.oversampling if oversampling is None else oversampling
         k = 1/(self.sample_rate*factor)
@@ -63,12 +64,24 @@ class GridConfig:
         K2 = B*c2*self.box.length**2/math.pi**2
         return (c2*k*k+4*sigma1*k)*inverse_H**2 + 4*K2*k*k*inverse_H**4
 
+    def score_values(self, values):
+        rho,tension,radius,modulus,length,_,_,sigma1=self.box.to_material(values).unbind()
+        return self.physical_score(tension/(rho*math.pi*radius**2),modulus*radius**2/(4*rho),sigma1,length)
+
+    def physical_score(self,c2,K2,sigma1,length,*,intervals=None,oversampling=None):
+        N=self.intervals if intervals is None else intervals
+        factor=self.oversampling if oversampling is None else oversampling
+        k=1/(self.sample_rate*factor); inverse_H=N*1.01/length
+        return (c2*k*k+4*sigma1*k)*inverse_H**2+4*K2*k*k*inverse_H**4
+
     @property
     def corner_score(self):
-        return self.score(self.box.ranges[0][1], self.box.ranges[1][1], self.box.ranges[5][1])
+        return max(self.physical_score(c*c,K*K,sigma1,length) for c,K,sigma1,length in self.box.stability_cases())
 
     def describe(self):
+        low,high=self.box.length_range
+        spacing_text=f'h={low/self.intervals:.7g} m' if low==high else f'h=L/N ({low/self.intervals:.7g}–{high/self.intervals:.7g} m over length range)'
         return (f'Grid: {self.intervals} intervals (reference ×1 minimum {self.minimum_intervals}); '
-                f'h={self.spacing:.7g} m\nOversampling ×{self.oversampling}; '
+                f'{spacing_text}\nOversampling ×{self.oversampling}; '
                 f'internal rate {self.integration_rate:,} Hz; output {self.sample_rate:,} Hz\n'
                 f'Worst-corner margin-adjusted stability utilisation: {self.corner_score:.6f} ≤ 1')

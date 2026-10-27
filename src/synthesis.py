@@ -3,7 +3,7 @@ import math
 import cmath
 import torch
 from .kc_string_forward import ForwardString
-from .parameters import material_multipliers
+from .kc_string_forward import nominal_parameters
 
 
 class Renderer:
@@ -28,7 +28,7 @@ class Renderer:
     def __call__(self, values):
         # The fit's bounded parameter transform supplies the whole-box guarantee.
         # No per-evaluation stability test, projection or parameter-dependent grid.
-        multipliers = material_multipliers(values, self.grid.box.density, self.grid.box.length)
+        multipliers = self.grid.box.to_material(values) / nominal_parameters()
         audio = self.model(multipliers, self.duration)
         if self.filter is not None:
             padded = torch.nn.functional.pad(audio.reshape(1,1,-1), (self.half_width,self.half_width), mode='replicate')
@@ -51,9 +51,9 @@ def modal_diagnostics(values, grid, count=8):
     A z² + D z + C = 0; frequencies come from arg(z), decay from -log|z|/k.
     Nonoscillatory poles have no cents metric.
     """
-    f0, B, _, _, sigma0, sigma1 = values.detach().tolist()
-    L=grid.box.length; h=grid.spacing; k=1/grid.integration_rate
-    c2=(2*L*f0)**2; K2=B*c2*L*L/math.pi**2
+    rho,tension,radius,modulus,L,_,sigma0,sigma1=grid.box.to_material(values).detach().tolist()
+    h=L/grid.intervals; k=1/grid.integration_rate
+    c2=tension/(rho*math.pi*radius**2); K2=modulus*radius**2/(4*rho)
     rows=[]
     for mode in range(1,min(count,grid.intervals-1)+1):
         beta2=(mode*math.pi/L)**2
