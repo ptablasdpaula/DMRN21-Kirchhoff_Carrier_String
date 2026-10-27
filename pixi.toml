@@ -7,11 +7,13 @@ version = "0.1.0"
 
 [tasks]
 test = "python test/kc_string.py"
-ranges-check = "python test/stability_ranges.py"
+parameters-check = "python test/parameters_grid.py"
 forward-check = "python test/kc_string_forward.py"
 workbench-check = "python test/optimization_workbench.py"
-inharmonicity-check = "python test/inharmonicity_synthesis.py"
-fixed-grid-check = "python test/inharmonicity_fixed_grid.py"
+synthesis-check = "python test/synthesis.py"
+optimization-check = "python test/optimization.py"
+numerics-check = "python test/numerical_validation.py"
+recovery = "python experiments/recovery.py"
 notebook-check = "jupyter nbconvert --execute --to notebook notebooks/kc_string.ipynb --output kc_string.executed.ipynb --output-dir .notebook-build --ExecutePreprocessor.timeout=120 --ExecutePreprocessor.kernel_name=python3"
 
 [dependencies]
