@@ -1,4 +1,5 @@
 import csv
+import math
 import shutil
 import subprocess
 import tempfile
@@ -12,9 +13,30 @@ import torch
 project_root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(project_root / "src"))
 import kc_string
+from kc_string_forward import ForwardString
 
 
 class KirchhoffCarrierStringTest(unittest.TestCase):
+    def test_rank_one_update_matches_direct_matrix_solve(self):
+        right_hand_side = torch.tensor([0.2, -0.8, 0.3], dtype=torch.float64)
+        for direction in ([0.0, 0.0, 0.0], [1.5, -0.3, 0.7]):
+            with self.subTest(direction=direction):
+                q = torch.tensor(direction, dtype=torch.float64)
+                effective_mass = 0.4
+                matrix = effective_mass * torch.eye(3, dtype=torch.float64) + torch.outer(q, q)
+                expected = torch.linalg.solve(matrix, right_hand_side)
+                actual = kc_string.solve_rank_one(right_hand_side, q, 1 / effective_mass)
+                torch.testing.assert_close(actual, expected, rtol=1e-12, atol=1e-14)
+
+    def test_second_difference_matches_simply_supported_mode(self):
+        interval_count = 8
+        spacing = 1 / interval_count
+        points = torch.arange(1, interval_count, dtype=torch.float64)
+        mode = torch.sin(math.pi * points / interval_count)
+        eigenvalue = -4 * math.sin(math.pi / (2 * interval_count))**2 / spacing**2
+        actual = kc_string.second_spatial_derivative(mode, spacing)
+        torch.testing.assert_close(actual, eigenvalue * mode, rtol=1e-12, atol=1e-12)
+
     def test_output_matches_reference_matlab_script(self):
         octave = shutil.which("octave-cli") or shutil.which("octave")
         self.assertIsNotNone(
@@ -93,6 +115,12 @@ class KirchhoffCarrierStringTest(unittest.TestCase):
             rtol=1e-9,
             atol=1e-12,
         )
+        # Use the original dt rather than its floored, reported sample rate.
+        intervals, _, time_step, _ = kc_string.simulation_grid(oversampling_factor_for_test)
+        forward = ForwardString(intervals=intervals, sample_rate=1 / time_step)
+        native_output = forward(torch.ones(8, dtype=torch.float64),
+                                (python_output.numel() - 2) * time_step)
+        torch.testing.assert_close(native_output, reference_output, rtol=1e-9, atol=1e-12)
 
 
 if __name__ == "__main__":
