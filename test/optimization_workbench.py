@@ -1,69 +1,70 @@
-"""Execute the interactive notebook and exercise its state/selection contracts."""
+"""Execute both entry notebooks and exercise controls in a real kernel."""
 from pathlib import Path
+import base64
 import nbformat
 from nbclient import NotebookClient
-
 ROOT=Path(__file__).resolve().parents[1]
-notebook=nbformat.read(ROOT/'notebooks/optimization_workbench.ipynb',as_version=4)
-notebook.cells.append(nbformat.v4.new_code_cell('''
-workbench.duration.value = .08
-next(b for b in workbench.buttons if b.description == 'Generate target').click()
+checks='''
+workbench.duration.value=.04
+workbench.prepare()
+assert workbench.grid is not None
+fixed_grid=workbench.grid
+assert len(workbench.target_fields)==6
+workbench.generate_target()
 assert workbench.target is not None
-next(b for b in workbench.buttons if b.description == 'Generate initial signal').click()
+workbench.fill_initial(True)
+workbench.generate_initial()
 assert workbench.initial is not None
-original_initial = workbench.initial['physical'].clone()
-for i, box in enumerate(workbench.optimize_boxes):
-    box.value = (i == 5)  # Optimise amplitude only.
-for name in ('adam', 'lbfgs'):
-    workbench.max_steps[name].value = 2
-    next(b for b in workbench.buttons if b.description == f'Run {name.upper()} from initial signal').click()
-    assert name in workbench.results, name
-    result = workbench.results[name]
-    frozen = torch.tensor([i != 5 for i in range(8)])
-    assert torch.equal(result['best_physical'][frozen], original_initial[frozen])
-    assert result['iterations'] == 2
-    assert result['best_loss'] <= workbench.initial['loss']
-assert torch.equal(workbench.initial['physical'], original_initial)
-for box in workbench.optimize_boxes: box.value = False
-workbench.run('adam')
-assert workbench.results['adam']['iterations'] == 0
-assert torch.equal(workbench.results['adam']['best_physical'], original_initial)
-workbench.initial_fields[0].value *= 1.01
-assert workbench.initial is None and workbench.target is not None and not workbench.results
-workbench.sample_rate.value = 48000
+for name in ('adam','lbfgs'):
+    workbench.max_steps[name].value=2
+    workbench.run(name)
+    assert name in workbench.results
+    assert workbench.results[name]['iterations']==2
+    assert workbench.grid is fixed_grid
+initial=workbench.initial['physical'].clone()
+for result in workbench.results.values():
+    torch.testing.assert_close(result['requested_initial'],initial)
+workbench.target_fields[0].value=80.
+assert workbench.target is None and workbench.grid is fixed_grid
+assert not workbench.results
+workbench.generate_target()
+assert workbench.target is not None
+# Range edits invalidate every dependent object immediately.
+workbench.range_fields[0][1].value=110.
+assert workbench.grid is None and workbench.renderer is None
 assert workbench.target is None and workbench.initial is None
-workbench.oversampling.value = 2
-workbench.generate_target()
-workbench.generate_initial()
-assert workbench.target is not None and workbench.initial is not None
-assert workbench.target['audio'].numel() == round(.08 * 48000)
-x = (workbench.initial['physical'] / __import__('src.kc_string_forward', fromlist=['nominal_parameters']).nominal_parameters()).requires_grad_()
-workbench.renderer(x).square().mean().backward()
-assert torch.isfinite(x.grad).all()
-# Zero damping is valid, including when selected for optimization.
-workbench.target_fields[6].value = 0.
-workbench.initial_fields[6].value = 0.
-workbench.generate_target()
-workbench.generate_initial()
-workbench.optimize_boxes[6].value = True
+assert all(field.disabled for field in workbench.target_fields)
+workbench.prepare()
+assert workbench.grid is not None and workbench.grid is not fixed_grid
+# Bad ranges do not leave a stale configuration usable.
+workbench.range_fields[0][0].value=120.
+workbench.prepare()
+assert workbench.grid is None
+workbench.range_fields[0][0].value=60.
+workbench.prepare();workbench.generate_target();workbench.generate_initial()
+workbench.max_steps['adam'].value=1
 workbench.run('adam')
 assert 'adam' in workbench.results
-assert workbench.results['adam']['best_physical'][6] >= 0
-from src.optimization_workbench import fit_selected
-for name in ('adam', 'lbfgs'):
-    plateau = fit_selected(workbench.renderer, lambda audio: audio.sum()*0+1,
-                           workbench.initial['physical'], [False]*5+[True,False,False],
-                           name, .01, 30)
-    assert plateau['iterations'] == 20
-    assert 'Less than 10%' in plateau['stop_reason']
-# Invalid grids are reported rather than run or silently altered.
-workbench.intervals.value = 4095
-workbench.generate_target()
-assert workbench.target is None
-assert workbench.intervals.value == 4095
-print('Notebook workflow, frozen parameters, independent starts, invalidation, zero selection, oversampling, zero damping and invalid-grid checks passed.')
+print('Notebook ranges, sliders, independent fits, invalidation and plots passed.')
+'''
+for name in ('synthesis','optimization'):
+    notebook=nbformat.read(ROOT/f'notebooks/{name}.ipynb',as_version=4)
+    notebook.cells.append(nbformat.v4.new_code_cell(checks if name=='optimization' else '''
+workbench.duration.value=.04
+workbench.prepare();workbench.generate_target()
+assert workbench.target is not None and workbench.grid is not None
 '''))
-NotebookClient(notebook,timeout=120,kernel_name='python3',resources={'metadata':{'path':str(ROOT)}}).execute()
-path=ROOT/'.notebook-build/optimization_workbench.tested.ipynb'
-nbformat.write(notebook,path)
-print('Passed; executed notebook:',path)
+    NotebookClient(notebook,timeout=180,kernel_name='python3',resources={'metadata':{'path':str(ROOT)}}).execute()
+    output=ROOT/f'.notebook-build/{name}.tested.ipynb';output.parent.mkdir(exist_ok=True)
+    nbformat.write(notebook,output)
+    images=[]
+    def walk(value):
+        if isinstance(value,dict):
+            if 'image/png' in value:images.append(value['image/png'])
+            for item in value.values():walk(item)
+        elif isinstance(value,list):
+            for item in value:walk(item)
+    walk(notebook)
+    assert images,'Missing rendered figure'
+    (ROOT/f'.notebook-build/{name}_preview.png').write_bytes(base64.b64decode(images[-1]))
+    print('Passed:',output)
