@@ -62,7 +62,24 @@ def dual_dot(left, right):
     return dual_multiply(left, right).sum(dim=0)
 
 
-def initialize(relative_parameters, intervals, sample_rate):
+def excitation_shape(intervals, excitation='first_mode'):
+    """Fixed spatial profile; amplitude remains a differentiable physical parameter."""
+    indices = torch.arange(1, intervals, dtype=torch.float64)
+    if excitation == 'first_mode':
+        return torch.sin(math.pi * indices / intervals)
+    if excitation == 'multimode':
+        modes = torch.arange(1, min(8, intervals-1)+1, dtype=torch.float64)
+        shape = (torch.sin(math.pi*indices[:, None]*modes/intervals)/modes**2).sum(dim=1)
+        return shape / shape.abs().max()
+    if excitation == 'raised_cosine':
+        # Same node-centred width convention as the MATLAB reference.
+        width = max(1, math.floor(.25*(intervals-1)))
+        distance = (indices-intervals/2)/width
+        return torch.where(distance.abs() <= 1, .5*(1+torch.cos(math.pi*distance)), 0.)
+    raise ValueError('Choose first_mode, multimode or raised_cosine excitation.')
+
+
+def initialize(relative_parameters, intervals, sample_rate, excitation='first_mode'):
     nominal = nominal_parameters()
     # d(nominal_i * theta_i)/dtheta_j = nominal_i when i == j, otherwise zero.
     parameters = torch.cat(((nominal * relative_parameters)[:, None], torch.diag(nominal)), dim=1)
@@ -73,8 +90,7 @@ def initialize(relative_parameters, intervals, sample_rate):
     mass = dual_multiply(density, area)
     inertia = math.pi * dual_multiply(dual_multiply(radius, radius), dual_multiply(radius, radius)) / 4
     inverse_spacing_squared = dual_divide(dual_constant(1), dual_multiply(spacing, spacing))
-    indices = torch.arange(1, intervals, dtype=torch.float64)
-    previous = torch.sin(math.pi * indices / intervals)[:, None] * amplitude
+    previous = excitation_shape(intervals, excitation)[:, None] * amplitude
     second = second_derivative(previous, inverse_spacing_squared)
     fourth = second_derivative(second, inverse_spacing_squared)
     nonlinear = dual_multiply(-dual_dot(previous, second), second)
@@ -186,8 +202,8 @@ def native_block(states, coefficients, loss_sum, steps):
 
 class _AudioWithTangents(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, relative_parameters, intervals, sample_rate, steps, output_stride):
-        states, coefficients, _ = initialize(relative_parameters, intervals, sample_rate)
+    def forward(ctx, relative_parameters, intervals, sample_rate, steps, output_stride, excitation):
+        states, coefficients, _ = initialize(relative_parameters, intervals, sample_rate, excitation)
         audio, tangents = _native_kernel().simulate(states, coefficients, steps, output_stride)
         ctx.save_for_backward(tangents)
         return audio
@@ -198,7 +214,7 @@ class _AudioWithTangents(torch.autograd.Function):
         (tangents,) = ctx.saved_tensors
         # Chain rule for any scalar loss computed from the returned audio:
         # d loss/d theta_j = sum_i (d loss/d audio_i) (d audio_i/d theta_j).
-        return grad_output @ tangents, None, None, None, None
+        return grad_output @ tangents, None, None, None, None, None
 
 
 class ForwardString:
@@ -210,7 +226,7 @@ class ForwardString:
     Use any differentiable PyTorch loss and optimizer. Second derivatives are
     deliberately unsupported. No reverse simulation or checkpointing is used.
     """
-    def __init__(self, intervals=128, sample_rate=44100, output_stride=1):
+    def __init__(self, intervals=128, sample_rate=44100, output_stride=1, excitation="first_mode"):
         if not isinstance(intervals, int) or intervals < 4 or intervals % 2:
             raise ValueError('Use an even integer interval count >= 4.')
         if not math.isfinite(sample_rate) or sample_rate <= 0:
@@ -219,6 +235,8 @@ class ForwardString:
             raise ValueError('Output stride must be a positive integer.')
         self.intervals = intervals
         self.sample_rate = sample_rate
+        excitation_shape(intervals, excitation)
+        self.excitation = excitation
         self.output_stride = output_stride
 
     def _steps(self, theta, duration_seconds):
@@ -239,11 +257,11 @@ class ForwardString:
         The caller must keep theta inside the fixed-grid stability region.
         """
         steps = self._steps(theta, duration_seconds)
-        return _AudioWithTangents.apply(theta, self.intervals, self.sample_rate, steps, self.output_stride)
+        return _AudioWithTangents.apply(theta, self.intervals, self.sample_rate, steps, self.output_stride, self.excitation)
 
     @torch.no_grad()
     def output_and_tangents(self, theta, duration_seconds=0.06):
         """Return detached audio and its (n_out, 8) first-order Jacobian."""
         steps = self._steps(theta, duration_seconds)
-        states, coefficients, _ = initialize(theta.detach(), self.intervals, self.sample_rate)
+        states, coefficients, _ = initialize(theta.detach(), self.intervals, self.sample_rate, self.excitation)
         return _native_kernel().simulate(states, coefficients, steps, self.output_stride)
