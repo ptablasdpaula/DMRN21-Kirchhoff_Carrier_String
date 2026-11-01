@@ -1,0 +1,1 @@
+[{"id":"kc-alpha-scan-one-fast","command":["bash","hpc/alpha-scan-one-benchmark.sh"],"estimated_seconds":900}]

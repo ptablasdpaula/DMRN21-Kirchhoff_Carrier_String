@@ -1,0 +1,4 @@
+[
+  {"id":"kc-recovery-cpu-modal","command":["bash","hpc/recovery-one.sh","cpu","modal"],"estimated_seconds":1800},
+  {"id":"kc-recovery-cuda-modal","command":["bash","hpc/recovery-one.sh","cuda","modal"],"estimated_seconds":1200}
+]

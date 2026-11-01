@@ -1,0 +1,1 @@
+[{"id":"kc-parallel-toy","command":["bash","experiments/parallel_segments/toy_check.sh"],"estimated_seconds":900}]

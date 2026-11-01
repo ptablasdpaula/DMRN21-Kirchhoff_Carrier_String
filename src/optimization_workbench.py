@@ -23,6 +23,8 @@ class OptimizationWorkbench:
         self.results={};self.busy=False;self.preparing=False;self.buttons=[]
         self.coordinates=widgets.Dropdown(options=[('Direct material parameters','material'),('Fundamental / inharmonicity','perceptual')],
             value=coordinate_system,description='Coordinates',layout=widgets.Layout(width='440px'))
+        self.device=widgets.Dropdown(options=['cpu']+(['cuda'] if torch.cuda.is_available() else []),value='cpu',description='Device')
+        self.backend=widgets.Dropdown(options=[('Original / native','native'),('Fused spatial','spatial'),('Full-grid modal','modal')],value='native',description='Solver')
         box=MaterialParameterBox() if coordinate_system=='material' else ParameterBox()
         self.labels=MATERIAL_LABELS if coordinate_system=='material' else PERCEPTUAL_LABELS
         self.names,self.units=box.names,box.units
@@ -51,7 +53,7 @@ class OptimizationWorkbench:
         for field in self.optimize_boxes: field.observe(lambda _:self._clear_results(),names='value')
 
     def configuration_controls(self):
-        return [field for pair in self.range_fields for field in pair]+[self.coordinates,self.sample_rate,self.duration,self.max_oversampling,self.density,self.length,self.excitation]
+        return [field for pair in self.range_fields for field in pair]+[self.coordinates,self.sample_rate,self.duration,self.max_oversampling,self.density,self.length,self.excitation,self.device,self.backend]
 
     def _button(self,label,callback,style=''):
         button=widgets.Button(description=label,button_style=style,layout=widgets.Layout(width='auto'))
@@ -115,7 +117,7 @@ class OptimizationWorkbench:
         self._message(self.grid_output,'Coordinate system changed; ranges reset to reference defaults. Apply ranges / prepare grid.')
 
     def ranges_panel(self):
-        return widgets.VBox([self.coordinates,self.range_rows,widgets.HBox([self.sample_rate,self.duration,self.max_oversampling]),
+        return widgets.VBox([self.coordinates,widgets.HBox([self.device,self.backend]),self.range_rows,widgets.HBox([self.sample_rate,self.duration,self.max_oversampling]),
             widgets.HBox([self.density,self.length]),self.excitation,
             self._button('Apply ranges / prepare grid',lambda _:self.prepare(),'primary'),self.grid_output])
 
@@ -130,7 +132,7 @@ class OptimizationWorkbench:
             box=(MaterialParameterBox(ranges) if self.coordinates.value=='material' else
                  ParameterBox(ranges,self.density.value,self.length.value))
             grid=GridConfig(box,self.sample_rate.value,self.max_oversampling.value)
-            renderer=Renderer(grid,self.duration.value,self.excitation.value)
+            renderer=Renderer(grid,self.duration.value,self.excitation.value,device=self.device.value,backend=self.backend.value)
             low,high=box.bounds();defaults=box.defaults().clamp(low,high)
             initial=box.perturb(defaults)
             self.preparing=True
@@ -217,13 +219,13 @@ class OptimizationWorkbench:
                 print(f"{name}: derived f₀={derived[0]:.6g} Hz; linear f₁={derived[0]*torch.sqrt(1+derived[1]):.6g} Hz; T={physical[1]:.6g} N; E={physical[3]:.6g} Pa")
                 print(f'First-mode nonlinear-strength indicator B(a/r)²={nonlinear_strength(derived):.6g}; this is not an accuracy bound for the chosen excitation.')
                 print(f'Current stability utilisation: {self.grid.score_values(p):.6f}. '+('CeL: '+str(signal['loss']) if name=='Initial' else ''))
-                display(Audio((signal['audio']*self._gain()).numpy(),rate=self.grid.sample_rate,normalize=False))
+                display(Audio((signal['audio']*self._gain()).detach().cpu().numpy(),rate=self.grid.sample_rate,normalize=False))
                 rows=modal_diagnostics(p,self.grid)
                 def fmt(value):return 'nonoscillatory' if value is None else f'{value:.5g}'
                 table=''.join('<tr>'+''.join(f'<td style="padding:3px 12px">{v}</td>' for v in [row['mode'],fmt(row['continuous_hz']),fmt(row['discrete_hz']),fmt(row['cents'])])+'</tr>' for row in rows)
                 display(HTML('<table><tr><th>Mode</th><th>Continuous damped Hz</th><th>Discrete damped Hz</th><th>Error (cents)</th></tr>'+table+'</table>'))
                 if name=='Target':
-                    audio=signal['audio'];fig,axes=plt.subplots(1,2,figsize=(12,3),layout='constrained')
+                    audio=signal['audio'].detach().cpu();fig,axes=plt.subplots(1,2,figsize=(12,3),layout='constrained')
                     axes[0].plot(torch.arange(audio.numel())/self.grid.sample_rate,audio,linewidth=.6)
                     axes[0].set(xlabel='Time (s)',ylabel='Displacement (m)')
                     spectrum=torch.fft.rfft(audio*torch.hann_window(audio.numel(),dtype=torch.float64)).abs()
@@ -272,7 +274,7 @@ class OptimizationWorkbench:
                 return
             result=self.results[name]
             print(f"{name.upper()} best CeL: {result['best_loss']:.8g}. {result['stop_reason']}")
-            display(Audio((result['audio']*self._gain()).numpy(),rate=self.target['settings']['sample_rate'],normalize=False))
+            display(Audio((result['audio']*self._gain()).detach().cpu().numpy(),rate=self.target['settings']['sample_rate'],normalize=False))
             rows=''.join('<tr>'+''.join(f'<td style="padding:4px 12px">{value}</td>' for value in
                 [html.escape(self.labels[i]),f'{self.target["physical"][i]:.7g}',f'{self.initial["physical"][i]:.7g}',
                  f'{result["best_physical"][i]:.7g}','Yes' if result['mask'][i] else 'Fixed'])+'</tr>' for i in range(len(self.names)))
@@ -293,7 +295,7 @@ class OptimizationWorkbench:
             fig,axes=plt.subplots(1,3,figsize=(13,3.5),sharex=True,sharey=True,layout='constrained')
             for axis,power,title in zip(axes,powers,['Target','Initial',name.upper()+' best prediction']):
                 db=10*torch.log10((power/reference_peak).clamp_min(1e-8))
-                artist=axis.pcolormesh(times.numpy(),frequency.numpy(),db.numpy(),shading='auto',vmin=-80,vmax=0,cmap='magma',rasterized=True)
+                artist=axis.pcolormesh(times.cpu().numpy(),frequency.cpu().numpy(),db.cpu().numpy(),shading='auto',vmin=-80,vmax=0,cmap='magma',rasterized=True)
                 axis.set(title=title,xlabel='Time (s)',ylim=(0,min(2000,self.target['settings']['sample_rate']/2)))
             axes[0].set_ylabel('Frequency (Hz)')
             fig.colorbar(artist,ax=axes,label='Power (dB, shared reference)')

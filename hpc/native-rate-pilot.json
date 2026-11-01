@@ -1,0 +1,1 @@
+[{"id":"kc-native-rate-pilot","command":["bash","hpc/native-rate-pilot.sh"],"estimated_seconds":3000}]

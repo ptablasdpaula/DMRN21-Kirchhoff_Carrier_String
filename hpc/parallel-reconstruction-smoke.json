@@ -1,0 +1,1 @@
+[{"id":"kc-parallel-recon-smoke","command":["bash","hpc/parallel-reconstruction-benchmark.sh","smoke"],"estimated_seconds":1800}]

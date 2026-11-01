@@ -1,0 +1,1 @@
+[{"id":"kc-exact-fit-adjoint","command":["bash","hpc/exact-fit.sh","cuda-adjoint"],"estimated_seconds":6000}]

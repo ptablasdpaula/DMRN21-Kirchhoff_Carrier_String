@@ -1,0 +1,10 @@
+[
+  {
+    "id": "kc-gpu-check",
+    "command": [
+      "bash",
+      "hpc/check.sh"
+    ],
+    "estimated_seconds": 1200
+  }
+]

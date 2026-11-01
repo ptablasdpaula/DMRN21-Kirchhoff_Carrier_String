@@ -1,0 +1,1 @@
+[{"id":"kc-scalar-cache-smoke","command":["bash","hpc/scalar-cache-smoke.sh"],"estimated_seconds":600}]

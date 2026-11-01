@@ -50,10 +50,10 @@ assert 'adam' in workbench.results
 # Switch to materials: old results disappear and the direct controls replace them.
 workbench.coordinates.value='material'
 assert workbench.grid is None and not workbench.results
-assert len(workbench.range_fields)==8
+assert len(workbench.range_fields)==10
 assert workbench.density.layout.display=='none'
 workbench.prepare()
-assert workbench.grid is not None and len(workbench.target_fields)==8
+assert workbench.grid is not None and len(workbench.target_fields)==10
 material_grid=workbench.grid
 workbench.generate_target();workbench.fill_initial(True);workbench.generate_initial()
 assert workbench.target is not None and workbench.initial is not None
@@ -67,7 +67,7 @@ for name in ('adam','lbfgs'):
     assert name in workbench.results
     result=workbench.results[name]
     torch.testing.assert_close(result['requested_initial'],saved_initial)
-    frozen=torch.tensor([True,False,True,True,True,False,True,True])
+    frozen=torch.tensor([True,False,True,True,True,False,True,True,True,True])
     assert torch.equal(result['best_physical'][frozen],saved_initial[frozen])
     assert workbench.grid is material_grid
 # Fitted length changes physical h continuously but never changes N or the rate.
@@ -79,6 +79,15 @@ workbench.coordinates.value='perceptual'
 assert workbench.grid is None and len(workbench.range_fields)==6
 workbench.prepare();workbench.generate_target();workbench.generate_initial()
 assert workbench.target is not None
+if torch.cuda.is_available():
+    workbench.device.value='cuda';workbench.backend.value='modal'
+    assert workbench.grid is None
+    workbench.prepare();workbench.generate_target();workbench.fill_initial(True);workbench.generate_initial()
+    assert workbench.target is not None and workbench.target['audio'].is_cuda
+    workbench.max_steps['adam'].value=1;workbench.run('adam')
+    assert 'adam' in workbench.results
+    assert workbench.results['adam']['best_physical'].is_cuda
+    workbench.show_prediction('adam')
 print('Both coordinate systems: ranges, native synthesis, independent fits, freezing, switching and plots passed.')
 '''
 for name in ('synthesis','optimization'):
@@ -94,6 +103,8 @@ assert workbench.target is not None and workbench.grid is not None
     images=[]
     def walk(value):
         if isinstance(value,dict):
+            if value.get('output_type')=='error':
+                raise AssertionError(f"Notebook callback failed: {value.get('ename')}: {value.get('evalue')}")
             if 'image/png' in value:images.append(value['image/png'])
             for item in value.values():walk(item)
         elif isinstance(value,list):

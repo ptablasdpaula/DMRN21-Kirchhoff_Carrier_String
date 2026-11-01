@@ -1,0 +1,1 @@
+[{"id":"kc-alpha-scan-coordinates","command":["bash","hpc/alpha-scan-coordinate-check.sh"],"estimated_seconds":1200}]

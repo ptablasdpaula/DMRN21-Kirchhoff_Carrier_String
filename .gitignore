@@ -13,3 +13,15 @@ __pycache__/
 # OS metadata and generated experiment media
 .DS_Store
 output/
+
+# Local copies of books/papers (copyrighted); never commit
+references/
+
+# DMRN LaTeX kit archives, template sources and build logs
+paper_dmrn2026/*.zip
+paper_dmrn2026/template-source/
+paper_dmrn2026/*.log
+paper_dmrn2026/*.blg
+paper_dmrn2026/*.aux
+paper_dmrn2026/*.bbl
+paper_dmrn2026/*.out
