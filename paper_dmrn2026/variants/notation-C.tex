@@ -1,0 +1,159 @@
+% DMRN+21: the official 2026 kit ships the 2025 style; its event header and
+% footer are updated in the local copy, without changing its page layout.
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{caption}
+\usepackage{times,amsmath,graphicx,url,dmrn2026}
+\usepackage{indentfirst}
+\usepackage{xcolor}
+\captionsetup[figure]{skip=3pt}\setlength{\intextsep}{4pt plus 1pt minus 1pt}
+\setlength{\parskip}{0.1em}
+\captionsetup[figure]{font=footnotesize,labelfont=footnotesize}
+\captionsetup[table]{font=footnotesize,labelfont=footnotesize}
+\setlength{\belowcaptionskip}{0pt}
+\renewcommand{\thesection}{\Roman{section}}
+\newcommand{\head}[1]{\par\vspace{2pt}\noindent\textbf{#1.}\ \ignorespaces}
+\providecommand{\bstctlentry}[1]{\nocite{#1}}
+% Layout economies after the DMRN+15 auraloss one-pager: tighter title block,
+% 7 pt footer close to the page edge, taller text block. The style file is unchanged.
+\setlength{\textheight}{266truemm}\setlength{\footskip}{0.2in}
+\cfoot{\fontsize{7}{8}\selectfont\textsc{DMRN+21: DIGITAL MUSIC RESEARCH NETWORK ONE-DAY WORKSHOP 2026, KING'S COLLEGE LONDON, FRI 11 DECEMBER 2026}}
+\makeatletter
+\def\@maketitle{\newpage
+ \null
+ \begin{minipage}{0.5\textwidth}
+ \textsc{DMRN+21: Digital Music Research Network\\One-day Workshop 2026}\vspace{3mm}\\\textsc{King's College London}\\\textsc{Fri 11 December 2026}
+ \end{minipage}%
+ \begin{minipage}{0.5\textwidth}
+ \hfill\hbox{\includegraphics[width=6cm]{DMRN_Logo_high_res.jpg}}
+ \end{minipage}
+ \vskip 1em \begin{center}
+ {\large \bf \@title \par} \vskip 0.8em {\large
+\begin{tabular}[t]{c}\@name \\ \@address
+ \end{tabular}
+ \par}
+ \end{center}
+ \par
+ \vskip 0.6em}
+\makeatother
+
+\title{Efficient Backprop for an FDTD Kirchhoff--Carrier String}
+\name{\normalfont Pablo Tablas de Paula, Emmanouil D. Benetos and Joshua D. Reiss\thanks{This work was supported by UKRI grant EP/S022694.}}
+\address{\small Centre for Digital Music, Queen Mary University of London, p.tablasdepaula@qmul.ac.uk}
+
+\begin{document}
+\bstctlentry{BSTcontrol}
+\ninept
+\maketitle
+\begin{sloppy}
+\begin{abstract}
+We present a differentiable FDTD Kirchhoff--Carrier string whose
+backpropagation runs in a custom CUDA kernel that stores only periodic
+checkpoints and three scalars per time step. A fourth-order spatial stencil
+removes grid dispersion, allowing lower internal oversampling. Peak memory
+stays nearly flat with batch size, and gradients are faster and far leaner
+than with a state-of-the-art differentiable modal solver.
+\end{abstract}
+
+\section{Introduction}
+Although FDTD synthesis is increasingly leaner~\cite{bilbao2024guitar},
+differentiable frameworks~\cite{engel2020ddsp} largely keep away from it,
+since backpropagating through a time-stepping scheme results in deep
+recurrent differentiation graphs, expensive in time and memory. Instead, the
+literature has favoured cheaper approaches like digital
+waveguides~\cite{tablas2026waveguides,tablas2026sound}, which do not
+naturally capture nonlinearities and collisions, and modal
+synthesis~\cite{diaz2025}. In this work we demonstrate that an FDTD string
+can be backpropagated faster, and in far less memory, than a current
+differentiable modal solver.
+
+\section{Model and method}
+The string is the damped Kirchhoff--Carrier stiff string, simply supported at
+both ends:
+\begin{equation}
+\begin{aligned}
+\rho A\,u_{tt}&=T_0\,G\,u_{xx}-EIu_{xxxx}-2\rho A\sigma_0u_t+2\rho A\sigma_1u_{txx},\\
+G&=1+\frac{EA}{2LT_0}\int_0^L\!u_x^2\,dx,
+\end{aligned}
+\label{eq:pde}
+\end{equation}
+with density $\rho$, cross-section $A$, Young's modulus $E$, second moment of
+area $I$, tension $T_0$ and damping $\sigma_0,\sigma_1$; the stretch of the whole
+string raises its tension by the factor $G$, coupling every mode through one
+integral.
+
+\head{Time stepping}
+We use Russo et al.'s scheme~\cite{russo2026} in Bilbao's
+notation~\cite{bilbao2009}: $u$ is the grid function at the current step, with
+grid spacing $h$ and time step $k$, and $u^{\pm}=e_{t\pm}u$ its values one step
+later and earlier; $\delta_{tt}u=(u^+-2u+u^-)/k^2$, $\delta_{t\cdot}u=(u^+-u^-)/2k$,
+$\delta_{t-}u=(u-u^-)/k$ and $\mu_{t\cdot}u=\tfrac12(u^++u^-)$ are the time
+differences and average, $\delta_{x+}$, $\delta_{xx}$, $\delta_{xxxx}$ the
+spatial differences and $\langle f,g\rangle=h\sum_lf_lg_l$ the inner product on
+the grid:
+\begin{equation}
+\rho A\,\delta_{tt}u=T_0\,g\,\delta_{xx}u-EI\delta_{xxxx}u
+ -2\rho A\sigma_0\delta_{t\cdot}u+2\rho A\sigma_1\delta_{t-}\delta_{xx}u,
+\label{eq:scheme}
+\end{equation}
+\begin{equation}
+g=1+\frac{EA}{2LT_0}\,\big\langle\delta_{x+}u,\;\delta_{x+}\mu_{t\cdot}u\big\rangle.
+\label{eq:g}
+\end{equation}
+The tension-modulation factor $g$ carries the whole nonlinearity: it is $G$
+with the stretch averaged over $u^-$ and $u^+$, the choice that conserves the
+discrete energy~\cite{bilbao2009}. Because it reaches $u^+$ the scheme is
+implicit, but only through this one scalar, which is linear in $u^+$:
+evaluating $g$ with the linear prediction $\tilde u^{+}$ (the update with
+$g=1$) in place of $u^+$ and dividing $g-1$ by
+$1+\frac{k^2EA}{4L\rho A(1+\sigma_0k)}\|\delta_{xx}u\|^2$ gives $g$ exactly
+(Russo et al.'s Sherman--Morrison step). In the discrete sine basis every spatial
+operator is diagonal, so with $g$ known (\ref{eq:scheme}) updates each mode
+independently.
+
+\head{Cached adjoint}
+Instead of every state of every step, we keep $(u,u^-)$ every 256 steps and,
+per step, only the three scalars behind $g$: $g$ itself, $\|\delta_{xx}u\|^2$
+and $\langle\delta_{x+}u,\delta_{x+}\tilde u^{+}\rangle$. On the reverse pass
+each segment is re-run from its checkpoint, cheaply since with $g$ known
+(\ref{eq:scheme}) is diagonal, and differentiated backwards, the stored scalars
+supplying the derivatives of $g$. A CUDA kernel runs this in parallel over
+modes and batch items.
+
+\head{Spatial stencil}
+Spatial derivatives use the fourth-order five-point
+stencil~\cite{bilbao2009}, closed at the simply supported ends by odd
+reflection; it is diagonal in the same sine basis, so only the mode
+eigenvalues change, and on our 176-interval grid the waveform error against
+a converged solution of Russo et al.'s scheme~\cite{russo2026} drops from
+11.7\% to 1\% at 2$\times$ oversampling.
+
+\section{Evaluation}
+Each evaluation is one sound-matching step: a batch of strings is simulated
+for 1 s, the mean absolute error of each waveform against the target's is
+computed, and backpropagated to ten parameters: the eight physical ones of
+(\ref{eq:pde}) plus the pluck and pickup positions. The target is Russo et
+al.'s steel string ($\rho=8050$ kg/m$^3$, $T_0=75$ N, $r=0.356$ mm, $E=174$ GPa,
+$L=1$ m, $\sigma_0=0.92$ s$^{-1}$, $\sigma_1=2.9\times10^{-4}$ m$^2$/s), plucked
+at its centre with a 2 mm raised cosine of half-width $L/4$ and read at its
+midpoint; the batch perturbs every parameter by up to $\pm3\%$. We compare our
+method with direct PyTorch autodiff of the same FDTD and a 100-mode
+\texttt{jaxdiffmodal} Kirchhoff--Carrier string~\cite{diaz2025} on an A100
+80 GB in float64; the FDTD uses 176 intervals at 88.2 kHz, decimated to
+44.1 kHz. As seen in
+Fig.~\ref{fig:benchmark}, our method is nearly three orders of magnitude
+faster than plain autodiff and faster than \texttt{jaxdiffmodal}, and its
+memory grows slowly with batch size, whereas both baselines grow linearly and
+eventually run out.
+
+\begin{figure}[!h]
+ \centering
+ \includegraphics[width=\columnwidth]{figures/benchmark-dots-label.pdf}
+ \caption{Raised-cosine pluck, 1 s, ten gradients; numbers: time.}
+ \label{fig:benchmark}
+\end{figure}
+
+\bibliographystyle{IEEEtran}
+{\footnotesize\bibliography{references}}
+\end{sloppy}
+\end{document}

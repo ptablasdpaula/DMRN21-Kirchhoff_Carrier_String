@@ -1,0 +1,99 @@
+% DMRN+21: the official 2026 kit ships the 2025 style; its event header and
+% footer are updated in the local copy, without changing its page layout.
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{caption}
+\usepackage{times,amsmath,graphicx,url,dmrn2026}
+\usepackage[table]{xcolor}
+\definecolor{tabpurple}{HTML}{7625A8}
+\usepackage{indentfirst}
+\setlength{\parskip}{0.1em}
+\captionsetup[figure]{font=footnotesize,labelfont=footnotesize}
+\captionsetup[table]{font=footnotesize,labelfont=footnotesize}
+\setlength{\belowcaptionskip}{0pt}
+\renewcommand{\thesection}{\Roman{section}}
+
+\title{Fast Backpropagation for a Finite-Difference Time-Domain Kirchhoff--Carrier String}
+\name{Pablo Tablas de Paula, Emmanouil D. Benetos and Joshua D. Reiss\thanks{This work was supported by UKRI grant EP/S022694.}}
+\address{Centre for Digital Music, Queen Mary University of London, UK}
+
+\begin{document}
+\tenpt
+\maketitle
+\begin{sloppy}
+\begin{abstract}
+We accelerate backpropagation through a nonlinear finite-difference string
+using CUDA state reconstruction, checkpoints and three scalars per step.
+Russo et al.'s time step is preserved; a fourth-order spatial stencil removes
+the grid's dispersion.
+\end{abstract}
+
+\section{Introduction}
+Plucked-string synthesis spans Karplus--Strong, digital waveguides, modal and
+FDTD methods; FDTD captures the string's nonlinearity and its fret and finger
+collisions, and energy-based schemes now run full guitar models in real
+time~\cite{bilbao2024guitar}. Differentiable implementations learn a model's
+parameters from recordings by gradient descent~\cite{engel2020ddsp,tablas2026sound}.
+Backpropagating through an FDTD is costly because reverse mode keeps every
+node at every step, so differentiable physical models have favoured modal
+formulations with exact linear recurrences~\cite{diaz2025}. We show that an
+FDTD string can be backpropagated at modal cost.
+
+\section{Model and method}
+We use Russo et al.'s non-SAV reference scheme~\cite{russo2026}. For
+displacement $u(x,t)$ and $\mu=\rho A$,
+\begin{equation}
+\begin{aligned}
+\mu u_{tt}={}&T_0u_{xx}-EIu_{xxxx}-2\mu\sigma_0u_t\\
+ &+\frac{EA}{2L}\!\left(\int_0^L u_x^2\,dx\right)u_{xx}
+ +2\mu\sigma_1u_{txx},
+\end{aligned}
+\label{eq:pde}
+\end{equation}
+with length $L$, density $\rho$, area $A$, modulus $E$, second moment $I$,
+tension $T_0$ and damping $\sigma_0,\sigma_1$.
+
+The reference step uses a Sherman--Morrison rank-one solve; a full sine
+transform diagonalizes the spatial operators without dropping modes. With
+$p,u,v$ successive states, $\ell=Bu+Pp$, $v=m(\ell-q\alpha)$, $B,P$ diagonal,
+$m=[\mu(1+\sigma_0k)]^{-1}$, $q=(k/2)\sqrt{hEA/L}\,D_{xx}u$ for timestep $k$
+and spacing $h$, and $\alpha=(q^Tp+mq^T\ell)/(1+mq^Tq)$, the previous state
+is $p=P^{-1}(v/m-Bu+q\alpha)$. The forward pass stores both states every 256
+steps plus $\alpha$, $q^Tq$ and $q^T\ell$ per step; the reverse pass
+reconstructs each segment and differentiates all dependencies, CUDA-parallel
+over modes and batch items.
+
+The reference's three-point $D_{xx}$ disperses, drifting the waveform 11.7\%
+from the converged solution within a second; we use the five-point stencil
+$(-1,16,-30,16,-1)/12h^2$, closed at the simply supported ends by odd
+reflection, with $D_{xxxx}$ its square. It is diagonal in the same sine
+basis, so only the eigenvalues change, $-4s^2/h^2\to-4s^2(1+s^2/3)/h^2$ with
+$s=\sin(\pi n/2N)$; time step, rank-one solve and adjoint are untouched, and
+the stability bound is the reference's with $h\to h\sqrt{3}/2$.
+
+\section{Evaluation}
+We compare our cached adjoint (\emph{Ours}), \emph{Autodiff} (direct PyTorch
+autodiff) and \texttt{jaxdiffmodal}~\cite{diaz2025} on an A100 80 GB:
+1 s, float64, identical pickup, loss and the reference code's raised-cosine
+pluck; FDTD on 176 intervals at 88.2 kHz (2$\times$, decimated), within
+1.2\% waveform relative $L^2$ of the modal solution, and \texttt{jaxdiffmodal}
+with 100 continuous modes at 44.1 kHz.
+In Fig.~\ref{fig:benchmark} our time is nearly flat in batch size and our
+memory grows slowly; \texttt{jaxdiffmodal} is slightly slower and its memory
+grows linearly until it runs out; Autodiff is nearly three orders of magnitude
+slower and runs out of memory first.
+The three- and five-point variants match the (correspondingly modified)
+reference code to $2.5\times10^{-9}$ and $5.0\times10^{-10}$ relative $L^2$
+over 4 s, and all eight gradients pass a 2 ms finite-difference check.
+
+\begin{figure}[!h]
+ \centering
+ \includegraphics[width=\columnwidth]{figures/benchmark-dots-size.pdf}
+ \caption{Raised-cosine pluck, 1 s, eight gradients; dot size: log of the evaluation time.}
+ \label{fig:benchmark}
+\end{figure}
+
+\bibliographystyle{IEEEtran}
+{\footnotesize\bibliography{references}}
+\end{sloppy}
+\end{document}
