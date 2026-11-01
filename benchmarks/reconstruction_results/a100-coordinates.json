@@ -1,0 +1,46 @@
+{
+  "status": "passed",
+  "source_sha256": "7b2310bfe033d40c7cc3dcfdc330e87db003e28ee5a3f91a08301cb03e91bf45",
+  "reconstruction_sha256": "d2f95525a5ed9803a437dc2c5cde0f0407493211fdf4b3e927eb2fff47bb5d3c",
+  "test_sha256": "a007cf30051148ba7fe46279135055f5f10aafe35fbfaf84ffa52f1f58f527e4",
+  "source_changed_during_run": false,
+  "gpu": "NVIDIA A100 80GB PCIe",
+  "checks": [
+    {
+      "coordinates": "perceptual",
+      "intervals": 176,
+      "rate": 132300,
+      "duration": 0.03,
+      "loss": 0.046942358632059,
+      "gradient_relative_l2": 2.3073060702017166e-10,
+      "status": "passed"
+    },
+    {
+      "coordinates": "perceptual",
+      "intervals": 176,
+      "rate": 132300,
+      "duration": 4.0,
+      "loss": 0.019650395810358153,
+      "gradient_relative_l2": 7.190922369923547e-10,
+      "status": "passed"
+    },
+    {
+      "coordinates": "material",
+      "intervals": 180,
+      "rate": 132300,
+      "duration": 0.03,
+      "loss": 0.036649432245058525,
+      "gradient_relative_l2": 5.663445535658801e-10,
+      "status": "passed"
+    },
+    {
+      "coordinates": "material",
+      "intervals": 180,
+      "rate": 132300,
+      "duration": 4.0,
+      "loss": 0.046170281441728536,
+      "gradient_relative_l2": 2.658336715685232e-09,
+      "status": "passed"
+    }
+  ]
+}

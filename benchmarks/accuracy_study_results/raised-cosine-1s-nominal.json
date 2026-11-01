@@ -1,0 +1,448 @@
+{
+  "metadata": {
+    "duration_seconds": 1.0,
+    "output_rate": 44100,
+    "parameters": "nominal",
+    "material": [
+      8050.000000000001,
+      75.0,
+      0.0003556,
+      174000000000.0,
+      1.0,
+      0.002,
+      0.9210340371976183,
+      0.0002863929670587644
+    ],
+    "wave_speed": 153.1425953279453,
+    "stiffness": 0.8266248189501376,
+    "sigma_1": 0.0002863929670587644,
+    "length": 1.0,
+    "f0": 76.57129766397264,
+    "inharmonicity_B": 0.00028755744808984997,
+    "raised_cosine_half_width_fraction": 0.24431818181818182,
+    "modes_below_output_nyquist": 123,
+    "reference": "fdtd-1118-48x",
+    "pickup": "midpoint (even modes vanish); the pluck is symmetric",
+    "device": "cpu",
+    "fdtd_backend": "native",
+    "torch_version": "2.14.1+cu130"
+  },
+  "configurations": [
+    {
+      "name": "fdtd-176-3x",
+      "seconds": 1.8368650190532207,
+      "solver": "fdtd",
+      "intervals": 176,
+      "oversampling": 3,
+      "rate": 132300,
+      "spacing": 0.005681818181818182,
+      "excitation": "raised_cosine",
+      "stability_score": 0.19852954718009708,
+      "note": "benchmark grid: largest even N stable at 3x over the whole parameter box"
+    },
+    {
+      "name": "fdtd-272-3x",
+      "seconds": 2.402130452916026,
+      "solver": "fdtd",
+      "intervals": 272,
+      "oversampling": 3,
+      "rate": 132300,
+      "spacing": 0.003676470588235294,
+      "excitation": "raised_cosine:0.24431818181818182",
+      "stability_score": 0.9912205339828284,
+      "russo_time_step": 7.591990233360138e-06,
+      "note": "h = 1.01 h_min(k) at the fixed integer rate; Russo et al. would recompute k from h"
+    },
+    {
+      "name": "fdtd-390-6x",
+      "seconds": 7.405865783803165,
+      "solver": "fdtd",
+      "intervals": 390,
+      "oversampling": 6,
+      "rate": 264600,
+      "spacing": 0.002564102564102564,
+      "excitation": "raised_cosine:0.24431818181818182",
+      "stability_score": 0.9924578044822813,
+      "russo_time_step": 3.793627545066959e-06,
+      "note": "h = 1.01 h_min(k) at the fixed integer rate; Russo et al. would recompute k from h"
+    },
+    {
+      "name": "fdtd-556-12x",
+      "seconds": 19.196472197771072,
+      "solver": "fdtd",
+      "intervals": 556,
+      "oversampling": 12,
+      "rate": 529200,
+      "spacing": 0.0017985611510791368,
+      "excitation": "raised_cosine:0.24431818181818182",
+      "stability_score": 0.9976500267004422,
+      "russo_time_step": 1.891869736292155e-06,
+      "note": "h = 1.01 h_min(k) at the fixed integer rate; Russo et al. would recompute k from h"
+    },
+    {
+      "name": "fdtd-788-24x",
+      "seconds": 54.501097223721445,
+      "solver": "fdtd",
+      "intervals": 788,
+      "oversampling": 24,
+      "rate": 1058400,
+      "spacing": 0.0012690355329949238,
+      "excitation": "raised_cosine:0.24431818181818182",
+      "stability_score": 0.9929128629964661,
+      "russo_time_step": 9.481894804581555e-07,
+      "note": "h = 1.01 h_min(k) at the fixed integer rate; Russo et al. would recompute k from h"
+    },
+    {
+      "name": "fdtd-1118-48x",
+      "seconds": 155.72443180996925,
+      "solver": "fdtd",
+      "intervals": 1118,
+      "oversampling": 48,
+      "rate": 2116800,
+      "spacing": 0.0008944543828264759,
+      "excitation": "raised_cosine:0.24431818181818182",
+      "stability_score": 0.999039895132401,
+      "russo_time_step": 4.7263821067068984e-07,
+      "note": "h = 1.01 h_min(k) at the fixed integer rate; Russo et al. would recompute k from h"
+    },
+    {
+      "name": "modal-100-44.1k-raw",
+      "seconds": 3.2846888629719615,
+      "filtered": false,
+      "note": "as benchmarked: no filter at the output rate",
+      "solver": "modal",
+      "modes": 100,
+      "rate": 44100,
+      "excitation": "raised_cosine",
+      "integrator": "jaxdiffmodal.time_integrators.solve_tf"
+    },
+    {
+      "name": "modal-100-44.1k-band",
+      "seconds": 0.0,
+      "filtered": true,
+      "note": "same signal through the 1x project filter (same cutoff and width as the FDTD decimation)",
+      "solver": "modal",
+      "modes": 100,
+      "rate": 44100,
+      "excitation": "raised_cosine",
+      "integrator": "jaxdiffmodal.time_integrators.solve_tf"
+    },
+    {
+      "name": "modal-100-132.3k",
+      "seconds": 1.1835731472820044,
+      "filtered": true,
+      "note": "decimated with the FDTD anti-alias filter",
+      "solver": "modal",
+      "modes": 100,
+      "rate": 132300,
+      "excitation": "raised_cosine",
+      "integrator": "jaxdiffmodal.time_integrators.solve_tf"
+    },
+    {
+      "name": "modal-123-44.1k-raw",
+      "seconds": 1.499919604510069,
+      "filtered": false,
+      "note": "as benchmarked: no filter at the output rate",
+      "solver": "modal",
+      "modes": 123,
+      "rate": 44100,
+      "excitation": "raised_cosine",
+      "integrator": "jaxdiffmodal.time_integrators.solve_tf"
+    },
+    {
+      "name": "modal-123-44.1k-band",
+      "seconds": 0.0,
+      "filtered": true,
+      "note": "same signal through the 1x project filter (same cutoff and width as the FDTD decimation)",
+      "solver": "modal",
+      "modes": 123,
+      "rate": 44100,
+      "excitation": "raised_cosine",
+      "integrator": "jaxdiffmodal.time_integrators.solve_tf"
+    },
+    {
+      "name": "modal-123-132.3k",
+      "seconds": 1.3113714279606938,
+      "filtered": true,
+      "note": "decimated with the FDTD anti-alias filter",
+      "solver": "modal",
+      "modes": 123,
+      "rate": 132300,
+      "excitation": "raised_cosine",
+      "integrator": "jaxdiffmodal.time_integrators.solve_tf"
+    }
+  ],
+  "comparisons": [
+    {
+      "candidate": "fdtd-176-3x",
+      "reference": "fdtd-1118-48x",
+      "label": "benchmark FDTD grid vs grid-converged FDTD",
+      "audio_relative_l2": 0.11396112929726693,
+      "fft_magnitude_relative_l2": 0.03982763471704368
+    },
+    {
+      "candidate": "fdtd-272-3x",
+      "reference": "fdtd-1118-48x",
+      "label": "refinement path vs finest",
+      "audio_relative_l2": 0.04802972964052741,
+      "fft_magnitude_relative_l2": 0.017005447280312593
+    },
+    {
+      "candidate": "fdtd-390-6x",
+      "reference": "fdtd-1118-48x",
+      "label": "refinement path vs finest",
+      "audio_relative_l2": 0.02389160753064528,
+      "fft_magnitude_relative_l2": 0.00878967299736176
+    },
+    {
+      "candidate": "fdtd-556-12x",
+      "reference": "fdtd-1118-48x",
+      "label": "refinement path vs finest",
+      "audio_relative_l2": 0.010708424277809112,
+      "fft_magnitude_relative_l2": 0.004258827457040333
+    },
+    {
+      "candidate": "fdtd-788-24x",
+      "reference": "fdtd-1118-48x",
+      "label": "refinement path vs finest",
+      "audio_relative_l2": 0.0037174474855793463,
+      "fft_magnitude_relative_l2": 0.001519656737217332
+    },
+    {
+      "candidate": "fdtd-272-3x",
+      "reference": "fdtd-390-6x",
+      "label": "successive refinements",
+      "audio_relative_l2": 0.026020069185120433,
+      "fft_magnitude_relative_l2": 0.008925205120233762
+    },
+    {
+      "candidate": "fdtd-390-6x",
+      "reference": "fdtd-556-12x",
+      "label": "successive refinements",
+      "audio_relative_l2": 0.013906381198366487,
+      "fft_magnitude_relative_l2": 0.0051283817352878545
+    },
+    {
+      "candidate": "fdtd-556-12x",
+      "reference": "fdtd-788-24x",
+      "label": "successive refinements",
+      "audio_relative_l2": 0.00719440220958623,
+      "fft_magnitude_relative_l2": 0.002962495838215925
+    },
+    {
+      "candidate": "fdtd-788-24x",
+      "reference": "fdtd-1118-48x",
+      "label": "successive refinements",
+      "audio_relative_l2": 0.0037174474855793463,
+      "fft_magnitude_relative_l2": 0.001519656737217332
+    },
+    {
+      "candidate": "modal-100-44.1k-raw",
+      "reference": "fdtd-1118-48x",
+      "label": "modal vs grid-converged FDTD",
+      "audio_relative_l2": 0.0037154732004402746,
+      "fft_magnitude_relative_l2": 0.0015596899389675783
+    },
+    {
+      "candidate": "modal-100-44.1k-band",
+      "reference": "fdtd-1118-48x",
+      "label": "modal vs grid-converged FDTD",
+      "audio_relative_l2": 0.0037154669761132212,
+      "fft_magnitude_relative_l2": 0.0015596934701895494
+    },
+    {
+      "candidate": "modal-100-132.3k",
+      "reference": "fdtd-1118-48x",
+      "label": "modal vs grid-converged FDTD",
+      "audio_relative_l2": 0.00371677309013791,
+      "fft_magnitude_relative_l2": 0.0015601229835496577
+    },
+    {
+      "candidate": "modal-123-44.1k-raw",
+      "reference": "fdtd-1118-48x",
+      "label": "modal vs grid-converged FDTD",
+      "audio_relative_l2": 0.003716432371302598,
+      "fft_magnitude_relative_l2": 0.0015598141910113936
+    },
+    {
+      "candidate": "modal-123-44.1k-band",
+      "reference": "fdtd-1118-48x",
+      "label": "modal vs grid-converged FDTD",
+      "audio_relative_l2": 0.003716403344720622,
+      "fft_magnitude_relative_l2": 0.0015597905362754597
+    },
+    {
+      "candidate": "modal-123-132.3k",
+      "reference": "fdtd-1118-48x",
+      "label": "modal vs grid-converged FDTD",
+      "audio_relative_l2": 0.0037168705208699636,
+      "fft_magnitude_relative_l2": 0.0015601330726375555
+    },
+    {
+      "candidate": "modal-100-44.1k-raw",
+      "reference": "fdtd-176-3x",
+      "label": "modal vs benchmark FDTD grid (the sweep diagnostic uses the raw 44.1k signal)",
+      "audio_relative_l2": 0.11677447514241227,
+      "fft_magnitude_relative_l2": 0.04093790004938731
+    },
+    {
+      "candidate": "modal-100-44.1k-band",
+      "reference": "fdtd-176-3x",
+      "label": "modal vs benchmark FDTD grid (the sweep diagnostic uses the raw 44.1k signal)",
+      "audio_relative_l2": 0.11677441103359826,
+      "fft_magnitude_relative_l2": 0.04093786655449953
+    },
+    {
+      "candidate": "modal-100-132.3k",
+      "reference": "fdtd-176-3x",
+      "label": "modal vs benchmark FDTD grid (the sweep diagnostic uses the raw 44.1k signal)",
+      "audio_relative_l2": 0.11677637468560159,
+      "fft_magnitude_relative_l2": 0.04093884438420795
+    },
+    {
+      "candidate": "modal-123-44.1k-raw",
+      "reference": "fdtd-176-3x",
+      "label": "modal vs benchmark FDTD grid (the sweep diagnostic uses the raw 44.1k signal)",
+      "audio_relative_l2": 0.116775463817387,
+      "fft_magnitude_relative_l2": 0.040938002166654795
+    },
+    {
+      "candidate": "modal-123-44.1k-band",
+      "reference": "fdtd-176-3x",
+      "label": "modal vs benchmark FDTD grid (the sweep diagnostic uses the raw 44.1k signal)",
+      "audio_relative_l2": 0.11677539898019862,
+      "fft_magnitude_relative_l2": 0.04093796776929932
+    },
+    {
+      "candidate": "modal-123-132.3k",
+      "reference": "fdtd-176-3x",
+      "label": "modal vs benchmark FDTD grid (the sweep diagnostic uses the raw 44.1k signal)",
+      "audio_relative_l2": 0.11677647436647791,
+      "fft_magnitude_relative_l2": 0.04093885036895731
+    },
+    {
+      "candidate": "modal-100-44.1k-raw",
+      "reference": "modal-123-44.1k-raw",
+      "label": "modal truncation",
+      "audio_relative_l2": 1.4276505010989519e-05,
+      "fft_magnitude_relative_l2": 1.0049336222720374e-05
+    },
+    {
+      "candidate": "modal-100-44.1k-band",
+      "reference": "modal-100-132.3k",
+      "label": "modal time stepping",
+      "audio_relative_l2": 3.6106036968833695e-06,
+      "fft_magnitude_relative_l2": 2.0495341728077127e-06
+    },
+    {
+      "candidate": "modal-123-44.1k-band",
+      "reference": "modal-123-132.3k",
+      "label": "modal time stepping",
+      "audio_relative_l2": 4.094770058361547e-06,
+      "fft_magnitude_relative_l2": 2.8612910289703865e-06
+    },
+    {
+      "candidate": "fdtd-176-3x",
+      "reference": "modal-123-44.1k-band",
+      "label": "FDTD grid vs sub-Nyquist modal (band-matched)",
+      "audio_relative_l2": 0.11677951682973163,
+      "fft_magnitude_relative_l2": 0.04093941088953504
+    },
+    {
+      "candidate": "fdtd-272-3x",
+      "reference": "modal-123-44.1k-band",
+      "label": "FDTD grid vs sub-Nyquist modal (band-matched)",
+      "audio_relative_l2": 0.05115720804775063,
+      "fft_magnitude_relative_l2": 0.018207324121702947
+    },
+    {
+      "candidate": "fdtd-390-6x",
+      "reference": "modal-123-44.1k-band",
+      "label": "FDTD grid vs sub-Nyquist modal (band-matched)",
+      "audio_relative_l2": 0.02718576976327166,
+      "fft_magnitude_relative_l2": 0.010094723401903203
+    },
+    {
+      "candidate": "fdtd-556-12x",
+      "reference": "modal-123-44.1k-band",
+      "label": "FDTD grid vs sub-Nyquist modal (band-matched)",
+      "audio_relative_l2": 0.014158437142725043,
+      "fft_magnitude_relative_l2": 0.005549077723196455
+    },
+    {
+      "candidate": "fdtd-788-24x",
+      "reference": "modal-123-44.1k-band",
+      "label": "FDTD grid vs sub-Nyquist modal (band-matched)",
+      "audio_relative_l2": 0.0073110685946342945,
+      "fft_magnitude_relative_l2": 0.0029491904601538933
+    },
+    {
+      "candidate": "fdtd-1118-48x",
+      "reference": "modal-123-44.1k-band",
+      "label": "FDTD grid vs sub-Nyquist modal (band-matched)",
+      "audio_relative_l2": 0.003716410286387557,
+      "fft_magnitude_relative_l2": 0.0015597934499374507
+    }
+  ],
+  "convergence_ratios": [
+    {
+      "coarse": "fdtd-272-3x",
+      "fine": "fdtd-390-6x",
+      "audio_error_ratio": 1.8710884459414128,
+      "spacing_squared_ratio": 2.05584991349481
+    },
+    {
+      "coarse": "fdtd-390-6x",
+      "fine": "fdtd-556-12x",
+      "audio_error_ratio": 1.9329446412985967,
+      "spacing_squared_ratio": 2.032452333990795
+    },
+    {
+      "coarse": "fdtd-556-12x",
+      "fine": "fdtd-788-24x",
+      "audio_error_ratio": 1.935307018456783,
+      "spacing_squared_ratio": 2.0086434449562662
+    },
+    {
+      "coarse": "fdtd-176-3x",
+      "fine": "fdtd-272-3x",
+      "against": "modal-123-44.1k-band",
+      "audio_error_ratio": 2.282757822137762,
+      "spacing_squared_ratio": 2.3884297520661155
+    },
+    {
+      "coarse": "fdtd-272-3x",
+      "fine": "fdtd-390-6x",
+      "against": "modal-123-44.1k-band",
+      "audio_error_ratio": 1.8817641910903222,
+      "spacing_squared_ratio": 2.05584991349481
+    },
+    {
+      "coarse": "fdtd-390-6x",
+      "fine": "fdtd-556-12x",
+      "against": "modal-123-44.1k-band",
+      "audio_error_ratio": 1.9201109196745196,
+      "spacing_squared_ratio": 2.032452333990795
+    },
+    {
+      "coarse": "fdtd-556-12x",
+      "fine": "fdtd-788-24x",
+      "against": "modal-123-44.1k-band",
+      "audio_error_ratio": 1.9365756126424716,
+      "spacing_squared_ratio": 2.0086434449562662
+    },
+    {
+      "coarse": "fdtd-788-24x",
+      "fine": "fdtd-1118-48x",
+      "against": "modal-123-44.1k-band",
+      "audio_error_ratio": 1.9672393603615907,
+      "spacing_squared_ratio": 2.0129415857146538
+    }
+  ],
+  "finest_grid_error_estimate": {
+    "grid": "fdtd-1118-48x",
+    "last_increment": 0.0037174474855793463,
+    "spacing_squared_ratio": 2.0129415857146538,
+    "estimated_error_vs_limit": 0.0036699524809780623
+  }
+}

@@ -1,0 +1,200 @@
+{
+  "metadata": {
+    "source_sha256": "7b2310bfe033d40c7cc3dcfdc330e87db003e28ee5a3f91a08301cb03e91bf45",
+    "revision": "e7d0a18452cba4e85ee2532bc73bc9eb2ff34c95",
+    "source_status": " M README.md\n M experiments/recovery.py\n M src/kc_string_forward.py\n M src/optimization.py\n M src/optimization_workbench.py\n M src/parameters.py\n M src/synthesis.py\n M test/optimization_workbench.py\n?? benchmarks/alpha_scan_compare.py\n?? benchmarks/alpha_scan_one_compare.py\n?? benchmarks/alpha_scan_results/\n?? benchmarks/alpha_scan_two_directions.py\n?? benchmarks/cache_grouped_compare.py\n?? benchmarks/cache_reconstruction_compare.py\n?? benchmarks/cache_reconstruction_results/\n?? benchmarks/even_batch_driver.py\n?? benchmarks/even_results/\n?? benchmarks/exact_methods.py\n?? benchmarks/exact_results/\n?? benchmarks/gpu.py\n?? benchmarks/gpu_results/\n?? benchmarks/jax_compare.py\n?? benchmarks/jax_pure_compare.py\n?? benchmarks/jax_results/\n?? benchmarks/jax_reverse_compare.py\n?? benchmarks/loss_batch_grouped.py\n?? benchmarks/loss_batch_results/\n?? benchmarks/manual_ce_compare.py\n?? benchmarks/parallel_reconstruction.py\n?? benchmarks/parallel_scan_results/\n?? benchmarks/parallel_scan_scale.py\n?? benchmarks/profile_gpu.py\n?? benchmarks/profile_grouped.py\n?? benchmarks/reconstruction.py\n?? benchmarks/reconstruction_results/\n?? benchmarks/scalar_cache_results/\n?? benchmarks/scalar_cache_sweep.py\n?? benchmarks/scalar_cache_sweep_frozen.py\n?? benchmarks/scalar_fallback_compare.py\n?? benchmarks/structured_adjoint_results/\n?? benchmarks/summarize_even_batches.py\n?? benchmarks/summarize_gpu.py\n?? docs/alpha_scan_experiments.md\n?? docs/cached_reconstruction_experiments.md\n?? docs/even_batch_experiments.md\n?? docs/exact_solver_experiments.md\n?? docs/gpu.md\n?? docs/gpu_results.md\n?? docs/highlighted_benchmark.md\n?? docs/ideas/\n?? docs/jax_comparison.md\n?? docs/loss_batch_experiments.md\n?? docs/reconstruction_experiments.md\n?? docs/scalar_cache_sweep.md\n?? docs/structured_adjoint_experiment.md\n?? experiments/cached_reconstruction/\n?? experiments/exact_recovery.py\n?? experiments/jax_loss_benchmark.py\n?? experiments/jax_study/\n?? experiments/loss_batch/\n?? experiments/parallel_alpha_scan/\n?? experiments/parallel_alpha_scan_one/\n?? experiments/parallel_segments/\n?? experiments/reconstruction/\n?? experiments/scalar_cache/\n?? experiments/structured_adjoint/\n?? hpc/\n?? src/accelerated.py\n?? src/adjoint.py\n?? src/kc_adjoint.cu\n?? src/kc_dual.h\n?? src/kc_fused.cpp\n?? src/kc_fused.cu\n?? src/seeded.py\n?? test/accelerated.py\n?? test/adjoint.py\n?? test/adjoint_math.py\n?? test/alpha_scan_coordinate_stress.py\n?? test/alpha_scan_math.py\n?? test/alpha_scan_one_reconstruction.py\n?? test/alpha_scan_reconstruction.py\n?? test/cached_coordinate_stress.py\n?? test/even_batch_isolation.py\n?? test/exact_benchmark.py\n?? test/experimental_kernels.py\n?? test/grouped_loss_contract.py\n?? test/jax_loss_reference.py\n?? test/manual_ce_long.py\n?? test/manual_ce_loss.py\n?? test/parallel_reconstruction.py\n?? test/reconstruction.py\n?? test/reconstruction_coordinates.py\n?? test/reconstruction_math.py\n?? test/scalar_cache_algebra.py\n?? test/scalar_cache_coordinates.py\n?? test/scalar_cache_fallback.py\n?? test/scalar_cache_smoke.py\n?? test/seeded.py\n?? test/seeded_long_batch_direct.py\n?? test/structured_adjoint.py\n?? test/structured_adjoint_full_k32.py\n?? test/structured_adjoint_gpu.py\n?? test/structured_adjoint_loss.py\n?? test/structured_adjoint_loss_cpu.py\n",
+    "host": "xdg1",
+    "cpu": "Intel(R) Xeon(R) Platinum 8462Y+",
+    "job": "34510042",
+    "torch": "2.14.1+cu130",
+    "cuda_runtime": "13.0",
+    "gpu": "NVIDIA H100 80GB HBM3",
+    "dtype": "float64",
+    "cpu_threads": 1,
+    "intervals": 176,
+    "output_rate": 44100,
+    "internal_rate": 132300,
+    "excitation": "multimode",
+    "target": "same original CPU reference, all parameter vectors",
+    "loss": "independent STFTCumulativeEnergyLoss per item, summed for backward",
+    "structured_suite_sha256": "a069521b7a45d4845bbfe2bbba3c211c559242a554f7552b4dbe2c3a3ebcf48b",
+    "status": "complete",
+    "source_changed": false
+  },
+  "cases": [
+    {
+      "batch": 1,
+      "chunk": 16,
+      "window": 4,
+      "steps": 64,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "gradient_relative_l2": 2.241579051398279e-12,
+      "boundary_error": 6.365148631272252e-15,
+      "adjoint_error": 3.663474499272278e-14,
+      "wrapper_gradient_relative_l2": 2.078346844873882e-12,
+      "rank": 64,
+      "seconds": [
+        0.025004146620631218,
+        0.024286972358822823
+      ],
+      "peak_cuda_bytes": 72008192,
+      "estimated_four_second_backward": 206.75303736934438,
+      "estimate_note": "Linear runtime extrapolation of eager-PyTorch short prototype only; not a measurement"
+    },
+    {
+      "batch": 1,
+      "chunk": 16,
+      "window": 4,
+      "kind": "four_second",
+      "status": "skipped",
+      "reason": "Short-window estimate exceeds runtime guard; full result not measured",
+      "estimated_seconds": 206.75303736934438
+    },
+    {
+      "batch": 1,
+      "chunk": 32,
+      "window": 4,
+      "steps": 128,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "gradient_relative_l2": 4.531094969172939e-12,
+      "boundary_error": 2.860355599744775e-14,
+      "adjoint_error": 3.7971871359033707e-13,
+      "wrapper_gradient_relative_l2": 4.171519784717326e-12,
+      "rank": 128,
+      "seconds": [
+        0.04828510247170925,
+        0.04610468074679375
+      ],
+      "peak_cuda_bytes": 76062208,
+      "estimated_four_second_backward": 199.62872053147294,
+      "estimate_note": "Linear runtime extrapolation of eager-PyTorch short prototype only; not a measurement"
+    },
+    {
+      "batch": 1,
+      "chunk": 32,
+      "window": 4,
+      "kind": "four_second",
+      "status": "skipped",
+      "reason": "Short-window estimate exceeds runtime guard; full result not measured",
+      "estimated_seconds": 199.62872053147294
+    },
+    {
+      "batch": 1,
+      "chunk": 64,
+      "window": 4,
+      "steps": 256,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "gradient_relative_l2": 1.0855475264032625e-11,
+      "boundary_error": 8.061337373213768e-14,
+      "adjoint_error": 5.036481439513259e-13,
+      "wrapper_gradient_relative_l2": 9.584840791681859e-12,
+      "rank": 256,
+      "seconds": [
+        0.08971012197434902,
+        0.08942073583602905
+      ],
+      "peak_cuda_bytes": 84887040,
+      "estimated_four_second_backward": 185.44764276884962,
+      "estimate_note": "Linear runtime extrapolation of eager-PyTorch short prototype only; not a measurement"
+    },
+    {
+      "batch": 1,
+      "chunk": 64,
+      "window": 4,
+      "kind": "four_second",
+      "status": "skipped",
+      "reason": "Short-window estimate exceeds runtime guard; full result not measured",
+      "estimated_seconds": 185.44764276884962
+    },
+    {
+      "batch": 128,
+      "chunk": 16,
+      "window": 4,
+      "steps": 64,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "gradient_relative_l2": 9.401469898281843e-13,
+      "boundary_error": 1.6531208781426425e-14,
+      "adjoint_error": 5.320764210473878e-14,
+      "wrapper_gradient_relative_l2": 8.746952286704101e-13,
+      "rank": 64,
+      "seconds": [
+        0.033619122579693794,
+        0.03351740725338459
+      ],
+      "peak_cuda_bytes": 631003136,
+      "estimated_four_second_backward": 277.98811983084306,
+      "estimate_note": "Linear runtime extrapolation of eager-PyTorch short prototype only; not a measurement"
+    },
+    {
+      "batch": 128,
+      "chunk": 16,
+      "window": 4,
+      "kind": "four_second",
+      "status": "skipped",
+      "reason": "Short-window estimate exceeds runtime guard; full result not measured",
+      "estimated_seconds": 277.98811983084306
+    },
+    {
+      "batch": 128,
+      "chunk": 32,
+      "window": 4,
+      "steps": 128,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "gradient_relative_l2": 3.446524281270176e-12,
+      "boundary_error": 5.201893604026188e-14,
+      "adjoint_error": 4.3033612459684815e-13,
+      "wrapper_gradient_relative_l2": null,
+      "rank": 128,
+      "seconds": [
+        0.06714385189116001,
+        0.06705204211175442
+      ],
+      "peak_cuda_bytes": 1150322688,
+      "estimated_four_second_backward": 277.5978626625147,
+      "estimate_note": "Linear runtime extrapolation of eager-PyTorch short prototype only; not a measurement"
+    },
+    {
+      "batch": 128,
+      "chunk": 32,
+      "window": 4,
+      "kind": "four_second",
+      "status": "skipped",
+      "reason": "Short-window estimate exceeds runtime guard; full result not measured",
+      "estimated_seconds": 277.5978626625147
+    },
+    {
+      "batch": 128,
+      "chunk": 64,
+      "window": 4,
+      "steps": 256,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "gradient_relative_l2": 1.0733330150191075e-11,
+      "boundary_error": 1.2175645977120606e-13,
+      "adjoint_error": 1.425152054297036e-12,
+      "wrapper_gradient_relative_l2": null,
+      "rank": 256,
+      "seconds": [
+        0.1476134080439806,
+        0.14764528907835484
+      ],
+      "peak_cuda_bytes": 2185433088,
+      "estimated_four_second_backward": 305.21049601666164,
+      "estimate_note": "Linear runtime extrapolation of eager-PyTorch short prototype only; not a measurement"
+    },
+    {
+      "batch": 128,
+      "chunk": 64,
+      "window": 4,
+      "kind": "four_second",
+      "status": "skipped",
+      "reason": "Short-window estimate exceeds runtime guard; full result not measured",
+      "estimated_seconds": 305.21049601666164
+    }
+  ]
+}

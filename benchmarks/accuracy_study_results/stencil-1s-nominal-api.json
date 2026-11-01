@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "duration_seconds": 1.0,
+    "parameters": "nominal",
+    "excitation": "raised_cosine",
+    "reference": "modal 123 modes, 44.1 kHz, band-matched (1x project filter)",
+    "time_step": "Russo et al.'s non-SAV reference step, unchanged",
+    "pure_torch_reference_recurrence": "src.kc_string_forward.initialize/advance, value column"
+  },
+  "rows": [
+    {
+      "intervals": 176,
+      "oversampling": 2,
+      "rate": 88200,
+      "order": 2,
+      "spacing": 0.005681818181818182,
+      "excitation": "raised_cosine",
+      "eigenvalue_factor": 1.0,
+      "stability_score": 0.4309125274636229,
+      "seconds": 66.15365393087268,
+      "work_vs_benchmark": 1.0,
+      "status": "ok",
+      "audio_relative_l2": 0.11259986008655724,
+      "fft_magnitude_relative_l2": 0.03907802177609623
+    },
+    {
+      "intervals": 176,
+      "oversampling": 2,
+      "rate": 88200,
+      "order": 4,
+      "spacing": 0.005681818181818182,
+      "excitation": "raised_cosine",
+      "eigenvalue_factor": 1.3333333333333333,
+      "stability_score": 0.7243831677941579,
+      "seconds": 68.10265620797873,
+      "work_vs_benchmark": 1.0,
+      "status": "ok",
+      "audio_relative_l2": 0.010323247034648313,
+      "fft_magnitude_relative_l2": 0.0050746133829665955
+    },
+    {
+      "intervals": 176,
+      "oversampling": 3,
+      "rate": 132300,
+      "order": 2,
+      "spacing": 0.005681818181818182,
+      "excitation": "raised_cosine",
+      "eigenvalue_factor": 1.0,
+      "stability_score": 0.19160608485455663,
+      "seconds": 98.72448783367872,
+      "work_vs_benchmark": 1.5,
+      "status": "ok",
+      "audio_relative_l2": 0.11677951682996415,
+      "fft_magnitude_relative_l2": 0.04093941088962075
+    },
+    {
+      "intervals": 176,
+      "oversampling": 3,
+      "rate": 132300,
+      "order": 4,
+      "spacing": 0.005681818181818182,
+      "excitation": "raised_cosine",
+      "eigenvalue_factor": 1.3333333333333333,
+      "stability_score": 0.3220672825509616,
+      "seconds": 102.14200351759791,
+      "work_vs_benchmark": 1.5,
+      "status": "ok",
+      "audio_relative_l2": 0.004531313599922693,
+      "fft_magnitude_relative_l2": 0.0022047831157287344
+    },
+    {
+      "intervals": 176,
+      "oversampling": 6,
+      "rate": 264600,
+      "order": 4,
+      "spacing": 0.005681818181818182,
+      "excitation": "raised_cosine",
+      "eigenvalue_factor": 1.3333333333333333,
+      "stability_score": 0.08060622661957575,
+      "seconds": 205.24352679029107,
+      "work_vs_benchmark": 3.0,
+      "status": "ok",
+      "audio_relative_l2": 0.0017816065860058062,
+      "fft_magnitude_relative_l2": 0.0007185473770398056
+    }
+  ]
+}

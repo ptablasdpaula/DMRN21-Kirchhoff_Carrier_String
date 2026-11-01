@@ -1,0 +1,437 @@
+{
+  "metadata": {
+    "source_sha256": "7b2310bfe033d40c7cc3dcfdc330e87db003e28ee5a3f91a08301cb03e91bf45",
+    "revision": "e7d0a18452cba4e85ee2532bc73bc9eb2ff34c95",
+    "source_status": " M README.md\n M experiments/recovery.py\n M src/kc_string_forward.py\n M src/optimization.py\n M src/optimization_workbench.py\n M src/parameters.py\n M src/synthesis.py\n M test/optimization_workbench.py\n?? benchmarks/alpha_scan_compare.py\n?? benchmarks/alpha_scan_results/\n?? benchmarks/alpha_scan_two_directions.py\n?? benchmarks/cache_grouped_compare.py\n?? benchmarks/cache_reconstruction_compare.py\n?? benchmarks/cache_reconstruction_results/\n?? benchmarks/even_batch_driver.py\n?? benchmarks/even_results/\n?? benchmarks/exact_methods.py\n?? benchmarks/exact_results/\n?? benchmarks/gpu.py\n?? benchmarks/gpu_results/\n?? benchmarks/jax_compare.py\n?? benchmarks/jax_pure_compare.py\n?? benchmarks/jax_results/\n?? benchmarks/jax_reverse_compare.py\n?? benchmarks/loss_batch_grouped.py\n?? benchmarks/loss_batch_results/\n?? benchmarks/manual_ce_compare.py\n?? benchmarks/parallel_reconstruction.py\n?? benchmarks/parallel_scan_results/\n?? benchmarks/parallel_scan_scale.py\n?? benchmarks/profile_gpu.py\n?? benchmarks/profile_grouped.py\n?? benchmarks/reconstruction.py\n?? benchmarks/reconstruction_results/\n?? benchmarks/scalar_cache_results/\n?? benchmarks/scalar_cache_sweep.py\n?? benchmarks/scalar_fallback_compare.py\n?? benchmarks/summarize_even_batches.py\n?? benchmarks/summarize_gpu.py\n?? docs/alpha_scan_experiments.md\n?? docs/cached_reconstruction_experiments.md\n?? docs/even_batch_experiments.md\n?? docs/exact_solver_experiments.md\n?? docs/gpu.md\n?? docs/gpu_results.md\n?? docs/highlighted_benchmark.md\n?? docs/ideas/\n?? docs/jax_comparison.md\n?? docs/loss_batch_experiments.md\n?? docs/reconstruction_experiments.md\n?? docs/scalar_cache_sweep.md\n?? docs/structured_adjoint_experiment.md\n?? experiments/cached_reconstruction/\n?? experiments/exact_recovery.py\n?? experiments/jax_loss_benchmark.py\n?? experiments/jax_study/\n?? experiments/loss_batch/\n?? experiments/parallel_alpha_scan/\n?? experiments/parallel_segments/\n?? experiments/reconstruction/\n?? experiments/scalar_cache/\n?? experiments/structured_adjoint/\n?? hpc/\n?? src/accelerated.py\n?? src/adjoint.py\n?? src/kc_adjoint.cu\n?? src/kc_dual.h\n?? src/kc_fused.cpp\n?? src/kc_fused.cu\n?? src/seeded.py\n?? test/accelerated.py\n?? test/adjoint.py\n?? test/adjoint_math.py\n?? test/alpha_scan_coordinate_stress.py\n?? test/alpha_scan_math.py\n?? test/alpha_scan_reconstruction.py\n?? test/cached_coordinate_stress.py\n?? test/even_batch_isolation.py\n?? test/exact_benchmark.py\n?? test/experimental_kernels.py\n?? test/grouped_loss_contract.py\n?? test/jax_loss_reference.py\n?? test/manual_ce_long.py\n?? test/manual_ce_loss.py\n?? test/parallel_reconstruction.py\n?? test/reconstruction.py\n?? test/reconstruction_coordinates.py\n?? test/reconstruction_math.py\n?? test/scalar_cache_algebra.py\n?? test/scalar_cache_coordinates.py\n?? test/scalar_cache_fallback.py\n?? test/scalar_cache_smoke.py\n?? test/seeded.py\n?? test/seeded_long_batch_direct.py\n?? test/structured_adjoint.py\n?? test/structured_adjoint_gpu.py\n?? test/structured_adjoint_loss.py\n?? test/structured_adjoint_loss_cpu.py\n",
+    "host": "xdg1",
+    "cpu": "Intel(R) Xeon(R) Platinum 8462Y+",
+    "job": "34505297",
+    "torch": "2.14.1+cu130",
+    "cuda_runtime": "13.0",
+    "gpu": "NVIDIA H100 80GB HBM3",
+    "dtype": "float64",
+    "cpu_threads": 1,
+    "intervals": 176,
+    "output_rate": 44100,
+    "internal_rate": 132300,
+    "excitation": "multimode",
+    "target": "same original CPU reference, all parameter vectors",
+    "loss": "independent STFTCumulativeEnergyLoss per item, summed for backward",
+    "cached_sha256": "1a0e42f4e151faeb4039985cedf859d9b50a1597d455bc78f27343ced286d2be",
+    "script_sha256": "ba303e4948f22585ff7f40072ce61af45a725ec4ce9f1351f5a7f47401375a22",
+    "status": "complete",
+    "source_changed_during_run": false
+  },
+  "checks": [
+    {
+      "method": "cached",
+      "batch": 1,
+      "duration": 0.25,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 8.053412581595776e-10
+    },
+    {
+      "method": "seeded",
+      "batch": 1,
+      "duration": 0.25,
+      "status": "passed",
+      "audio_relative_l2": 1.6378985508113922e-16,
+      "loss_relative_l2": 5.606387616171657e-16,
+      "scaled_gradient_relative_l2": 7.442262434693492e-10
+    },
+    {
+      "method": "cached",
+      "batch": 128,
+      "duration": 0.25,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 4.131244520550851e-10
+    },
+    {
+      "method": "seeded",
+      "batch": 128,
+      "duration": 0.25,
+      "status": "passed",
+      "audio_relative_l2": 1.6914778009245623e-16,
+      "loss_relative_l2": 4.855746333330774e-16,
+      "scaled_gradient_relative_l2": 3.4588051236138335e-10
+    },
+    {
+      "method": "cached",
+      "batch": 1,
+      "duration": 4.0,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 1.2742044074485265e-09
+    },
+    {
+      "method": "seeded",
+      "batch": 1,
+      "duration": 4.0,
+      "status": "passed",
+      "audio_relative_l2": 1.464582232236957e-16,
+      "loss_relative_l2": 1.9276743611537114e-16,
+      "scaled_gradient_relative_l2": 1.3862115850000031e-09
+    },
+    {
+      "method": "cached",
+      "batch": 128,
+      "duration": 4.0,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 1.3425593784749042e-09
+    },
+    {
+      "method": "seeded",
+      "batch": 128,
+      "duration": 4.0,
+      "status": "passed",
+      "audio_relative_l2": 1.4778116882641614e-16,
+      "loss_relative_l2": 4.78008387055188e-16,
+      "scaled_gradient_relative_l2": 1.7322700132028436e-09
+    }
+  ],
+  "rows": [
+    {
+      "method": "seeded",
+      "batch": 1,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "warmup_seconds": 0.10562548227608204,
+      "median_seconds": 0.10471726022660732,
+      "min_seconds": 0.10463125072419643,
+      "max_seconds": 0.10475720092654228,
+      "repetitions_seconds": [
+        0.10463125072419643,
+        0.10475720092654228,
+        0.10471726022660732
+      ],
+      "cuda_event_seconds": [
+        0.10462406158447266,
+        0.1047470703125,
+        0.10470864105224609
+      ],
+      "peak_cuda_bytes": 74426368
+    },
+    {
+      "method": "replay",
+      "batch": 1,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "warmup_seconds": 0.10163112170994282,
+      "median_seconds": 0.10148166492581367,
+      "min_seconds": 0.10146689601242542,
+      "max_seconds": 0.10157581605017185,
+      "repetitions_seconds": [
+        0.10148166492581367,
+        0.10157581605017185,
+        0.10146689601242542
+      ],
+      "cuda_event_seconds": [
+        0.10146908569335937,
+        0.10156646728515625,
+        0.10145760345458985
+      ],
+      "peak_cuda_bytes": 73235456
+    },
+    {
+      "method": "reconstruction",
+      "batch": 1,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "warmup_seconds": 0.2289611715823412,
+      "median_seconds": 0.09017334878444672,
+      "min_seconds": 0.09015066735446453,
+      "max_seconds": 0.09022919833660126,
+      "repetitions_seconds": [
+        0.09022919833660126,
+        0.09017334878444672,
+        0.09015066735446453
+      ],
+      "cuda_event_seconds": [
+        0.09020966339111328,
+        0.09015235137939454,
+        0.09013148498535156
+      ],
+      "peak_cuda_bytes": 73235456
+    },
+    {
+      "method": "cached",
+      "batch": 1,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "warmup_seconds": 0.06312892585992813,
+      "median_seconds": 0.06328727304935455,
+      "min_seconds": 0.06300847791135311,
+      "max_seconds": 0.06338959373533726,
+      "repetitions_seconds": [
+        0.06300847791135311,
+        0.06328727304935455,
+        0.06338959373533726
+      ],
+      "cuda_event_seconds": [
+        0.06298905563354493,
+        0.06326752090454102,
+        0.06336387252807617
+      ],
+      "peak_cuda_bytes": 74029568
+    },
+    {
+      "method": "seeded",
+      "batch": 128,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "warmup_seconds": 0.27531979605555534,
+      "median_seconds": 0.28129313327372074,
+      "min_seconds": 0.2758983112871647,
+      "max_seconds": 0.2840018477290869,
+      "repetitions_seconds": [
+        0.2840018477290869,
+        0.28129313327372074,
+        0.2758983112871647
+      ],
+      "cuda_event_seconds": [
+        0.283991943359375,
+        0.28128216552734375,
+        0.27588714599609376
+      ],
+      "peak_cuda_bytes": 710401536
+    },
+    {
+      "method": "replay",
+      "batch": 128,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "warmup_seconds": 0.2756931520998478,
+      "median_seconds": 0.27661317959427834,
+      "min_seconds": 0.27576060965657234,
+      "max_seconds": 0.2852847967296839,
+      "repetitions_seconds": [
+        0.27576060965657234,
+        0.27661317959427834,
+        0.2852847967296839
+      ],
+      "cuda_event_seconds": [
+        0.2757182312011719,
+        0.2766019287109375,
+        0.28527407836914065
+      ],
+      "peak_cuda_bytes": 557233152
+    },
+    {
+      "method": "reconstruction",
+      "batch": 128,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "warmup_seconds": 0.2618747539818287,
+      "median_seconds": 0.26273271068930626,
+      "min_seconds": 0.2617847006767988,
+      "max_seconds": 0.26279799826443195,
+      "repetitions_seconds": [
+        0.26273271068930626,
+        0.2617847006767988,
+        0.26279799826443195
+      ],
+      "cuda_event_seconds": [
+        0.26270950317382813,
+        0.261760498046875,
+        0.26276229858398437
+      ],
+      "peak_cuda_bytes": 557233152
+    },
+    {
+      "method": "cached",
+      "batch": 128,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "warmup_seconds": 0.24308979324996471,
+      "median_seconds": 0.23754329606890678,
+      "min_seconds": 0.23744226805865765,
+      "max_seconds": 0.23757817968726158,
+      "repetitions_seconds": [
+        0.23757817968726158,
+        0.23744226805865765,
+        0.23754329606890678
+      ],
+      "cuda_event_seconds": [
+        0.23755567932128907,
+        0.23741949462890624,
+        0.23751866149902343
+      ],
+      "peak_cuda_bytes": 658839552
+    },
+    {
+      "method": "seeded",
+      "batch": 1,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "warmup_seconds": 1.5745931882411242,
+      "median_seconds": 1.5767160840332508,
+      "min_seconds": 1.5738191530108452,
+      "max_seconds": 1.578206343576312,
+      "repetitions_seconds": [
+        1.5767160840332508,
+        1.578206343576312,
+        1.5738191530108452
+      ],
+      "cuda_event_seconds": [
+        1.5766947021484374,
+        1.5781920166015626,
+        1.573802001953125
+      ],
+      "peak_cuda_bytes": 185697280
+    },
+    {
+      "method": "replay",
+      "batch": 1,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "warmup_seconds": 1.5615906473249197,
+      "median_seconds": 1.5615962035953999,
+      "min_seconds": 1.5614855363965034,
+      "max_seconds": 1.5616122260689735,
+      "repetitions_seconds": [
+        1.5615962035953999,
+        1.5616122260689735,
+        1.5614855363965034
+      ],
+      "cuda_event_seconds": [
+        1.561578857421875,
+        1.5615968017578126,
+        1.561467041015625
+      ],
+      "peak_cuda_bytes": 166118400
+    },
+    {
+      "method": "reconstruction",
+      "batch": 1,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "warmup_seconds": 1.3718129266053438,
+      "median_seconds": 1.3689086232334375,
+      "min_seconds": 1.3688974007964134,
+      "max_seconds": 1.369330670684576,
+      "repetitions_seconds": [
+        1.369330670684576,
+        1.3689086232334375,
+        1.3688974007964134
+      ],
+      "cuda_event_seconds": [
+        1.36929345703125,
+        1.36888330078125,
+        1.3688720703125
+      ],
+      "peak_cuda_bytes": 166118400
+    },
+    {
+      "method": "cached",
+      "batch": 1,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "warmup_seconds": 0.967317609116435,
+      "median_seconds": 0.9670613780617714,
+      "min_seconds": 0.9668969176709652,
+      "max_seconds": 0.9671209249645472,
+      "repetitions_seconds": [
+        0.9671209249645472,
+        0.9668969176709652,
+        0.9670613780617714
+      ],
+      "cuda_event_seconds": [
+        0.9670983276367188,
+        0.96685302734375,
+        0.9670371704101562
+      ],
+      "peak_cuda_bytes": 178819584
+    },
+    {
+      "method": "seeded",
+      "batch": 128,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "warmup_seconds": 2.1102678719908,
+      "median_seconds": 2.110212890431285,
+      "min_seconds": 2.1100422348827124,
+      "max_seconds": 2.113856852054596,
+      "repetitions_seconds": [
+        2.1100422348827124,
+        2.113856852054596,
+        2.110212890431285
+      ],
+      "cuda_event_seconds": [
+        2.11002392578125,
+        2.113836669921875,
+        2.11019482421875
+      ],
+      "peak_cuda_bytes": 10744873984
+    },
+    {
+      "method": "replay",
+      "batch": 128,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "warmup_seconds": 2.162869907915592,
+      "median_seconds": 2.1582435574382544,
+      "min_seconds": 2.158056788146496,
+      "max_seconds": 2.1587709318846464,
+      "repetitions_seconds": [
+        2.1582435574382544,
+        2.158056788146496,
+        2.1587709318846464
+      ],
+      "cuda_event_seconds": [
+        2.15822607421875,
+        2.1580361328125,
+        2.158750244140625
+      ],
+      "peak_cuda_bytes": 8240075776
+    },
+    {
+      "method": "reconstruction",
+      "batch": 128,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "warmup_seconds": 1.9146384205669165,
+      "median_seconds": 1.9158937279134989,
+      "min_seconds": 1.9157655462622643,
+      "max_seconds": 1.920385517179966,
+      "repetitions_seconds": [
+        1.9157655462622643,
+        1.920385517179966,
+        1.9158937279134989
+      ],
+      "cuda_event_seconds": [
+        1.9157362060546874,
+        1.92035546875,
+        1.9158604736328124
+      ],
+      "peak_cuda_bytes": 8240075776
+    },
+    {
+      "method": "cached",
+      "batch": 128,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "warmup_seconds": 1.5213859416544437,
+      "median_seconds": 1.5213632304221392,
+      "min_seconds": 1.5213215984404087,
+      "max_seconds": 1.521409884095192,
+      "repetitions_seconds": [
+        1.521409884095192,
+        1.5213632304221392,
+        1.5213215984404087
+      ],
+      "cuda_event_seconds": [
+        1.5213729248046874,
+        1.5213343505859376,
+        1.5212889404296874
+      ],
+      "peak_cuda_bytes": 9865778176
+    }
+  ]
+}

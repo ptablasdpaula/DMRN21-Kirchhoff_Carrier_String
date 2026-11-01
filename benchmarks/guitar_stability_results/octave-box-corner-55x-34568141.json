@@ -1,0 +1,54 @@
+{
+  "status": "passed",
+  "seconds": 0.02,
+  "steps": 48510,
+  "intervals": 176,
+  "sample_rate_hz": 2425500,
+  "oversampling": 55,
+  "branch": "SAV=false",
+  "excitation": "raised_cosine",
+  "output": "raw midpoint, before filtering",
+  "physical_parameters": {
+    "rho": 8050.0,
+    "T0": 70.3,
+    "radius": 0.00012304790692520674,
+    "E": 2072608019007.8098,
+    "L": 0.1625,
+    "amplitude": 0.002,
+    "sigma0": 1.0,
+    "sigma1": 0.001
+  },
+  "case": {
+    "f0_hz": 1318.4,
+    "B": 0.001984,
+    "stability_score": 0.9881506077916079
+  },
+  "gpu": "NVIDIA A100-PCIE-40GB",
+  "reference_octave_seconds": 7.18568610958755,
+  "reference_energies": [
+    0.013703371208551609,
+    0.013703371208591447,
+    1.0055091026639783e-05,
+    0.009015007472445038,
+    0.004678308638993301
+  ],
+  "comparisons": {
+    "cpu": {
+      "max_abs_waveform_error_m": 1.8386004117841928e-13,
+      "relative_l2_waveform_error": 8.652819868863756e-11
+    },
+    "cuda_1_scalar": {
+      "max_abs_waveform_error_m": 3.353583686790951e-13,
+      "relative_l2_waveform_error": 1.4970457985780785e-10
+    },
+    "cuda_3_scalar": {
+      "max_abs_waveform_error_m": 3.353583686790951e-13,
+      "relative_l2_waveform_error": 1.4970457985780785e-10
+    }
+  },
+  "tolerance": {
+    "waveform_rtol": 1e-07,
+    "waveform_atol_m": 1e-10,
+    "relative_l2_max": 1e-07
+  }
+}

@@ -49,14 +49,15 @@ are derived from these coordinates, not independently fitted.
 
 1. Enter ranges and click **Apply ranges / prepare grid**.
 2. Preserve at least the nominal reference string’s ×1 spatial resolution:
-   148 intervals at 44.1 kHz, with reference damping.
+   128 intervals at 44.1 kHz with the default five-point stencil (148 with the
+   reference's three-point stencil, `order=2`), with reference damping.
 3. Starting at ×1, choose the smallest integer oversampling factor that supports
    that resolution at the worst corner of the box. Then choose the largest stable
    even interval count, using Russo’s exact 1% spacing margin.
 4. Keep the grid and internal rate fixed for every target, initial and fitted
    parameter vector inside the box. Filter before returning audio at the output rate.
 
-The perceptual default box selects **×3, 132,300 Hz internally and 176 intervals**.
+The perceptual default box selects **×3, 132,300 Hz internally and 152 intervals** (176 with `order=2`); the timing benchmark fixes 176 intervals at ×2 on its narrow `BenchmarkBox`.
 Material mode computes its own grid over its editable physical ranges; it checks
 both radius endpoints at the worst density, tension, modulus, length and loss bounds.
 When length varies, interval count and time step stay fixed while physical spacing
@@ -72,12 +73,13 @@ establish accurate nonlinear pitch glides. See [numerical conventions](docs/nume
 
 ## Differentiation and fitting
 
-`src/kc_string_forward.py` retains the low-level `ForwardString` API and eight
-material multipliers. A raw-array C++ loop propagates the value and eight material
+`src/kc_string_forward.py` retains the low-level `ForwardString` API and ten
+relative multipliers (eight material parameters, then the pluck and pickup positions as
+fractions of L). A raw-array C++ loop propagates the value and ten parameter
 sensitivities. The six-coordinate layer chains through that Jacobian. PyTorch’s
 backward contracts the saved audio tangents with the loss gradient; no reverse
 simulation is needed. This supports ordinary Adam and L-BFGS, **first derivatives
-only**, CPU float64. The evolving state uses O(N·8) memory; storing audio tangents
+only**, float64 on CPU or CUDA (see [GPU backends](docs/gpu.md)). The evolving state uses O(N·8) memory; storing audio tangents
 uses O(output samples·8), so total memory is not independent of duration. With
 oversampling, the current implementation stores internal-rate tangents before
 filtered downsampling.
@@ -131,10 +133,22 @@ Notebook fits save JSON to ignored `output/`; executed test notebooks and previe
 are under ignored `.notebook-build/`. Reproducible experiment records live in
 [`experiments/results/`](experiments/results/). The earlier performance measurements
 and independent differentiation references remain in [`benchmarks/`](benchmarks/).
-Their 0.51-second four-second result used **128 intervals and ×1**, not the new
+Their 0.51-second four-second result used **128 intervals and ×1**, not the later
 176-interval, ×3 defaults; see [result provenance](docs/results.md).
 
 Superseded exploratory notebooks and the material-coordinate fitting scripts are
 recoverable from baseline commit `2d717c5`. They are no longer active entry points.
 The upstream SAV repository remains an unmodified submodule. Fractional time
 steps, dynamic grids and second-order optimisation are outside the main workflow.
+
+## GPU and accelerated CPU implementations
+
+The original CPU backend remains the default. Fused spatial and full-grid modal
+backends support CPU and CUDA float64, preserving the existing discrete model
+and forward-sensitivity differentiation. Select `device="cuda", backend="modal"`
+or `backend="spatial"` in `Renderer`, or use the notebook Device/Solver controls.
+See [GPU implementation and HPC workflow](docs/gpu.md) for environment setup,
+validation, internal batching and benchmark methodology.
+[Measured results](docs/gpu_results.md) compare all five CPU/GPU paths and batch throughput.
+[Highlighted H100 result](docs/highlighted_benchmark.md): 128 four-second strings,
+including the loss and gradients for f0 and B, in 1.589 seconds.

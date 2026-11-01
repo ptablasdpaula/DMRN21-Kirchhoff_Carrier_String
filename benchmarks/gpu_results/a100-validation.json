@@ -1,0 +1,32 @@
+{
+  "device": "cuda",
+  "torch": "2.14.1+cu130",
+  "source_sha256": "6a3bb35b671948e5ac0e5619559522ed5571efb2399e453fc98615fa65f49eb0",
+  "source_changed_during_run": false,
+  "checks": [
+    {
+      "coordinates": "perceptual",
+      "backend": "spatial",
+      "waveform_relative_l2": 1.1441481616608417e-12,
+      "loss": 0.0035187528600118764
+    },
+    {
+      "coordinates": "perceptual",
+      "backend": "modal",
+      "waveform_relative_l2": 6.587847494823487e-10,
+      "loss": 0.0035187528587698226
+    },
+    {
+      "coordinates": "material",
+      "backend": "spatial",
+      "waveform_relative_l2": 1.8282778877119504e-12,
+      "loss": 0.0035187529080908404
+    },
+    {
+      "coordinates": "material",
+      "backend": "modal",
+      "waveform_relative_l2": 1.839747784126006e-09,
+      "loss": 0.0035187529091476634
+    }
+  ]
+}

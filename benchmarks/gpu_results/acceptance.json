@@ -1,0 +1,42 @@
+{
+  "source_sha256": "6a3bb35b671948e5ac0e5619559522ed5571efb2399e453fc98615fa65f49eb0",
+  "date": "2026-10-27",
+  "checks": [
+    {
+      "job": "33550646",
+      "status": "passed",
+      "checks": "Accelerated CPU/CUDA suite and original parameter-grid, material, synthesis, optimisation, numerical tests"
+    },
+    {
+      "job": "33552880",
+      "status": "passed",
+      "checks": "Current-source CUDA validation, five-repeat benchmarks and profiler"
+    },
+    {
+      "job": "33556149",
+      "status": "passed",
+      "checks": "Full four-second CPU modal Adam and L-BFGS recovery"
+    },
+    {
+      "job": "33556150",
+      "status": "passed",
+      "checks": "Full four-second CUDA modal Adam and L-BFGS recovery"
+    },
+    {
+      "job": "33557437",
+      "status": "partial",
+      "checks": "Current-source CUDA suite, GPU benchmark, both notebooks and independent differentiation references passed",
+      "failure": "Final Octave dependency installation failed on incomplete pre-existing cache; rerun separately"
+    },
+    {
+      "job": "33561079",
+      "status": "passed",
+      "checks": "Three Octave / Russo reference tests with isolated scratch package cache"
+    },
+    {
+      "job": null,
+      "status": "passed",
+      "checks": "Six hpc_sonic planner tests; compileall, shell syntax, git diff --check; generated notebooks contain no cell/widget errors"
+    }
+  ]
+}

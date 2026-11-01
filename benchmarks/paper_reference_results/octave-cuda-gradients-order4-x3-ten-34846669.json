@@ -1,0 +1,218 @@
+{
+  "mode": "gradients",
+  "duration_s": 0.002,
+  "steps": 265,
+  "intervals": 176,
+  "spatial_order": 4,
+  "sample_rate": 132300,
+  "branch": "SAV=false",
+  "excitation": "raised_cosine",
+  "precision": "float64",
+  "output": "raw internal-rate pickup waveform, includes two startup samples",
+  "physical_parameters": {
+    "rho": 8855.000000000002,
+    "T0": 67.5,
+    "radius": 0.00037338000000000003,
+    "E": 165300000000.0,
+    "L": 0.9,
+    "amplitude": 0.0022,
+    "sigma0": 0.7368272297580947,
+    "sigma1": 0.00031503226376464085,
+    "pluck_position": 0.45,
+    "pickup_position": 0.55
+  },
+  "stability_score": 0.45447943725952406,
+  "octave_seconds": 0.35939197801053524,
+  "native_seconds_including_extension_load": 0.4395019398070872,
+  "max_abs_error": 4.33683579499633e-15,
+  "rms_error": 2.2123126172991507e-15,
+  "normalized_l2_error": 2.2349663453102103e-12,
+  "reference_first_samples": [
+    0.0014092067009314165,
+    0.0014092065252103174,
+    0.001409137639202182,
+    0.0014090061247319817
+  ],
+  "native_first_samples": [
+    0.0014092067009314156,
+    0.0014092065252103152,
+    0.0014091376392021797,
+    0.00140900612473198
+  ],
+  "reference_energies": {
+    "first_total": 0.0018765374775462488,
+    "last_total": 0.001876537477546821,
+    "first_kinetic": 4.857678254691806e-07,
+    "first_linear_potential": 0.0018464053931061813,
+    "first_nonlinear_potential": 2.964631378465731e-05
+  },
+  "native_first_energies": {
+    "first_total": 0.0018765374775432265,
+    "first_kinetic": 4.857678254683856e-07,
+    "first_linear_potential": 0.0018464053931031565,
+    "first_nonlinear_potential": 2.9646313784660555e-05
+  },
+  "gradients": [
+    {
+      "parameter": "rho",
+      "step": 0.0001,
+      "analytic": 0.10953511440036373,
+      "octave_finite_difference": 0.10953511077785305,
+      "abs_error": 3.622510680312274e-09,
+      "relative_error": 3.307168500207251e-08
+    },
+    {
+      "parameter": "T0",
+      "step": 0.0001,
+      "analytic": -0.13051905497964467,
+      "octave_finite_difference": -0.13051905054656254,
+      "abs_error": 4.433082123611598e-09,
+      "relative_error": 3.396501970438484e-08
+    },
+    {
+      "parameter": "radius",
+      "step": 0.0001,
+      "analytic": 0.222922640547503,
+      "octave_finite_difference": 0.22292264694676045,
+      "abs_error": 6.399257457267993e-09,
+      "relative_error": 2.870617922815306e-08
+    },
+    {
+      "parameter": "E",
+      "step": 0.0001,
+      "analytic": -0.00318050143023509,
+      "octave_finite_difference": -0.0031804998934514828,
+      "abs_error": 1.536783607054143e-09,
+      "relative_error": 4.831893282619869e-07
+    },
+    {
+      "parameter": "L",
+      "step": 0.0001,
+      "analytic": 0.27445674579554274,
+      "octave_finite_difference": 0.27445674102066775,
+      "abs_error": 4.77487499539464e-09,
+      "relative_error": 1.739755043959759e-08
+    },
+    {
+      "parameter": "amplitude",
+      "step": 0.0001,
+      "analytic": 0.4406708132582478,
+      "octave_finite_difference": 0.4406708132360937,
+      "abs_error": 2.215411187833638e-11,
+      "relative_error": 5.0273608355512075e-11
+    },
+    {
+      "parameter": "sigma0",
+      "step": 0.001,
+      "analytic": 0.00010107522005019633,
+      "octave_finite_difference": 0.00010107513602475304,
+      "abs_error": 8.402544328725559e-11,
+      "relative_error": 8.313166481089669e-07
+    },
+    {
+      "parameter": "sigma1",
+      "step": 0.01,
+      "analytic": 1.9917059671160804e-06,
+      "octave_finite_difference": 1.9917145377412737e-06,
+      "abs_error": 8.570625193283463e-12,
+      "relative_error": 4.303139345964245e-06
+    },
+    {
+      "parameter": "pluck_position",
+      "step": 0.0001,
+      "analytic": 0.7296042199322949,
+      "octave_finite_difference": 0.7296041230542283,
+      "abs_error": 9.687806656888398e-08,
+      "relative_error": 1.3278168736675773e-07
+    },
+    {
+      "parameter": "pickup_position",
+      "step": 0.0001,
+      "analytic": -0.7296242911764754,
+      "octave_finite_difference": -0.7296242274934528,
+      "abs_error": 6.368302263304315e-08,
+      "relative_error": 8.728194628599364e-08
+    }
+  ],
+  "gradient_tolerance": {
+    "rtol": 0.001,
+    "atol": 2e-09,
+    "note": "relative-multiplier gradient of normalized mean-square loss"
+  },
+  "cached_cuda": {
+    "1": {
+      "max_abs_audio_error_vs_octave": 1.3615952983159207e-15,
+      "relative_l2_audio_error_vs_octave": 4.0708027417216717e-13,
+      "gradients": [
+        0.10953511439720387,
+        -0.13051905497897054,
+        0.22292264054067346,
+        -0.0031805014302178775,
+        0.274456745794119,
+        0.4406708132574337,
+        0.00010107522004993916,
+        1.9917059670901405e-06,
+        0.7296042199348267,
+        -0.7296242911783453
+      ],
+      "max_abs_gradient_error_vs_octave_finite_difference": 9.688059843249164e-08
+    },
+    "3": {
+      "max_abs_audio_error_vs_octave": 1.3615952983159207e-15,
+      "relative_l2_audio_error_vs_octave": 4.0708027417216717e-13,
+      "gradients": [
+        0.10953511439720387,
+        -0.13051905497897054,
+        0.22292264054067346,
+        -0.0031805014302178775,
+        0.274456745794119,
+        0.4406708132574337,
+        0.00010107522004993916,
+        1.9917059670901405e-06,
+        0.7296042199348267,
+        -0.7296242911783453
+      ],
+      "max_abs_gradient_error_vs_octave_finite_difference": 9.688059843249164e-08
+    }
+  },
+  "additional_material_cases": {
+    "steel": {
+      "physical_parameters": {
+        "rho": 8050.0,
+        "T0": 75.0,
+        "radius": 0.000356,
+        "E": 174000000000.0,
+        "L": 0.65,
+        "amplitude": 0.001,
+        "sigma0": 1.0,
+        "sigma1": 0.0001,
+        "pluck_position": 0.5,
+        "pickup_position": 0.5
+      },
+      "oversampling": 4,
+      "sample_rate": 176400,
+      "stability_score": 0.9506351773388868,
+      "max_abs_audio_error_vs_octave": 6.092621698118681e-15,
+      "relative_l2_audio_error_vs_octave": 7.884364689036784e-12
+    },
+    "nylon": {
+      "physical_parameters": {
+        "rho": 1150.0,
+        "T0": 75.0,
+        "radius": 0.0005,
+        "E": 3000000000.0,
+        "L": 0.65,
+        "amplitude": 0.001,
+        "sigma0": 1.0,
+        "sigma1": 0.0001,
+        "pluck_position": 0.5,
+        "pickup_position": 0.5
+      },
+      "oversampling": 3,
+      "sample_rate": 132300,
+      "stability_score": 0.843894234875902,
+      "max_abs_audio_error_vs_octave": 1.3395317841058407e-16,
+      "relative_l2_audio_error_vs_octave": 2.1852666865602468e-13
+    }
+  }
+}

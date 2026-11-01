@@ -1,0 +1,52 @@
+{
+  "mode": "long",
+  "duration_s": 4.0,
+  "steps": 529200,
+  "intervals": 176,
+  "sample_rate": 132300,
+  "branch": "SAV=false",
+  "excitation": "first_mode",
+  "precision": "float64",
+  "output": "raw internal-rate midpoint, includes two startup samples",
+  "physical_parameters": {
+    "rho": 8050.000000000001,
+    "T0": 75.0,
+    "radius": 0.0003556,
+    "E": 174000000000.0,
+    "L": 1.0,
+    "amplitude": 0.002,
+    "sigma0": 0.9210340371976183,
+    "sigma1": 0.0002863929670587644
+  },
+  "stability_score": 0.19852954718009708,
+  "octave_seconds": 58.79844179516658,
+  "native_seconds_including_extension_load": 8.096548289060593,
+  "max_abs_error": 2.533692964830887e-12,
+  "rms_error": 1.252719491173017e-12,
+  "normalized_l2_error": 2.4075017116602766e-09,
+  "reference_first_samples": [
+    0.002,
+    0.001999999924158995,
+    0.0019999731524738347,
+    0.0019999196856811414
+  ],
+  "native_first_samples": [
+    0.002,
+    0.001999999924158995,
+    0.001999973152473836,
+    0.001999919685681145
+  ],
+  "reference_energies": {
+    "first_total": 0.0007437799183483256,
+    "last_total": 0.0007437799183544518,
+    "first_kinetic": 1.002952517096895e-08,
+    "first_linear_potential": 0.0007404035534985409,
+    "first_nonlinear_potential": 3.3663352543937683e-06
+  },
+  "native_first_energies": {
+    "first_total": 0.0007437799183483314,
+    "first_kinetic": 1.0029525170757554e-08,
+    "first_linear_potential": 0.0007404035534985468,
+    "first_nonlinear_potential": 3.366335254393794e-06
+  }
+}

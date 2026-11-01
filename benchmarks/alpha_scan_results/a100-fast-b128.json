@@ -1,0 +1,191 @@
+{
+  "metadata": {
+    "source_sha256": "7b2310bfe033d40c7cc3dcfdc330e87db003e28ee5a3f91a08301cb03e91bf45",
+    "revision": "e7d0a18452cba4e85ee2532bc73bc9eb2ff34c95",
+    "source_status": " M README.md\n M experiments/recovery.py\n M src/kc_string_forward.py\n M src/optimization.py\n M src/optimization_workbench.py\n M src/parameters.py\n M src/synthesis.py\n M test/optimization_workbench.py\n?? benchmarks/alpha_scan_compare.py\n?? benchmarks/alpha_scan_results/\n?? benchmarks/alpha_scan_two_directions.py\n?? benchmarks/cache_grouped_compare.py\n?? benchmarks/cache_reconstruction_compare.py\n?? benchmarks/cache_reconstruction_results/\n?? benchmarks/even_batch_driver.py\n?? benchmarks/even_results/\n?? benchmarks/exact_methods.py\n?? benchmarks/exact_results/\n?? benchmarks/gpu.py\n?? benchmarks/gpu_results/\n?? benchmarks/jax_compare.py\n?? benchmarks/jax_pure_compare.py\n?? benchmarks/jax_results/\n?? benchmarks/jax_reverse_compare.py\n?? benchmarks/loss_batch_grouped.py\n?? benchmarks/loss_batch_results/\n?? benchmarks/manual_ce_compare.py\n?? benchmarks/parallel_reconstruction.py\n?? benchmarks/parallel_scan_results/\n?? benchmarks/parallel_scan_scale.py\n?? benchmarks/profile_gpu.py\n?? benchmarks/profile_grouped.py\n?? benchmarks/reconstruction.py\n?? benchmarks/reconstruction_results/\n?? benchmarks/scalar_cache_results/\n?? benchmarks/scalar_cache_sweep.py\n?? benchmarks/scalar_fallback_compare.py\n?? benchmarks/summarize_even_batches.py\n?? benchmarks/summarize_gpu.py\n?? docs/alpha_scan_experiments.md\n?? docs/cached_reconstruction_experiments.md\n?? docs/even_batch_experiments.md\n?? docs/exact_solver_experiments.md\n?? docs/gpu.md\n?? docs/gpu_results.md\n?? docs/highlighted_benchmark.md\n?? docs/ideas/\n?? docs/jax_comparison.md\n?? docs/loss_batch_experiments.md\n?? docs/reconstruction_experiments.md\n?? docs/scalar_cache_sweep.md\n?? docs/structured_adjoint_experiment.md\n?? experiments/cached_reconstruction/\n?? experiments/exact_recovery.py\n?? experiments/jax_loss_benchmark.py\n?? experiments/jax_study/\n?? experiments/loss_batch/\n?? experiments/parallel_alpha_scan/\n?? experiments/parallel_segments/\n?? experiments/reconstruction/\n?? experiments/scalar_cache/\n?? experiments/structured_adjoint/\n?? hpc/\n?? src/accelerated.py\n?? src/adjoint.py\n?? src/kc_adjoint.cu\n?? src/kc_dual.h\n?? src/kc_fused.cpp\n?? src/kc_fused.cu\n?? src/seeded.py\n?? test/accelerated.py\n?? test/adjoint.py\n?? test/adjoint_math.py\n?? test/alpha_scan_coordinate_stress.py\n?? test/alpha_scan_math.py\n?? test/alpha_scan_reconstruction.py\n?? test/cached_coordinate_stress.py\n?? test/even_batch_isolation.py\n?? test/exact_benchmark.py\n?? test/experimental_kernels.py\n?? test/grouped_loss_contract.py\n?? test/jax_loss_reference.py\n?? test/manual_ce_long.py\n?? test/manual_ce_loss.py\n?? test/parallel_reconstruction.py\n?? test/reconstruction.py\n?? test/reconstruction_coordinates.py\n?? test/reconstruction_math.py\n?? test/scalar_cache_algebra.py\n?? test/scalar_cache_coordinates.py\n?? test/scalar_cache_fallback.py\n?? test/scalar_cache_smoke.py\n?? test/seeded.py\n?? test/seeded_long_batch_direct.py\n?? test/structured_adjoint.py\n?? test/structured_adjoint_gpu.py\n?? test/structured_adjoint_loss.py\n?? test/structured_adjoint_loss_cpu.py\n",
+    "host": "rdg7",
+    "cpu": "Intel(R) Xeon(R) Gold 6442Y",
+    "job": "34510679",
+    "torch": "2.14.1+cu130",
+    "cuda_runtime": "13.0",
+    "gpu": "NVIDIA A100 80GB PCIe",
+    "dtype": "float64",
+    "cpu_threads": 1,
+    "intervals": 176,
+    "output_rate": 44100,
+    "internal_rate": 132300,
+    "excitation": "multimode",
+    "target": "same original CPU reference, all parameter vectors",
+    "loss": "independent STFTCumulativeEnergyLoss per item, summed for backward",
+    "validation": "/data/scratch/acw794/kc-string-gpu/alpha-scan-check-34508178.json",
+    "implementation_sha256": "dce63afd6c46d63318198557b83977c4016d4eb24c88b1fc126b081e57d96766",
+    "grouped_loss_sha256": "66b2ce449387e13d552b088b25008ba836964fbe0d4e051fef63636b34402669",
+    "benchmark_sha256": "c8004c6ad64d7291d60d4502283a0358893fdac906d5b0d4e0dd28a34c465723",
+    "status": "complete",
+    "source_changed_during_run": false
+  },
+  "checks": [
+    {
+      "batch": 128,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "group": 8,
+      "status": "passed",
+      "first_check_seconds": 109.89294208679348,
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 4.254095166227749e-10
+    },
+    {
+      "batch": 128,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "group": 8,
+      "status": "passed",
+      "first_check_seconds": 5.128490688279271,
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 1.482941891203291e-09
+    }
+  ],
+  "rows": [
+    {
+      "method": "replay",
+      "batch": 128,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "group": 8,
+      "status": "passed",
+      "warmup_seconds": 0.20426434185355902,
+      "median_seconds": 0.203721493948251,
+      "min_seconds": 0.20365838194265962,
+      "max_seconds": 0.2038087248802185,
+      "repetitions_seconds": [
+        0.2038087248802185,
+        0.203721493948251,
+        0.20365838194265962
+      ],
+      "cuda_event_seconds": [
+        0.20380058288574218,
+        0.20371148681640625,
+        0.20364799499511718
+      ],
+      "peak_cuda_bytes": 224737280
+    },
+    {
+      "method": "cached",
+      "batch": 128,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "group": 8,
+      "status": "passed",
+      "warmup_seconds": 0.1384554412215948,
+      "median_seconds": 0.13840189576148987,
+      "min_seconds": 0.13838532287627459,
+      "max_seconds": 0.13853211188688874,
+      "repetitions_seconds": [
+        0.13853211188688874,
+        0.13840189576148987,
+        0.13838532287627459
+      ],
+      "cuda_event_seconds": [
+        0.1385113525390625,
+        0.13838131713867188,
+        0.13836390686035155
+      ],
+      "peak_cuda_bytes": 326343680
+    },
+    {
+      "method": "scan",
+      "batch": 128,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "group": 8,
+      "status": "passed",
+      "warmup_seconds": 0.2733370829373598,
+      "median_seconds": 0.27348321909084916,
+      "min_seconds": 0.27333322959020734,
+      "max_seconds": 0.273748598061502,
+      "repetitions_seconds": [
+        0.273748598061502,
+        0.27348321909084916,
+        0.27333322959020734
+      ],
+      "cuda_event_seconds": [
+        0.27372747802734376,
+        0.2734622802734375,
+        0.2733117370605469
+      ],
+      "peak_cuda_bytes": 610483712
+    },
+    {
+      "method": "replay",
+      "batch": 128,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "group": 8,
+      "status": "passed",
+      "warmup_seconds": 3.0575898410752416,
+      "median_seconds": 3.0576522047631443,
+      "min_seconds": 3.05743640800938,
+      "max_seconds": 3.057792027015239,
+      "repetitions_seconds": [
+        3.05743640800938,
+        3.057792027015239,
+        3.0576522047631443
+      ],
+      "cuda_event_seconds": [
+        3.057407958984375,
+        3.057767333984375,
+        3.057630126953125
+      ],
+      "peak_cuda_bytes": 3326887936
+    },
+    {
+      "method": "cached",
+      "batch": 128,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "group": 8,
+      "status": "passed",
+      "warmup_seconds": 2.0072088250890374,
+      "median_seconds": 2.00673413509503,
+      "min_seconds": 2.0066795349121094,
+      "max_seconds": 2.007020862773061,
+      "repetitions_seconds": [
+        2.007020862773061,
+        2.0066795349121094,
+        2.00673413509503
+      ],
+      "cuda_event_seconds": [
+        2.006992919921875,
+        2.0066488037109376,
+        2.0067052001953125
+      ],
+      "peak_cuda_bytes": 4952590336
+    },
+    {
+      "method": "scan",
+      "batch": 128,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "group": 8,
+      "status": "passed",
+      "warmup_seconds": 4.180465462151915,
+      "median_seconds": 4.179858119226992,
+      "min_seconds": 4.179672021884471,
+      "max_seconds": 4.180054624099284,
+      "repetitions_seconds": [
+        4.179672021884471,
+        4.179858119226992,
+        4.180054624099284
+      ],
+      "cuda_event_seconds": [
+        4.179623046875,
+        4.179818359375,
+        4.18000390625
+      ],
+      "peak_cuda_bytes": 4952590336
+    }
+  ]
+}

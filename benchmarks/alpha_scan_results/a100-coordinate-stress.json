@@ -1,0 +1,71 @@
+{
+  "status": "passed",
+  "source_sha256": "7b2310bfe033d40c7cc3dcfdc330e87db003e28ee5a3f91a08301cb03e91bf45",
+  "reconstruction_sha256": "dce63afd6c46d63318198557b83977c4016d4eb24c88b1fc126b081e57d96766",
+  "test_sha256": "16d6c442cb68a45268808613401c20124451a74b486e6147933f6560b8b6706f",
+  "source_changed_during_run": false,
+  "gpu": "NVIDIA A100-PCIE-40GB",
+  "checks": [
+    {
+      "coordinates": "perceptual",
+      "intervals": 176,
+      "rate": 132300,
+      "duration": 0.03,
+      "loss": 0.046942358632059,
+      "gradient_relative_l2": 3.459337011055693e-10,
+      "status": "passed"
+    },
+    {
+      "coordinates": "perceptual",
+      "intervals": 176,
+      "rate": 132300,
+      "duration": 4.0,
+      "loss": 0.019650395810358153,
+      "gradient_relative_l2": 4.1851420327166836e-10,
+      "status": "passed"
+    },
+    {
+      "coordinates": "material",
+      "intervals": 180,
+      "rate": 132300,
+      "duration": 0.03,
+      "loss": 0.036649432245058525,
+      "gradient_relative_l2": 3.710422690077721e-10,
+      "status": "passed"
+    },
+    {
+      "coordinates": "material",
+      "intervals": 180,
+      "rate": 132300,
+      "duration": 4.0,
+      "loss": 0.046170281441728536,
+      "gradient_relative_l2": 1.1099219734631336e-09,
+      "status": "passed"
+    },
+    {
+      "name": "low_amplitude",
+      "gradient_relative_l2": 1.1079759192003266e-11,
+      "status": "passed"
+    },
+    {
+      "name": "high_amplitude",
+      "gradient_relative_l2": 1.6253674831626805e-11,
+      "status": "passed"
+    },
+    {
+      "name": "undamped",
+      "gradient_relative_l2": 1.339758331377015e-11,
+      "status": "passed"
+    },
+    {
+      "name": "high_damping",
+      "gradient_relative_l2": 2.508690753566047e-11,
+      "status": "passed"
+    },
+    {
+      "name": "stability_corner",
+      "gradient_relative_l2": 1.4289605501372215e-11,
+      "status": "passed"
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "device": "cuda",
+  "checks": [
+    {
+      "mode": "random",
+      "group": 1,
+      "grad_relative_l2": 1.8299350614350126e-16,
+      "status": "passed"
+    },
+    {
+      "mode": "random",
+      "group": 2,
+      "grad_relative_l2": 1.737473644819744e-16,
+      "status": "passed"
+    },
+    {
+      "mode": "random",
+      "group": 3,
+      "grad_relative_l2": 1.7492199408392135e-16,
+      "status": "passed"
+    },
+    {
+      "mode": "random",
+      "group": 7,
+      "grad_relative_l2": 1.8224062260856332e-16,
+      "status": "passed"
+    },
+    {
+      "mode": "random",
+      "group": 8,
+      "grad_relative_l2": 1.8221561646013059e-16,
+      "status": "passed"
+    },
+    {
+      "mode": "near",
+      "group": 1,
+      "grad_relative_l2": 1.890967597878511e-16,
+      "status": "passed"
+    },
+    {
+      "mode": "near",
+      "group": 2,
+      "grad_relative_l2": 1.8868760515172386e-16,
+      "status": "passed"
+    },
+    {
+      "mode": "near",
+      "group": 3,
+      "grad_relative_l2": 1.9418903561506258e-16,
+      "status": "passed"
+    },
+    {
+      "mode": "near",
+      "group": 7,
+      "grad_relative_l2": 1.9152709520908727e-16,
+      "status": "passed"
+    },
+    {
+      "mode": "near",
+      "group": 8,
+      "grad_relative_l2": 1.9161842285832048e-16,
+      "status": "passed"
+    },
+    {
+      "mode": "exact",
+      "group": 1,
+      "grad_relative_l2": 0.0,
+      "status": "passed"
+    },
+    {
+      "mode": "exact",
+      "group": 2,
+      "grad_relative_l2": 0.0,
+      "status": "passed"
+    },
+    {
+      "mode": "exact",
+      "group": 3,
+      "grad_relative_l2": 0.0,
+      "status": "passed"
+    },
+    {
+      "mode": "exact",
+      "group": 7,
+      "grad_relative_l2": 0.0,
+      "status": "passed"
+    },
+    {
+      "mode": "exact",
+      "group": 8,
+      "grad_relative_l2": 0.0,
+      "status": "passed"
+    },
+    {
+      "mode": "tiny",
+      "group": 1,
+      "grad_relative_l2": 0.0,
+      "status": "passed"
+    },
+    {
+      "mode": "tiny",
+      "group": 2,
+      "grad_relative_l2": 0.0,
+      "status": "passed"
+    },
+    {
+      "mode": "tiny",
+      "group": 3,
+      "grad_relative_l2": 0.0,
+      "status": "passed"
+    },
+    {
+      "mode": "tiny",
+      "group": 7,
+      "grad_relative_l2": 0.0,
+      "status": "passed"
+    },
+    {
+      "mode": "tiny",
+      "group": 8,
+      "grad_relative_l2": 0.0,
+      "status": "passed"
+    },
+    {
+      "mode": "per_item_targets",
+      "status": "rejected_as_unsupported"
+    }
+  ],
+  "status": "passed"
+}

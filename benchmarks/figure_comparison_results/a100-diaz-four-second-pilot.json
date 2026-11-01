@@ -1,0 +1,116 @@
+{
+  "metadata": {
+    "status": "complete",
+    "duration": 4.0,
+    "batch_sizes": [
+      1
+    ],
+    "methods": [
+      "diaz"
+    ],
+    "job_id": "34542037",
+    "hostname": "sbg5",
+    "gpu_visibility": "0",
+    "git_revision": "e7d0a18452cba4e85ee2532bc73bc9eb2ff34c95",
+    "memory_metric": "NVML sampled per-process allocation, including CUDA context and reservations",
+    "memory_sample_interval_seconds": 0.01,
+    "timeout_seconds_per_case": 1200.0,
+    "host_rss_limit_gb": 32.0,
+    "jaxdiffmodal_provenance": {
+      "url": "https://github.com/rodrigodzf/jaxdiffmodal",
+      "vcs_info": {
+        "vcs": "git",
+        "commit_id": "6980979dfb8a07b8664bddf7cf3e3d2f097d5ff0",
+        "requested_revision": "6980979dfb8a07b8664bddf7cf3e3d2f097d5ff0"
+      }
+    },
+    "source_fingerprints": {
+      "benchmarks/exact_methods.py": "287443082ffc3da0be65e97f65b2e5ce821f27c7f123e3a7d87ec710e70bea80",
+      "benchmarks/figure_comparison_driver.py": "d174ecb95daf51ab3aae390aacf0277992b7b371d9f0b047b67951549904f470",
+      "benchmarks/figure_comparison_plot.py": "d735d3e8e1276b21142f6b0395a27196060637a22bbd2f651da7e87900b4a3b4",
+      "benchmarks/figure_comparison_worker.py": "c2b6525dad724a6fa3a1d6789c76e912d2462d40552b7d3cbc6fac1b73792bea",
+      "benchmarks/reconstruction.py": "fb3dbad101e7841accf1f6975d0110f38f5e07c5fdee439bff671bd0481977b9",
+      "experiments/figure_comparison/diaz.py": "2ad6196d07de2122f32f3bbe19a2faf610e17c7578a9a21b79a8ceb02f1f99df",
+      "experiments/figure_comparison/diaz_worker.py": "34f25abee2bdbb553471af1c19c77bc8c0f0de1d3c74607ae19104fe17cafd52",
+      "experiments/figure_comparison/fdtd.py": "48911fa0a37de6aa235de5e44093ea45acb3e2f7e1a30f5cfa051ad0589c1b78",
+      "experiments/jax_loss_benchmark.py": "5ad281b2675783a4ff3620876f16147163cf2bd9dbbf1e138dada4918a407227",
+      "experiments/loss_batch/grouped.py": "66b2ce449387e13d552b088b25008ba836964fbe0d4e051fef63636b34402669",
+      "experiments/loss_batch/manual_ce_loss.py": "54c17a118774f2d6a55750ec2e8b3d5ce3ad35f1946522b843176b798343994c",
+      "experiments/scalar_cache/fallback.py": "bcdac69fb105f45336b2163e8d3f4ec185e018e6bd9342d104c3cab33bf33b15",
+      "experiments/scalar_cache/kc_scalar_cache.cu": "c12538998a59aded218da25ace872e0cac280e698ee8fa929cfb3e4af4620ac2",
+      "experiments/scalar_cache/reconstruct.py": "dd922a5515bba429e3f6535620576879d27e900ff023294aee70620e6fd5c5d4",
+      "hpc/figure-comparison.sh": "0a6566741cdcd9ecff1707fe3a323bc3606954e4e070bd91cf484f90afab2eb5",
+      "src/accelerated.py": "4a6e98ec14750e70e3526962573c34cbd3f5c4415c8539443315dbfe30f969ea",
+      "src/adjoint.py": "30aaa7685f440baabdb52678bf36060168e856ba2aa3cb897042e2e7e52ceb82",
+      "src/grid.py": "b5d74232d7742c5c8ad719b4c7043ff4124d67778d188bace6967bec382b77cb",
+      "src/kc_adjoint.cu": "889335875fda73a363df15d6e1d62e0b50ad36beec1a205914a3dbb99d2b6b1e",
+      "src/kc_dual.h": "e4e33af3f3d376e462aaf56e701c50347998678bf0506f97bed9632e652df274",
+      "src/kc_fused.cpp": "8f284b126f802a4409d8a62fc08bec66a5248fb05c5e3ddefab54ff83c88229f",
+      "src/kc_fused.cu": "f62255461d0746d3d700ac62174c831dae81180ce0a6994297a343fb7c81ecea",
+      "src/kc_string.py": "e2f5efec9e5bb15ebe0c4c85d2b22a1c84d23a0c01b8a357c707e6b3f8616045",
+      "src/kc_string_dual.cpp": "7c90fb6fe5bbc2537afdc8316328dc38b02e0db9a178f9081f29a6a5fb196d47",
+      "src/kc_string_forward.py": "4c4c86d17c8d4a2fa1afa03d0c00e737352908fb9dba9eeffdc37069a02a77e7",
+      "src/optimization.py": "a5c46ec67817457fe719240bbbae1539fc2eccc4565afb0398613a0c5b31e3bb",
+      "src/optimization_workbench.py": "96e35b32e425425ba1b9ce7544bf4f963b691a07e615bbc62b7612cea9b454a4",
+      "src/parameters.py": "b29a2d2a8db65a920b99c45e95bbd84b075fe8d04e24526f7c7a214dd5b09459",
+      "src/seeded.py": "45d62c1fc8cce92d61ecf5308febd7ffeec31732f623b2faa41522400a1c4317",
+      "src/synthesis.py": "af62f8a17e868a830f3cab16aea84e147f3be391ac282b98984814780cac9349",
+      "upstream/jaxdiffmodal/__init__.py": "91447944015cec709e8aa7655f7e9d64e1e4508e7023a57fe3746911c0fc6fed",
+      "upstream/jaxdiffmodal/coupling.py": "fcbfcb4042093df824198d639f8c8a15a23f727eeb995569d3b04453a602be84",
+      "upstream/jaxdiffmodal/excitations.py": "60b8cce0477e3b6c0ce8f9dd5a7e0c4ca74945f8d4e4a1889270222337689035",
+      "upstream/jaxdiffmodal/features.py": "e945d15360e5c3d3ea05bf41f926a816e5daa668786f111b0cf0a82c21cb1419",
+      "upstream/jaxdiffmodal/ftm.py": "9dc34307ce792022319823fc8ed777b459acd5a7f88e648f181c7d89a3fbdb53",
+      "upstream/jaxdiffmodal/losses.py": "06be1e828651dd017b32fb24af6bae0246d2a01bc4797c20ef9bdc164763ddb0",
+      "upstream/jaxdiffmodal/lpc.py": "d3a0ad4199caa2aef7baeafefad65f325a1b89b09d198481cb8d33462418a118",
+      "upstream/jaxdiffmodal/num_utils.py": "2b788d5af8d186c418973c11e58f1c48ecf8c5b39483b8366cd7e0f96c946c1a",
+      "upstream/jaxdiffmodal/time_integrators.py": "913d5726f5e3d688c8a1579e741224a886a9f614ad334e071de72448fe84881d",
+      "upstream/jaxdiffmodal/utils.py": "eb81e5fb8bcbb3c05a0ab42baebab6239643dd5104f3fc2bcc9e3dcf20a3edd1"
+    },
+    "source_changed_during_run": false
+  },
+  "rows": [
+    {
+      "method": "diaz",
+      "batch": 1,
+      "duration_seconds": 4.0,
+      "status": "ok",
+      "median_seconds": 5.027352498844266,
+      "repetitions_seconds": [
+        5.027593042701483,
+        5.027352498844266,
+        5.026989962905645
+      ],
+      "compile_seconds": 5.542119996622205,
+      "warmup_seconds": 5.168515199795365,
+      "peak_framework_allocated_bytes": 9664850432,
+      "framework_memory_stats_scope": "JAX cumulative device stats, not reset between compilation/warm-up and measurement",
+      "validation": {
+        "first_item_audio_relative_l2_vs_fdtd": 0.03280496738889021,
+        "first_item_modal_loss": 0.017996227167649693,
+        "first_item_fdtd_loss": 0.01799809667915079,
+        "gradients_finite": true
+      },
+      "gpu_name": "NVIDIA A100-PCIE-40GB",
+      "jax_version": "0.12.0.1",
+      "gradient_coordinates": 6,
+      "loss_group": 16,
+      "modes": 175,
+      "integrator": "jaxdiffmodal.time_integrators.solve_tf",
+      "upstream_vcs_info": {
+        "vcs": "git",
+        "commit_id": "6980979dfb8a07b8664bddf7cf3e3d2f097d5ff0",
+        "requested_revision": "6980979dfb8a07b8664bddf7cf3e3d2f097d5ff0"
+      },
+      "upstream_integrator_sha256": "913d5726f5e3d688c8a1579e741224a886a9f614ad334e071de72448fe84881d",
+      "upstream_ftm_sha256": "9dc34307ce792022319823fc8ed777b459acd5a7f88e648f181c7d89a3fbdb53",
+      "peak_gpu_bytes": 18194890752,
+      "gpu_memory_metric": "NVML sampled process memory",
+      "gpu_memory_samples": 1426,
+      "gpu_memory_sample_interval_seconds": 0.01,
+      "gpu_memory_error": null,
+      "log": "/data/scratch/acw794/kc-string-gpu/figure-diaz-four-second-pilot-34542037-logs/diaz-b1.log",
+      "worker_exit_code": 0,
+      "peak_sampled_host_rss_bytes": 2253905920
+    }
+  ]
+}

@@ -1,0 +1,521 @@
+{
+  "metadata": {
+    "source_sha256": "7b2310bfe033d40c7cc3dcfdc330e87db003e28ee5a3f91a08301cb03e91bf45",
+    "revision": "e7d0a18452cba4e85ee2532bc73bc9eb2ff34c95",
+    "source_status": " M README.md\n M experiments/recovery.py\n M src/kc_string_forward.py\n M src/optimization.py\n M src/optimization_workbench.py\n M src/parameters.py\n M src/synthesis.py\n M test/optimization_workbench.py\n?? benchmarks/even_batch_driver.py\n?? benchmarks/even_results/\n?? benchmarks/exact_methods.py\n?? benchmarks/exact_results/\n?? benchmarks/gpu.py\n?? benchmarks/gpu_results/\n?? benchmarks/jax_compare.py\n?? benchmarks/jax_pure_compare.py\n?? benchmarks/jax_reverse_compare.py\n?? benchmarks/parallel_reconstruction.py\n?? benchmarks/parallel_scan_results/\n?? benchmarks/parallel_scan_scale.py\n?? benchmarks/profile_gpu.py\n?? benchmarks/reconstruction.py\n?? benchmarks/reconstruction_results/\n?? benchmarks/summarize_even_batches.py\n?? benchmarks/summarize_gpu.py\n?? docs/even_batch_experiments.md\n?? docs/exact_solver_experiments.md\n?? docs/gpu.md\n?? docs/gpu_results.md\n?? docs/ideas/\n?? docs/reconstruction_experiments.md\n?? experiments/exact_recovery.py\n?? experiments/jax_loss_benchmark.py\n?? experiments/jax_study/\n?? experiments/parallel_segments/\n?? experiments/reconstruction/\n?? hpc/\n?? src/accelerated.py\n?? src/adjoint.py\n?? src/kc_adjoint.cu\n?? src/kc_dual.h\n?? src/kc_fused.cpp\n?? src/kc_fused.cu\n?? src/seeded.py\n?? test/accelerated.py\n?? test/adjoint.py\n?? test/adjoint_math.py\n?? test/even_batch_isolation.py\n?? test/exact_benchmark.py\n?? test/experimental_kernels.py\n?? test/jax_loss_reference.py\n?? test/parallel_reconstruction.py\n?? test/reconstruction.py\n?? test/reconstruction_coordinates.py\n?? test/reconstruction_math.py\n?? test/seeded.py\n",
+    "host": "sbg5",
+    "cpu": "Intel(R) Xeon(R) Platinum 8268 CPU @ 2.90GHz",
+    "job": "34329070",
+    "torch": "2.14.1+cu130",
+    "cuda_runtime": "13.0",
+    "gpu": "NVIDIA A100-PCIE-40GB",
+    "dtype": "float64",
+    "cpu_threads": 1,
+    "intervals": 176,
+    "output_rate": 44100,
+    "internal_rate": 132300,
+    "excitation": "multimode",
+    "target": "same original CPU reference, all parameter vectors",
+    "loss": "independent STFTCumulativeEnergyLoss per item, summed for backward",
+    "jax": "0.12.0.1",
+    "method": "JAX full reverse-mode through lax.scan and native JAX filter/CeL",
+    "benchmark_sha256": "8ce1e737e723eca8e9d501a79f3d22e2dc409830e30b42a71c7a8647c735c80d",
+    "jax_memory_note": "JAX device cumulative peak across previous cases, not per case; excludes Torch",
+    "status": "complete"
+  },
+  "checks": [
+    {
+      "batch": 1,
+      "duration": 0.025,
+      "method": "plain",
+      "status": "passed",
+      "audio_relative_l2": 1.347281461031761e-11,
+      "loss_relative_l2": 1.7165871673335095e-11,
+      "scaled_gradient_relative_l2": 2.1850795666234232e-10
+    },
+    {
+      "batch": 1,
+      "duration": 0.025,
+      "method": "step_remat",
+      "status": "passed",
+      "audio_relative_l2": 1.347281461031761e-11,
+      "loss_relative_l2": 1.7165871673335095e-11,
+      "scaled_gradient_relative_l2": 3.6915009391282765e-10
+    },
+    {
+      "batch": 8,
+      "duration": 0.025,
+      "method": "plain",
+      "status": "passed",
+      "audio_relative_l2": 2.185359329597181e-11,
+      "loss_relative_l2": 2.4872821911618247e-12,
+      "scaled_gradient_relative_l2": 1.1345608146070852e-10
+    },
+    {
+      "batch": 8,
+      "duration": 0.025,
+      "method": "step_remat",
+      "status": "passed",
+      "audio_relative_l2": 2.185359329597181e-11,
+      "loss_relative_l2": 2.4872821911618247e-12,
+      "scaled_gradient_relative_l2": 1.2629363979007735e-10
+    },
+    {
+      "batch": 1,
+      "duration": 0.25,
+      "method": "plain",
+      "status": "passed",
+      "audio_relative_l2": 1.2237204085940447e-10,
+      "loss_relative_l2": 1.2084232123401037e-11,
+      "scaled_gradient_relative_l2": 1.3905743348454348e-09
+    },
+    {
+      "batch": 1,
+      "duration": 0.25,
+      "method": "step_remat",
+      "status": "passed",
+      "audio_relative_l2": 1.2237204085940447e-10,
+      "loss_relative_l2": 1.2084232123401037e-11,
+      "scaled_gradient_relative_l2": 1.3874021456397453e-09
+    },
+    {
+      "batch": 8,
+      "duration": 0.25,
+      "method": "plain",
+      "status": "passed",
+      "audio_relative_l2": 1.9638774934448667e-10,
+      "loss_relative_l2": 3.3454404457000787e-12,
+      "scaled_gradient_relative_l2": 8.134234869495446e-10
+    },
+    {
+      "batch": 8,
+      "duration": 0.25,
+      "method": "step_remat",
+      "status": "passed",
+      "audio_relative_l2": 1.9638774934448667e-10,
+      "loss_relative_l2": 3.3454404457000787e-12,
+      "scaled_gradient_relative_l2": 4.108786797465076e-10
+    },
+    {
+      "batch": 1,
+      "duration": 4.0,
+      "method": "plain",
+      "status": "passed",
+      "audio_relative_l2": 7.14112811350011e-10,
+      "loss_relative_l2": 3.7344257096322506e-11,
+      "scaled_gradient_relative_l2": 2.2696971844070388e-09
+    },
+    {
+      "batch": 1,
+      "duration": 4.0,
+      "method": "step_remat",
+      "status": "passed",
+      "audio_relative_l2": 7.14112811350011e-10,
+      "loss_relative_l2": 3.7344257096322506e-11,
+      "scaled_gradient_relative_l2": 1.4005485125341467e-09
+    }
+  ],
+  "rows": [
+    {
+      "method": "jax_reverse_plain",
+      "batch": 1,
+      "duration": 0.025,
+      "status": "passed",
+      "compile_seconds": 2.2932089883834124,
+      "first_run_seconds": 0.11682873219251633,
+      "median_seconds": 0.1080877985805273,
+      "repetitions_seconds": [
+        0.10824245773255825,
+        0.10757881216704845,
+        0.1080877985805273
+      ],
+      "jax_device_memory_stats": {
+        "num_allocs": 101,
+        "bytes_in_use": 80128,
+        "peak_bytes_in_use": 134271232,
+        "largest_alloc_size": 33554432,
+        "bytes_limit": 31824281600,
+        "bytes_reserved": 0,
+        "peak_bytes_reserved": 0,
+        "largest_free_block_bytes": 67108864,
+        "pool_bytes": 136314880,
+        "peak_pool_bytes": 136314880
+      }
+    },
+    {
+      "method": "jax_reverse_step_remat",
+      "batch": 1,
+      "duration": 0.025,
+      "status": "passed",
+      "compile_seconds": 1.6538523770868778,
+      "first_run_seconds": 0.11176558025181293,
+      "median_seconds": 0.1067246776074171,
+      "repetitions_seconds": [
+        0.1067246776074171,
+        0.10715577378869057,
+        0.10671323724091053
+      ],
+      "jax_device_memory_stats": {
+        "num_allocs": 125,
+        "bytes_in_use": 80640,
+        "peak_bytes_in_use": 134271232,
+        "largest_alloc_size": 33554432,
+        "bytes_limit": 31824281600,
+        "bytes_reserved": 0,
+        "peak_bytes_reserved": 0,
+        "largest_free_block_bytes": 67108864,
+        "pool_bytes": 136314880,
+        "peak_pool_bytes": 136314880
+      }
+    },
+    {
+      "method": "cuda_replay",
+      "batch": 1,
+      "duration": 0.025,
+      "status": "passed",
+      "warmup_seconds": 0.02583351917564869,
+      "median_seconds": 0.022081507369875908,
+      "min_seconds": 0.02206084318459034,
+      "max_seconds": 0.022232549265027046,
+      "repetitions_seconds": [
+        0.022232549265027046,
+        0.022081507369875908,
+        0.02206084318459034
+      ],
+      "cuda_event_seconds": [
+        0.022223871231079103,
+        0.022072320938110353,
+        0.02205286407470703
+      ],
+      "peak_cuda_bytes": 17810432
+    },
+    {
+      "method": "jax_reverse_plain",
+      "batch": 8,
+      "duration": 0.025,
+      "status": "passed",
+      "compile_seconds": 12.251350512728095,
+      "first_run_seconds": 0.1340700127184391,
+      "median_seconds": 0.12717143073678017,
+      "repetitions_seconds": [
+        0.12735914252698421,
+        0.12717143073678017,
+        0.1271273698657751
+      ],
+      "jax_device_memory_stats": {
+        "num_allocs": 268,
+        "bytes_in_use": 451328,
+        "peak_bytes_in_use": 269165568,
+        "largest_alloc_size": 268435456,
+        "bytes_limit": 31824281600,
+        "bytes_reserved": 0,
+        "peak_bytes_reserved": 0,
+        "largest_free_block_bytes": 268435456,
+        "pool_bytes": 404750336,
+        "peak_pool_bytes": 404750336
+      }
+    },
+    {
+      "method": "jax_reverse_step_remat",
+      "batch": 8,
+      "duration": 0.025,
+      "status": "passed",
+      "compile_seconds": 1.674327788874507,
+      "first_run_seconds": 0.12614328414201736,
+      "median_seconds": 0.12117261253297329,
+      "repetitions_seconds": [
+        0.1212337501347065,
+        0.12117261253297329,
+        0.12109412997961044
+      ],
+      "jax_device_memory_stats": {
+        "num_allocs": 292,
+        "bytes_in_use": 451584,
+        "peak_bytes_in_use": 269165568,
+        "largest_alloc_size": 268435456,
+        "bytes_limit": 31824281600,
+        "bytes_reserved": 0,
+        "peak_bytes_reserved": 0,
+        "largest_free_block_bytes": 268435456,
+        "pool_bytes": 404750336,
+        "peak_pool_bytes": 404750336
+      }
+    },
+    {
+      "method": "cuda_replay",
+      "batch": 8,
+      "duration": 0.025,
+      "status": "passed",
+      "warmup_seconds": 0.04326336458325386,
+      "median_seconds": 0.03645728714764118,
+      "min_seconds": 0.03391816094517708,
+      "max_seconds": 0.0372456070035696,
+      "repetitions_seconds": [
+        0.03391816094517708,
+        0.0372456070035696,
+        0.03645728714764118
+      ],
+      "cuda_event_seconds": [
+        0.03391078567504883,
+        0.037236736297607424,
+        0.03644825744628906
+      ],
+      "peak_cuda_bytes": 22253568
+    },
+    {
+      "method": "jax_reverse_plain",
+      "batch": 1,
+      "duration": 0.25,
+      "status": "passed",
+      "compile_seconds": 4.610779507085681,
+      "first_run_seconds": 1.0927259679883718,
+      "median_seconds": 1.0887286309152842,
+      "repetitions_seconds": [
+        1.0902282558381557,
+        1.0887286309152842,
+        1.0858660284429789
+      ],
+      "jax_device_memory_stats": {
+        "num_allocs": 363,
+        "bytes_in_use": 1346560,
+        "peak_bytes_in_use": 270506496,
+        "largest_alloc_size": 268435456,
+        "bytes_limit": 31824281600,
+        "bytes_reserved": 0,
+        "peak_bytes_reserved": 0,
+        "largest_free_block_bytes": 268435456,
+        "pool_bytes": 404750336,
+        "peak_pool_bytes": 404750336
+      }
+    },
+    {
+      "method": "jax_reverse_step_remat",
+      "batch": 1,
+      "duration": 0.25,
+      "status": "passed",
+      "compile_seconds": 2.5866203662008047,
+      "first_run_seconds": 1.0752679854631424,
+      "median_seconds": 1.0720063801854849,
+      "repetitions_seconds": [
+        1.0720063801854849,
+        1.0712854489684105,
+        1.0803275592625141
+      ],
+      "jax_device_memory_stats": {
+        "num_allocs": 387,
+        "bytes_in_use": 1303040,
+        "peak_bytes_in_use": 270506496,
+        "largest_alloc_size": 268435456,
+        "bytes_limit": 31824281600,
+        "bytes_reserved": 0,
+        "peak_bytes_reserved": 0,
+        "largest_free_block_bytes": 268435456,
+        "pool_bytes": 404750336,
+        "peak_pool_bytes": 404750336
+      }
+    },
+    {
+      "method": "cuda_replay",
+      "batch": 1,
+      "duration": 0.25,
+      "status": "passed",
+      "warmup_seconds": 0.1498394999653101,
+      "median_seconds": 0.14597618207335472,
+      "min_seconds": 0.14565570279955864,
+      "max_seconds": 0.14662541262805462,
+      "repetitions_seconds": [
+        0.14565570279955864,
+        0.14662541262805462,
+        0.14597618207335472
+      ],
+      "cuda_event_seconds": [
+        0.14564044189453124,
+        0.14661631774902345,
+        0.14596710205078126
+      ],
+      "peak_cuda_bytes": 23344640
+    },
+    {
+      "method": "jax_reverse_plain",
+      "batch": 8,
+      "duration": 0.25,
+      "status": "passed",
+      "compile_seconds": 3.449361076578498,
+      "first_run_seconds": 1.2957116607576609,
+      "median_seconds": 1.275246772915125,
+      "repetitions_seconds": [
+        1.275246772915125,
+        1.2754238992929459,
+        1.275125827640295
+      ],
+      "jax_device_memory_stats": {
+        "num_allocs": 458,
+        "bytes_in_use": 4980992,
+        "peak_bytes_in_use": 1893974784,
+        "largest_alloc_size": 1884249088,
+        "bytes_limit": 31824281600,
+        "bytes_reserved": 0,
+        "peak_bytes_reserved": 0,
+        "largest_free_block_bytes": 2147483648,
+        "pool_bytes": 2552233984,
+        "peak_pool_bytes": 2552233984
+      }
+    },
+    {
+      "method": "jax_reverse_step_remat",
+      "batch": 8,
+      "duration": 0.25,
+      "status": "passed",
+      "compile_seconds": 2.2190294675529003,
+      "first_run_seconds": 1.2200064584612846,
+      "median_seconds": 1.2154360078275204,
+      "repetitions_seconds": [
+        1.2154360078275204,
+        1.2161890137940645,
+        1.2153285294771194
+      ],
+      "jax_device_memory_stats": {
+        "num_allocs": 482,
+        "bytes_in_use": 4981248,
+        "peak_bytes_in_use": 1893974784,
+        "largest_alloc_size": 1884249088,
+        "bytes_limit": 31824281600,
+        "bytes_reserved": 0,
+        "peak_bytes_reserved": 0,
+        "largest_free_block_bytes": 2147483648,
+        "pool_bytes": 2552233984,
+        "peak_pool_bytes": 2552233984
+      }
+    },
+    {
+      "method": "cuda_replay",
+      "batch": 8,
+      "duration": 0.25,
+      "status": "passed",
+      "warmup_seconds": 0.17048750258982182,
+      "median_seconds": 0.16766486875712872,
+      "min_seconds": 0.1655742209404707,
+      "max_seconds": 0.16792665608227253,
+      "repetitions_seconds": [
+        0.16792665608227253,
+        0.1655742209404707,
+        0.16766486875712872
+      ],
+      "cuda_event_seconds": [
+        0.16791757202148438,
+        0.16556544494628905,
+        0.16765542602539063
+      ],
+      "peak_cuda_bytes": 51255296
+    },
+    {
+      "method": "jax_reverse_plain",
+      "batch": 1,
+      "duration": 4.0,
+      "status": "passed",
+      "compile_seconds": 42.99795286916196,
+      "first_run_seconds": 17.463482988998294,
+      "median_seconds": 17.412403976544738,
+      "repetitions_seconds": [
+        17.412403976544738,
+        17.417766677215695,
+        17.409878354519606
+      ],
+      "jax_device_memory_stats": {
+        "num_allocs": 553,
+        "bytes_in_use": 21847296,
+        "peak_bytes_in_use": 3804449536,
+        "largest_alloc_size": 3769496576,
+        "bytes_limit": 31824281600,
+        "bytes_reserved": 0,
+        "peak_bytes_reserved": 0,
+        "largest_free_block_bytes": 4294967296,
+        "pool_bytes": 6847201280,
+        "peak_pool_bytes": 6847201280
+      }
+    },
+    {
+      "method": "jax_reverse_step_remat",
+      "batch": 1,
+      "duration": 4.0,
+      "status": "passed",
+      "compile_seconds": 12.310662953183055,
+      "first_run_seconds": 16.912351861596107,
+      "median_seconds": 16.966019704937935,
+      "repetitions_seconds": [
+        16.966019704937935,
+        17.047075981274247,
+        16.965937366709113
+      ],
+      "jax_device_memory_stats": {
+        "num_allocs": 577,
+        "bytes_in_use": 25087744,
+        "peak_bytes_in_use": 3804449536,
+        "largest_alloc_size": 3769496576,
+        "bytes_limit": 31824281600,
+        "bytes_reserved": 0,
+        "peak_bytes_reserved": 0,
+        "largest_free_block_bytes": 4294967296,
+        "pool_bytes": 6847201280,
+        "peak_pool_bytes": 6847201280
+      }
+    },
+    {
+      "method": "cuda_replay",
+      "batch": 1,
+      "duration": 4.0,
+      "status": "passed",
+      "warmup_seconds": 2.2030126713216305,
+      "median_seconds": 2.1995095275342464,
+      "min_seconds": 2.1994151789695024,
+      "max_seconds": 2.19951556250453,
+      "repetitions_seconds": [
+        2.1995095275342464,
+        2.19951556250453,
+        2.1994151789695024
+      ],
+      "cuda_event_seconds": [
+        2.19949267578125,
+        2.199498779296875,
+        2.199382080078125
+      ],
+      "peak_cuda_bytes": 118874624
+    },
+    {
+      "method": "jax_reverse_plain",
+      "batch": 8,
+      "duration": 4.0,
+      "status": "skipped",
+      "estimated_seconds": 20.731386572122574,
+      "reason": "projected time exceeds bound"
+    },
+    {
+      "method": "jax_reverse_step_remat",
+      "batch": 8,
+      "duration": 4.0,
+      "status": "skipped",
+      "reason": "reverse tape memory unmeasured for long batches"
+    },
+    {
+      "method": "cuda_replay",
+      "batch": 8,
+      "duration": 4.0,
+      "status": "passed",
+      "warmup_seconds": 2.2481347490102053,
+      "median_seconds": 2.2457949239760637,
+      "min_seconds": 2.2451492715626955,
+      "max_seconds": 2.2466679625213146,
+      "repetitions_seconds": [
+        2.2451492715626955,
+        2.2457949239760637,
+        2.2466679625213146
+      ],
+      "cuda_event_seconds": [
+        2.24513330078125,
+        2.24577734375,
+        2.24665185546875
+      ],
+      "peak_cuda_bytes": 563774976
+    }
+  ]
+}

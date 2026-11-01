@@ -1,0 +1,1005 @@
+{
+  "metadata": {
+    "source_sha256": "7b2310bfe033d40c7cc3dcfdc330e87db003e28ee5a3f91a08301cb03e91bf45",
+    "revision": "e7d0a18452cba4e85ee2532bc73bc9eb2ff34c95",
+    "source_status": " M README.md\n M experiments/recovery.py\n M src/kc_string_forward.py\n M src/optimization.py\n M src/optimization_workbench.py\n M src/parameters.py\n M src/synthesis.py\n M test/optimization_workbench.py\n?? benchmarks/exact_methods.py\n?? benchmarks/gpu.py\n?? benchmarks/gpu_results/\n?? benchmarks/profile_gpu.py\n?? benchmarks/summarize_gpu.py\n?? docs/exact_solver_experiments.md\n?? docs/gpu.md\n?? docs/gpu_results.md\n?? experiments/exact_recovery.py\n?? hpc/\n?? src/accelerated.py\n?? src/adjoint.py\n?? src/kc_adjoint.cu\n?? src/kc_dual.h\n?? src/kc_fused.cpp\n?? src/kc_fused.cu\n?? src/seeded.py\n?? test/accelerated.py\n?? test/adjoint.py\n?? test/adjoint_math.py\n?? test/exact_benchmark.py\n?? test/experimental_kernels.py\n?? test/seeded.py\n",
+    "host": "rdg3",
+    "cpu": "Intel(R) Xeon(R) Gold 6442Y",
+    "job": "34299742",
+    "torch": "2.14.1+cu130",
+    "cuda_runtime": "13.0",
+    "gpu": "NVIDIA A100 80GB PCIe",
+    "dtype": "float64",
+    "cpu_threads": 1,
+    "intervals": 176,
+    "output_rate": 44100,
+    "internal_rate": 132300,
+    "excitation": "multimode",
+    "target": "same original CPU reference, all parameter vectors",
+    "loss": "independent STFTCumulativeEnergyLoss per item, summed for backward",
+    "benchmark_sha256": "287443082ffc3da0be65e97f65b2e5ce821f27c7f123e3a7d87ec710e70bea80",
+    "validation": "/data/scratch/acw794/kc-string-gpu/exact-validation-smoke-34299742-long.json",
+    "validation_evidence": {
+      "source_sha256": "7b2310bfe033d40c7cc3dcfdc330e87db003e28ee5a3f91a08301cb03e91bf45",
+      "source_changed_during_run": false,
+      "duration": 4.0,
+      "batch": 1,
+      "status": "passed",
+      "checks": [
+        {
+          "method": "cpu-native",
+          "waveform": "passed",
+          "independent_losses": "passed",
+          "gradients": "passed",
+          "waveform_relative_l2": 0.0
+        },
+        {
+          "method": "cpu-modal",
+          "waveform": "passed",
+          "independent_losses": "passed",
+          "gradients": "passed",
+          "waveform_relative_l2": 2.364141487243173e-09
+        },
+        {
+          "method": "cuda-modal",
+          "waveform": "passed",
+          "independent_losses": "passed",
+          "gradients": "passed",
+          "waveform_relative_l2": 2.3668215842797455e-09
+        },
+        {
+          "method": "cuda-recompute",
+          "waveform": "passed",
+          "independent_losses": "passed",
+          "gradients": "passed",
+          "waveform_relative_l2": 2.3668215842797455e-09
+        },
+        {
+          "method": "cuda-register",
+          "waveform": "passed",
+          "waveform_relative_l2": 2.3668215841312054e-09
+        },
+        {
+          "method": "cuda-seeded",
+          "waveform": "passed",
+          "independent_losses": "passed",
+          "gradients": "passed",
+          "waveform_relative_l2": 2.3668215842797455e-09
+        }
+      ],
+      "extension_load_or_build_seconds": {
+        "native_load_or_build_seconds": 0.27699913270771503,
+        "fused_load_or_build_seconds": 1.592614246532321
+      },
+      "max_build_jobs": "1"
+    },
+    "validation_short": "/data/scratch/acw794/kc-string-gpu/exact-validation-smoke-34299742-short.json",
+    "validation_short_evidence": {
+      "source_sha256": "7b2310bfe033d40c7cc3dcfdc330e87db003e28ee5a3f91a08301cb03e91bf45",
+      "source_changed_during_run": false,
+      "duration": 0.03,
+      "batch": 4,
+      "status": "passed",
+      "checks": [
+        {
+          "method": "cpu-native",
+          "waveform": "passed",
+          "independent_losses": "passed",
+          "gradients": "passed",
+          "waveform_relative_l2": 0.0
+        },
+        {
+          "method": "cpu-modal",
+          "waveform": "passed",
+          "independent_losses": "passed",
+          "gradients": "passed",
+          "waveform_relative_l2": 4.4712837838394586e-11
+        },
+        {
+          "method": "cuda-modal",
+          "waveform": "passed",
+          "independent_losses": "passed",
+          "gradients": "passed",
+          "waveform_relative_l2": 4.5499476424917575e-11
+        },
+        {
+          "method": "cuda-recompute",
+          "waveform": "passed",
+          "independent_losses": "passed",
+          "gradients": "passed",
+          "waveform_relative_l2": 4.5499476424917575e-11
+        },
+        {
+          "method": "cuda-register",
+          "waveform": "passed",
+          "waveform_relative_l2": 4.5499473903507066e-11
+        },
+        {
+          "method": "cuda-seeded",
+          "waveform": "passed",
+          "independent_losses": "passed",
+          "gradients": "passed",
+          "waveform_relative_l2": 4.5499476424917575e-11
+        }
+      ],
+      "extension_load_or_build_seconds": {
+        "native_load_or_build_seconds": 17.355811385437846,
+        "fused_load_or_build_seconds": 0.1926414743065834
+      },
+      "max_build_jobs": "1"
+    },
+    "kernel_resources": {
+      "cuda-modal": {
+        "columns": 9,
+        "storage": 3,
+        "registers_per_thread": 72,
+        "local_bytes_per_thread": 0,
+        "shared_bytes": 88560,
+        "max_threads": 896
+      },
+      "cuda-recompute": [
+        {
+          "columns": 1,
+          "registers_per_thread": 72,
+          "local_bytes_per_thread": 0,
+          "shared_bytes": 8440,
+          "max_threads": 896
+        },
+        {
+          "columns": 9,
+          "registers_per_thread": 72,
+          "local_bytes_per_thread": 0,
+          "shared_bytes": 75960,
+          "max_threads": 896
+        }
+      ],
+      "cuda-register": [
+        {
+          "columns": 1,
+          "registers_per_thread": 56,
+          "local_bytes_per_thread": 0,
+          "shared_bytes": 320,
+          "max_threads": 1024
+        }
+      ],
+      "cuda-seeded": "not provided by extension"
+    },
+    "source_changed_during_run": false
+  },
+  "rows": [
+    {
+      "method": "cpu-native",
+      "kind": "synthesis",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 2.4263529256551375,
+      "warmup_seconds": 0.4084869585931301,
+      "median_seconds": 0.41214119736105204,
+      "min_seconds": 0.40895473025739193,
+      "max_seconds": 0.41532766446471214,
+      "repetitions_seconds": [
+        0.40895473025739193,
+        0.41532766446471214
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-native",
+      "kind": "tangents",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": "material",
+      "items_per_second": 2.4612772897071364,
+      "warmup_seconds": 0.4050967860966921,
+      "median_seconds": 0.4062931081280112,
+      "min_seconds": 0.40591051056981087,
+      "max_seconds": 0.4066757056862116,
+      "repetitions_seconds": [
+        0.40591051056981087,
+        0.4066757056862116
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-native",
+      "kind": "vjp",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 2.426198609084261,
+      "warmup_seconds": 0.41468978859484196,
+      "median_seconds": 0.41216741129755974,
+      "min_seconds": 0.4107917323708534,
+      "max_seconds": 0.41354309022426605,
+      "repetitions_seconds": [
+        0.41354309022426605,
+        0.4107917323708534
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-native",
+      "kind": "loss_backward",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 2.4123916729316495,
+      "warmup_seconds": 0.4151732958853245,
+      "median_seconds": 0.41452638525515795,
+      "min_seconds": 0.41451949067413807,
+      "max_seconds": 0.4145332798361778,
+      "repetitions_seconds": [
+        0.4145332798361778,
+        0.41451949067413807
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-native",
+      "kind": "synthesis",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 2.4177556295139717,
+      "warmup_seconds": 1.6292351931333542,
+      "median_seconds": 1.6544269202277064,
+      "min_seconds": 1.6435143891721964,
+      "max_seconds": 1.6653394512832165,
+      "repetitions_seconds": [
+        1.6653394512832165,
+        1.6435143891721964
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-native",
+      "kind": "tangents",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": "material",
+      "items_per_second": 2.467211218929458,
+      "warmup_seconds": 1.6253396924585104,
+      "median_seconds": 1.6212637042626739,
+      "min_seconds": 1.618493191897869,
+      "max_seconds": 1.6240342166274786,
+      "repetitions_seconds": [
+        1.6240342166274786,
+        1.618493191897869
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-native",
+      "kind": "vjp",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 2.4394296706542558,
+      "warmup_seconds": 1.6400237958878279,
+      "median_seconds": 1.639727534726262,
+      "min_seconds": 1.6390268094837666,
+      "max_seconds": 1.6404282599687576,
+      "repetitions_seconds": [
+        1.6390268094837666,
+        1.6404282599687576
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-native",
+      "kind": "loss_backward",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 2.419774926721474,
+      "warmup_seconds": 1.665247743949294,
+      "median_seconds": 1.653046304360032,
+      "min_seconds": 1.6497124321758747,
+      "max_seconds": 1.6563801765441895,
+      "repetitions_seconds": [
+        1.6497124321758747,
+        1.6563801765441895
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-modal",
+      "kind": "synthesis",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 79.79569056143747,
+      "warmup_seconds": 0.02827533893287182,
+      "median_seconds": 0.012532005086541176,
+      "min_seconds": 0.012406768277287483,
+      "max_seconds": 0.012657241895794868,
+      "repetitions_seconds": [
+        0.012657241895794868,
+        0.012406768277287483
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-modal",
+      "kind": "tangents",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": "material",
+      "items_per_second": 5.739941317065985,
+      "warmup_seconds": 0.18249315209686756,
+      "median_seconds": 0.1742178089916706,
+      "min_seconds": 0.1737868543714285,
+      "max_seconds": 0.17464876361191273,
+      "repetitions_seconds": [
+        0.17464876361191273,
+        0.1737868543714285
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-modal",
+      "kind": "vjp",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 5.353113306162693,
+      "warmup_seconds": 0.18709113635122776,
+      "median_seconds": 0.1868071798235178,
+      "min_seconds": 0.18656669929623604,
+      "max_seconds": 0.18704766035079956,
+      "repetitions_seconds": [
+        0.18704766035079956,
+        0.18656669929623604
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-modal",
+      "kind": "loss_backward",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 5.578102497477458,
+      "warmup_seconds": 0.19030847772955894,
+      "median_seconds": 0.17927243188023567,
+      "min_seconds": 0.17887725122272968,
+      "max_seconds": 0.17966761253774166,
+      "repetitions_seconds": [
+        0.17887725122272968,
+        0.17966761253774166
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-modal",
+      "kind": "synthesis",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 84.46349687990056,
+      "warmup_seconds": 0.04797799326479435,
+      "median_seconds": 0.04735773615539074,
+      "min_seconds": 0.04728090763092041,
+      "max_seconds": 0.04743456467986107,
+      "repetitions_seconds": [
+        0.04743456467986107,
+        0.04728090763092041
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-modal",
+      "kind": "tangents",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": "material",
+      "items_per_second": 5.844578993589255,
+      "warmup_seconds": 0.6830670647323132,
+      "median_seconds": 0.6843948904424906,
+      "min_seconds": 0.6835771277546883,
+      "max_seconds": 0.6852126531302929,
+      "repetitions_seconds": [
+        0.6852126531302929,
+        0.6835771277546883
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-modal",
+      "kind": "vjp",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 5.708842870214052,
+      "warmup_seconds": 0.7257912177592516,
+      "median_seconds": 0.7006673840805888,
+      "min_seconds": 0.699408708140254,
+      "max_seconds": 0.7019260600209236,
+      "repetitions_seconds": [
+        0.699408708140254,
+        0.7019260600209236
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cpu-modal",
+      "kind": "loss_backward",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 5.575857849828075,
+      "warmup_seconds": 0.7135306689888239,
+      "median_seconds": 0.7173784030601382,
+      "min_seconds": 0.7136407364159822,
+      "max_seconds": 0.7211160697042942,
+      "repetitions_seconds": [
+        0.7211160697042942,
+        0.7136407364159822
+      ],
+      "cuda_event_seconds": [],
+      "peak_cuda_bytes": null
+    },
+    {
+      "method": "cuda-modal",
+      "kind": "synthesis",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 10.490186469405826,
+      "warmup_seconds": 0.3141071554273367,
+      "median_seconds": 0.09532719012349844,
+      "min_seconds": 0.095293203368783,
+      "max_seconds": 0.09536117687821388,
+      "repetitions_seconds": [
+        0.09536117687821388,
+        0.095293203368783
+      ],
+      "cuda_event_seconds": [
+        0.09534361267089844,
+        0.09527398681640625
+      ],
+      "peak_cuda_bytes": 10044928
+    },
+    {
+      "method": "cuda-modal",
+      "kind": "tangents",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": "material",
+      "items_per_second": 6.536720268424525,
+      "warmup_seconds": 0.1530846655368805,
+      "median_seconds": 0.15298191737383604,
+      "min_seconds": 0.15263323113322258,
+      "max_seconds": 0.1533306036144495,
+      "repetitions_seconds": [
+        0.15263323113322258,
+        0.1533306036144495
+      ],
+      "cuda_event_seconds": [
+        0.15261593627929687,
+        0.15330712890625
+      ],
+      "peak_cuda_bytes": 11937280
+    },
+    {
+      "method": "cuda-modal",
+      "kind": "vjp",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 6.521999273466527,
+      "warmup_seconds": 0.15471658296883106,
+      "median_seconds": 0.1533272173255682,
+      "min_seconds": 0.15303297899663448,
+      "max_seconds": 0.15362145565450191,
+      "repetitions_seconds": [
+        0.15303297899663448,
+        0.15362145565450191
+      ],
+      "cuda_event_seconds": [
+        0.1530081329345703,
+        0.15358976745605468
+      ],
+      "peak_cuda_bytes": 21040128
+    },
+    {
+      "method": "cuda-modal",
+      "kind": "loss_backward",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 6.421097955173751,
+      "warmup_seconds": 0.25451518781483173,
+      "median_seconds": 0.1557366056367755,
+      "min_seconds": 0.15522652678191662,
+      "max_seconds": 0.15624668449163437,
+      "repetitions_seconds": [
+        0.15624668449163437,
+        0.15522652678191662
+      ],
+      "cuda_event_seconds": [
+        0.15621530151367188,
+        0.15519232177734374
+      ],
+      "peak_cuda_bytes": 24889344
+    },
+    {
+      "method": "cuda-modal",
+      "kind": "synthesis",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 41.39392213473137,
+      "warmup_seconds": 0.09664232842624187,
+      "median_seconds": 0.09663254395127296,
+      "min_seconds": 0.09601607732474804,
+      "max_seconds": 0.09724901057779789,
+      "repetitions_seconds": [
+        0.09724901057779789,
+        0.09601607732474804
+      ],
+      "cuda_event_seconds": [
+        0.09722879791259766,
+        0.09599897766113281
+      ],
+      "peak_cuda_bytes": 21265408
+    },
+    {
+      "method": "cuda-modal",
+      "kind": "tangents",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": "material",
+      "items_per_second": 25.76672176687602,
+      "warmup_seconds": 0.15376312658190727,
+      "median_seconds": 0.15523899532854557,
+      "min_seconds": 0.15475504472851753,
+      "max_seconds": 0.1557229459285736,
+      "repetitions_seconds": [
+        0.1557229459285736,
+        0.15475504472851753
+      ],
+      "cuda_event_seconds": [
+        0.1557063751220703,
+        0.1547335662841797
+      ],
+      "peak_cuda_bytes": 28725248
+    },
+    {
+      "method": "cuda-modal",
+      "kind": "vjp",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 25.84166147733674,
+      "warmup_seconds": 0.15494606457650661,
+      "median_seconds": 0.15478880889713764,
+      "min_seconds": 0.15417670458555222,
+      "max_seconds": 0.15540091320872307,
+      "repetitions_seconds": [
+        0.15417670458555222,
+        0.15540091320872307
+      ],
+      "cuda_event_seconds": [
+        0.15415603637695313,
+        0.1553766326904297
+      ],
+      "peak_cuda_bytes": 30798336
+    },
+    {
+      "method": "cuda-modal",
+      "kind": "loss_backward",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 24.83275257206254,
+      "warmup_seconds": 0.1602589637041092,
+      "median_seconds": 0.1610775925219059,
+      "min_seconds": 0.16071111895143986,
+      "max_seconds": 0.16144406609237194,
+      "repetitions_seconds": [
+        0.16144406609237194,
+        0.16071111895143986
+      ],
+      "cuda_event_seconds": [
+        0.1614141387939453,
+        0.16067686462402345
+      ],
+      "peak_cuda_bytes": 42251776
+    },
+    {
+      "method": "cuda-recompute",
+      "kind": "synthesis",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 11.604063548669505,
+      "warmup_seconds": 0.08546251244843006,
+      "median_seconds": 0.08617670834064484,
+      "min_seconds": 0.08613487146794796,
+      "max_seconds": 0.08621854521334171,
+      "repetitions_seconds": [
+        0.08613487146794796,
+        0.08621854521334171
+      ],
+      "cuda_event_seconds": [
+        0.08611634826660156,
+        0.08620134735107422
+      ],
+      "peak_cuda_bytes": 18654208
+    },
+    {
+      "method": "cuda-recompute",
+      "kind": "tangents",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": "material",
+      "items_per_second": 6.2383543721584624,
+      "warmup_seconds": 0.16010754369199276,
+      "median_seconds": 0.16029868461191654,
+      "min_seconds": 0.16024631075561047,
+      "max_seconds": 0.16035105846822262,
+      "repetitions_seconds": [
+        0.16024631075561047,
+        0.16035105846822262
+      ],
+      "cuda_event_seconds": [
+        0.16022630310058594,
+        0.16032666015625
+      ],
+      "peak_cuda_bytes": 20546560
+    },
+    {
+      "method": "cuda-recompute",
+      "kind": "vjp",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 6.228242380967158,
+      "warmup_seconds": 0.16050449386239052,
+      "median_seconds": 0.1605589408427477,
+      "min_seconds": 0.16053546965122223,
+      "max_seconds": 0.16058241203427315,
+      "repetitions_seconds": [
+        0.16053546965122223,
+        0.16058241203427315
+      ],
+      "cuda_event_seconds": [
+        0.1605048370361328,
+        0.16055705261230468
+      ],
+      "peak_cuda_bytes": 21040128
+    },
+    {
+      "method": "cuda-recompute",
+      "kind": "loss_backward",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 6.136646097767761,
+      "warmup_seconds": 0.16240729205310345,
+      "median_seconds": 0.1629554620012641,
+      "min_seconds": 0.16274503618478775,
+      "max_seconds": 0.16316588781774044,
+      "repetitions_seconds": [
+        0.16274503618478775,
+        0.16316588781774044
+      ],
+      "cuda_event_seconds": [
+        0.16271359252929687,
+        0.16313343811035155
+      ],
+      "peak_cuda_bytes": 24889344
+    },
+    {
+      "method": "cuda-recompute",
+      "kind": "synthesis",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 46.00215615193607,
+      "warmup_seconds": 0.08651166595518589,
+      "median_seconds": 0.0869524460285902,
+      "min_seconds": 0.0867916401475668,
+      "max_seconds": 0.08711325190961361,
+      "repetitions_seconds": [
+        0.0867916401475668,
+        0.08711325190961361
+      ],
+      "cuda_event_seconds": [
+        0.08677375793457032,
+        0.08709529876708984
+      ],
+      "peak_cuda_bytes": 21265408
+    },
+    {
+      "method": "cuda-recompute",
+      "kind": "tangents",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": "material",
+      "items_per_second": 24.729560881012198,
+      "warmup_seconds": 0.16153764724731445,
+      "median_seconds": 0.1617497382685542,
+      "min_seconds": 0.16168024018406868,
+      "max_seconds": 0.16181923635303974,
+      "repetitions_seconds": [
+        0.16168024018406868,
+        0.16181923635303974
+      ],
+      "cuda_event_seconds": [
+        0.16165887451171876,
+        0.16180018615722655
+      ],
+      "peak_cuda_bytes": 28725248
+    },
+    {
+      "method": "cuda-recompute",
+      "kind": "vjp",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 24.65706990889416,
+      "warmup_seconds": 0.16192986816167831,
+      "median_seconds": 0.16222527716308832,
+      "min_seconds": 0.1622153501957655,
+      "max_seconds": 0.16223520413041115,
+      "repetitions_seconds": [
+        0.16223520413041115,
+        0.1622153501957655
+      ],
+      "cuda_event_seconds": [
+        0.1622087707519531,
+        0.16218829345703126
+      ],
+      "peak_cuda_bytes": 30798336
+    },
+    {
+      "method": "cuda-recompute",
+      "kind": "loss_backward",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 23.742677696915088,
+      "warmup_seconds": 0.16841843910515308,
+      "median_seconds": 0.1684729941189289,
+      "min_seconds": 0.1683029569685459,
+      "max_seconds": 0.1686430312693119,
+      "repetitions_seconds": [
+        0.1683029569685459,
+        0.1686430312693119
+      ],
+      "cuda_event_seconds": [
+        0.16826982116699218,
+        0.1686097869873047
+      ],
+      "peak_cuda_bytes": 42251776
+    },
+    {
+      "method": "cuda-register",
+      "kind": "synthesis",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 18.935966143098867,
+      "warmup_seconds": 0.05283970944583416,
+      "median_seconds": 0.052809557877480984,
+      "min_seconds": 0.05277184769511223,
+      "max_seconds": 0.05284726805984974,
+      "repetitions_seconds": [
+        0.05277184769511223,
+        0.05284726805984974
+      ],
+      "cuda_event_seconds": [
+        0.05275545501708984,
+        0.05283327865600586
+      ],
+      "peak_cuda_bytes": 18654208
+    },
+    {
+      "method": "cuda-register",
+      "kind": "synthesis",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 73.97522725595374,
+      "warmup_seconds": 0.05411142483353615,
+      "median_seconds": 0.054072155617177486,
+      "min_seconds": 0.05401047691702843,
+      "max_seconds": 0.054133834317326546,
+      "repetitions_seconds": [
+        0.054133834317326546,
+        0.05401047691702843
+      ],
+      "cuda_event_seconds": [
+        0.0541214714050293,
+        0.053997566223144534
+      ],
+      "peak_cuda_bytes": 21265408
+    },
+    {
+      "method": "cuda-seeded",
+      "kind": "synthesis",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 10.48067380269579,
+      "warmup_seconds": 0.0949427243322134,
+      "median_seconds": 0.09541371278464794,
+      "min_seconds": 0.09531224891543388,
+      "max_seconds": 0.095515176653862,
+      "repetitions_seconds": [
+        0.095515176653862,
+        0.09531224891543388
+      ],
+      "cuda_event_seconds": [
+        0.09550028991699219,
+        0.09529753875732422
+      ],
+      "peak_cuda_bytes": 18653696
+    },
+    {
+      "method": "cuda-seeded",
+      "kind": "tangents",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": "perceptual",
+      "items_per_second": 7.017936518272666,
+      "warmup_seconds": 2.093723511323333,
+      "median_seconds": 0.14249202702194452,
+      "min_seconds": 0.14174261130392551,
+      "max_seconds": 0.14324144273996353,
+      "repetitions_seconds": [
+        0.14324144273996353,
+        0.14174261130392551
+      ],
+      "cuda_event_seconds": [
+        0.1432227783203125,
+        0.14171955871582032
+      ],
+      "peak_cuda_bytes": 20222976
+    },
+    {
+      "method": "cuda-seeded",
+      "kind": "vjp",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 7.07174317830749,
+      "warmup_seconds": 0.14121941849589348,
+      "median_seconds": 0.1414078501984477,
+      "min_seconds": 0.14100061170756817,
+      "max_seconds": 0.14181508868932724,
+      "repetitions_seconds": [
+        0.14100061170756817,
+        0.14181508868932724
+      ],
+      "cuda_event_seconds": [
+        0.14097100830078124,
+        0.1417881622314453
+      ],
+      "peak_cuda_bytes": 20734976
+    },
+    {
+      "method": "cuda-seeded",
+      "kind": "loss_backward",
+      "batch": 1,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 6.947319846908956,
+      "warmup_seconds": 0.14419616758823395,
+      "median_seconds": 0.14394040033221245,
+      "min_seconds": 0.14374486543238163,
+      "max_seconds": 0.14413593523204327,
+      "repetitions_seconds": [
+        0.14374486543238163,
+        0.14413593523204327
+      ],
+      "cuda_event_seconds": [
+        0.14370816040039064,
+        0.14410240173339844
+      ],
+      "peak_cuda_bytes": 24584192
+    },
+    {
+      "method": "cuda-seeded",
+      "kind": "synthesis",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 41.18866161780935,
+      "warmup_seconds": 0.09649539180099964,
+      "median_seconds": 0.09711410477757454,
+      "min_seconds": 0.09658060036599636,
+      "max_seconds": 0.09764760918915272,
+      "repetitions_seconds": [
+        0.09764760918915272,
+        0.09658060036599636
+      ],
+      "cuda_event_seconds": [
+        0.09762713623046874,
+        0.09656320190429687
+      ],
+      "peak_cuda_bytes": 21264896
+    },
+    {
+      "method": "cuda-seeded",
+      "kind": "tangents",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": "perceptual",
+      "items_per_second": 28.092332291587155,
+      "warmup_seconds": 0.14319991879165173,
+      "median_seconds": 0.1423876080662012,
+      "min_seconds": 0.1422462109476328,
+      "max_seconds": 0.14252900518476963,
+      "repetitions_seconds": [
+        0.1422462109476328,
+        0.14252900518476963
+      ],
+      "cuda_event_seconds": [
+        0.14222540283203125,
+        0.1425070037841797
+      ],
+      "peak_cuda_bytes": 26520576
+    },
+    {
+      "method": "cuda-seeded",
+      "kind": "vjp",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 28.07553297572611,
+      "warmup_seconds": 0.1428799368441105,
+      "median_seconds": 0.14247280731797218,
+      "min_seconds": 0.14213435724377632,
+      "max_seconds": 0.14281125739216805,
+      "repetitions_seconds": [
+        0.14213435724377632,
+        0.14281125739216805
+      ],
+      "cuda_event_seconds": [
+        0.14210867309570313,
+        0.14278656005859375
+      ],
+      "peak_cuda_bytes": 28678144
+    },
+    {
+      "method": "cuda-seeded",
+      "kind": "loss_backward",
+      "batch": 4,
+      "duration": 0.25,
+      "tangent_coordinates": null,
+      "items_per_second": 26.904308307705243,
+      "warmup_seconds": 0.14952501468360424,
+      "median_seconds": 0.1486750729382038,
+      "min_seconds": 0.14828887209296227,
+      "max_seconds": 0.14906127378344536,
+      "repetitions_seconds": [
+        0.14828887209296227,
+        0.14906127378344536
+      ],
+      "cuda_event_seconds": [
+        0.1482803192138672,
+        0.1490513916015625
+      ],
+      "peak_cuda_bytes": 40131584
+    }
+  ]
+}

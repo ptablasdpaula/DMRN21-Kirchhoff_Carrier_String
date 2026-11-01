@@ -1,0 +1,526 @@
+{
+  "metadata": {
+    "source_sha256": "7b2310bfe033d40c7cc3dcfdc330e87db003e28ee5a3f91a08301cb03e91bf45",
+    "revision": "e7d0a18452cba4e85ee2532bc73bc9eb2ff34c95",
+    "source_status": " M README.md\n M experiments/recovery.py\n M src/kc_string_forward.py\n M src/optimization.py\n M src/optimization_workbench.py\n M src/parameters.py\n M src/synthesis.py\n M test/optimization_workbench.py\n?? benchmarks/alpha_scan_compare.py\n?? benchmarks/alpha_scan_one_compare.py\n?? benchmarks/alpha_scan_results/\n?? benchmarks/alpha_scan_two_directions.py\n?? benchmarks/cache_grouped_compare.py\n?? benchmarks/cache_reconstruction_compare.py\n?? benchmarks/cache_reconstruction_results/\n?? benchmarks/even_batch_driver.py\n?? benchmarks/even_results/\n?? benchmarks/exact_methods.py\n?? benchmarks/exact_results/\n?? benchmarks/gpu.py\n?? benchmarks/gpu_results/\n?? benchmarks/jax_compare.py\n?? benchmarks/jax_pure_compare.py\n?? benchmarks/jax_results/\n?? benchmarks/jax_reverse_compare.py\n?? benchmarks/loss_batch_grouped.py\n?? benchmarks/loss_batch_results/\n?? benchmarks/manual_ce_compare.py\n?? benchmarks/parallel_reconstruction.py\n?? benchmarks/parallel_scan_results/\n?? benchmarks/parallel_scan_scale.py\n?? benchmarks/profile_gpu.py\n?? benchmarks/profile_grouped.py\n?? benchmarks/reconstruction.py\n?? benchmarks/reconstruction_results/\n?? benchmarks/scalar_cache_results/\n?? benchmarks/scalar_cache_sweep.py\n?? benchmarks/scalar_cache_sweep_frozen.py\n?? benchmarks/scalar_fallback_compare.py\n?? benchmarks/structured_adjoint_results/\n?? benchmarks/summarize_even_batches.py\n?? benchmarks/summarize_gpu.py\n?? docs/alpha_scan_experiments.md\n?? docs/cached_reconstruction_experiments.md\n?? docs/even_batch_experiments.md\n?? docs/exact_solver_experiments.md\n?? docs/gpu.md\n?? docs/gpu_results.md\n?? docs/highlighted_benchmark.md\n?? docs/ideas/\n?? docs/jax_comparison.md\n?? docs/loss_batch_experiments.md\n?? docs/reconstruction_experiments.md\n?? docs/scalar_cache_sweep.md\n?? docs/structured_adjoint_experiment.md\n?? experiments/cached_reconstruction/\n?? experiments/exact_recovery.py\n?? experiments/jax_loss_benchmark.py\n?? experiments/jax_study/\n?? experiments/loss_batch/\n?? experiments/parallel_alpha_scan/\n?? experiments/parallel_alpha_scan_one/\n?? experiments/parallel_segments/\n?? experiments/reconstruction/\n?? experiments/scalar_cache/\n?? experiments/structured_adjoint/\n?? hpc/\n?? src/accelerated.py\n?? src/adjoint.py\n?? src/kc_adjoint.cu\n?? src/kc_dual.h\n?? src/kc_fused.cpp\n?? src/kc_fused.cu\n?? src/seeded.py\n?? test/accelerated.py\n?? test/adjoint.py\n?? test/adjoint_math.py\n?? test/alpha_scan_coordinate_stress.py\n?? test/alpha_scan_math.py\n?? test/alpha_scan_one_reconstruction.py\n?? test/alpha_scan_reconstruction.py\n?? test/cached_coordinate_stress.py\n?? test/even_batch_isolation.py\n?? test/exact_benchmark.py\n?? test/experimental_kernels.py\n?? test/grouped_loss_contract.py\n?? test/jax_loss_reference.py\n?? test/manual_ce_long.py\n?? test/manual_ce_loss.py\n?? test/parallel_reconstruction.py\n?? test/reconstruction.py\n?? test/reconstruction_coordinates.py\n?? test/reconstruction_math.py\n?? test/scalar_cache_algebra.py\n?? test/scalar_cache_coordinates.py\n?? test/scalar_cache_fallback.py\n?? test/scalar_cache_smoke.py\n?? test/seeded.py\n?? test/seeded_long_batch_direct.py\n?? test/structured_adjoint.py\n?? test/structured_adjoint_full_k32.py\n?? test/structured_adjoint_gpu.py\n?? test/structured_adjoint_loss.py\n?? test/structured_adjoint_loss_cpu.py\n",
+    "host": "sbg5",
+    "cpu": "Intel(R) Xeon(R) Platinum 8268 CPU @ 2.90GHz",
+    "job": "34510937",
+    "torch": "2.14.1+cu130",
+    "cuda_runtime": "13.0",
+    "gpu": "NVIDIA A100-PCIE-40GB",
+    "dtype": "float64",
+    "cpu_threads": 1,
+    "intervals": 176,
+    "output_rate": 44100,
+    "internal_rate": 132300,
+    "excitation": "multimode",
+    "target": "same original CPU reference, all parameter vectors",
+    "loss": "independent STFTCumulativeEnergyLoss per item, summed for backward",
+    "validation": "/data/scratch/acw794/kc-string-gpu/alpha-scan-check-34508178.json",
+    "implementation_sha256": "dce63afd6c46d63318198557b83977c4016d4eb24c88b1fc126b081e57d96766",
+    "dependencies_sha256": "d5832e838dbfb421ef2651f31d32b18c4733bcd052e62f255d0032be2bebb8ed",
+    "directions": [
+      "f0",
+      "B"
+    ],
+    "status": "complete",
+    "source_changed_during_run": false
+  },
+  "checks": [
+    {
+      "method": "seeded",
+      "batch": 1,
+      "duration": 0.25,
+      "status": "passed",
+      "audio_relative_l2": 1.6378985508113922e-16,
+      "loss_relative_l2": 5.606387616171657e-16,
+      "scaled_gradient_relative_l2": 7.193397150600765e-09
+    },
+    {
+      "method": "cached",
+      "batch": 1,
+      "duration": 0.25,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 6.0265646765695816e-09
+    },
+    {
+      "method": "scan",
+      "batch": 1,
+      "duration": 0.25,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 8.186169327208909e-09
+    },
+    {
+      "method": "seeded",
+      "batch": 128,
+      "duration": 0.25,
+      "status": "passed",
+      "audio_relative_l2": 1.6914778009245623e-16,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 3.75996564779422e-09
+    },
+    {
+      "method": "cached",
+      "batch": 128,
+      "duration": 0.25,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 2.6225487856102062e-09
+    },
+    {
+      "method": "scan",
+      "batch": 128,
+      "duration": 0.25,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 2.279455230162567e-09
+    },
+    {
+      "method": "seeded",
+      "batch": 1,
+      "duration": 4.0,
+      "status": "passed",
+      "audio_relative_l2": 1.464582232236957e-16,
+      "loss_relative_l2": 1.9276743611537114e-16,
+      "scaled_gradient_relative_l2": 8.208911247076347e-08
+    },
+    {
+      "method": "cached",
+      "batch": 1,
+      "duration": 4.0,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 5.3144895528332195e-09
+    },
+    {
+      "method": "scan",
+      "batch": 1,
+      "duration": 4.0,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 1.1310674252960437e-09
+    },
+    {
+      "method": "seeded",
+      "batch": 128,
+      "duration": 4.0,
+      "status": "passed",
+      "audio_relative_l2": 1.4778116882641614e-16,
+      "loss_relative_l2": 4.4257657290874977e-16,
+      "scaled_gradient_relative_l2": 5.096264031426204e-08
+    },
+    {
+      "method": "cached",
+      "batch": 128,
+      "duration": 4.0,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 3.1353351600952326e-08
+    },
+    {
+      "method": "scan",
+      "batch": 128,
+      "duration": 4.0,
+      "status": "passed",
+      "audio_relative_l2": 0.0,
+      "loss_relative_l2": 0.0,
+      "scaled_gradient_relative_l2": 3.580662172890361e-08
+    }
+  ],
+  "rows": [
+    {
+      "method": "seeded",
+      "batch": 1,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 0.13118227198719978,
+      "median_seconds": 0.12450112402439117,
+      "min_seconds": 0.12447553686797619,
+      "max_seconds": 0.12483585812151432,
+      "repetitions_seconds": [
+        0.12483585812151432,
+        0.12450112402439117,
+        0.12447553686797619
+      ],
+      "cuda_event_seconds": [
+        0.12481536102294923,
+        0.12447846221923828,
+        0.12445491027832031
+      ],
+      "peak_cuda_bytes": 23299072
+    },
+    {
+      "method": "replay",
+      "batch": 1,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 0.14538553729653358,
+      "median_seconds": 0.1453497614711523,
+      "min_seconds": 0.14531430788338184,
+      "max_seconds": 0.14560374803841114,
+      "repetitions_seconds": [
+        0.14531430788338184,
+        0.1453497614711523,
+        0.14560374803841114
+      ],
+      "cuda_event_seconds": [
+        0.14530662536621095,
+        0.14534042358398438,
+        0.14559437561035157
+      ],
+      "peak_cuda_bytes": 23166976
+    },
+    {
+      "method": "cached",
+      "batch": 1,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 0.09392908029258251,
+      "median_seconds": 0.0956864021718502,
+      "min_seconds": 0.09500699304044247,
+      "max_seconds": 0.09830904006958008,
+      "repetitions_seconds": [
+        0.09500699304044247,
+        0.09830904006958008,
+        0.0956864021718502
+      ],
+      "cuda_event_seconds": [
+        0.09497293090820312,
+        0.09827327728271484,
+        0.09565184020996094
+      ],
+      "peak_cuda_bytes": 23961088
+    },
+    {
+      "method": "scan",
+      "batch": 1,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 0.12691850028932095,
+      "median_seconds": 0.1268401686102152,
+      "min_seconds": 0.1264010388404131,
+      "max_seconds": 0.1307003479450941,
+      "repetitions_seconds": [
+        0.1307003479450941,
+        0.1264010388404131,
+        0.1268401686102152
+      ],
+      "cuda_event_seconds": [
+        0.13067674255371095,
+        0.12636569976806641,
+        0.12680499267578124
+      ],
+      "peak_cuda_bytes": 23961088
+    },
+    {
+      "method": "seeded",
+      "batch": 128,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 0.16701948083937168,
+      "median_seconds": 0.1588230524212122,
+      "min_seconds": 0.15835470147430897,
+      "max_seconds": 0.16158524714410305,
+      "repetitions_seconds": [
+        0.15835470147430897,
+        0.1588230524212122,
+        0.16158524714410305
+      ],
+      "cuda_event_seconds": [
+        0.1583462371826172,
+        0.158814208984375,
+        0.16157594299316405
+      ],
+      "peak_cuda_bytes": 241156608
+    },
+    {
+      "method": "replay",
+      "batch": 128,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 0.21182535029947758,
+      "median_seconds": 0.21441478841006756,
+      "min_seconds": 0.2135164923965931,
+      "max_seconds": 0.22091448493301868,
+      "repetitions_seconds": [
+        0.22091448493301868,
+        0.21441478841006756,
+        0.2135164923965931
+      ],
+      "cuda_event_seconds": [
+        0.22090547180175782,
+        0.21440614318847656,
+        0.21350604248046876
+      ],
+      "peak_cuda_bytes": 226013696
+    },
+    {
+      "method": "cached",
+      "batch": 128,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 0.1502375565469265,
+      "median_seconds": 0.1513330675661564,
+      "min_seconds": 0.14879942499101162,
+      "max_seconds": 0.1522262953221798,
+      "repetitions_seconds": [
+        0.1522262953221798,
+        0.14879942499101162,
+        0.1513330675661564
+      ],
+      "cuda_event_seconds": [
+        0.15220121765136718,
+        0.14874214172363281,
+        0.15130828857421874
+      ],
+      "peak_cuda_bytes": 327620096
+    },
+    {
+      "method": "scan",
+      "batch": 128,
+      "duration": 0.25,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 0.2891217265278101,
+      "median_seconds": 0.2927254047244787,
+      "min_seconds": 0.29112869687378407,
+      "max_seconds": 0.29301857203245163,
+      "repetitions_seconds": [
+        0.29112869687378407,
+        0.2927254047244787,
+        0.29301857203245163
+      ],
+      "cuda_event_seconds": [
+        0.291083251953125,
+        0.29266842651367186,
+        0.29296127319335935
+      ],
+      "peak_cuda_bytes": 611084800
+    },
+    {
+      "method": "seeded",
+      "batch": 1,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 1.8140688985586166,
+      "median_seconds": 1.8028230797499418,
+      "min_seconds": 1.8025903888046741,
+      "max_seconds": 1.802887100726366,
+      "repetitions_seconds": [
+        1.8025903888046741,
+        1.802887100726366,
+        1.8028230797499418
+      ],
+      "cuda_event_seconds": [
+        1.8025615234375,
+        1.8028543701171875,
+        1.8027969970703126
+      ],
+      "peak_cuda_bytes": 118693888
+    },
+    {
+      "method": "replay",
+      "batch": 1,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 2.1991000566631556,
+      "median_seconds": 2.1985590253025293,
+      "min_seconds": 2.1984624061733484,
+      "max_seconds": 2.1992330625653267,
+      "repetitions_seconds": [
+        2.1985590253025293,
+        2.1992330625653267,
+        2.1984624061733484
+      ],
+      "cuda_event_seconds": [
+        2.198516845703125,
+        2.199215087890625,
+        2.198446044921875
+      ],
+      "peak_cuda_bytes": 116049920
+    },
+    {
+      "method": "cached",
+      "batch": 1,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 1.4024114310741425,
+      "median_seconds": 1.4089512042701244,
+      "min_seconds": 1.4087339639663696,
+      "max_seconds": 1.4105538483709097,
+      "repetitions_seconds": [
+        1.4105538483709097,
+        1.4089512042701244,
+        1.4087339639663696
+      ],
+      "cuda_event_seconds": [
+        1.4104945068359376,
+        1.408890869140625,
+        1.408673828125
+      ],
+      "peak_cuda_bytes": 128751104
+    },
+    {
+      "method": "scan",
+      "batch": 1,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 1.867450539022684,
+      "median_seconds": 1.866422824561596,
+      "min_seconds": 1.866230834275484,
+      "max_seconds": 1.8681654054671526,
+      "repetitions_seconds": [
+        1.866422824561596,
+        1.8681654054671526,
+        1.866230834275484
+      ],
+      "cuda_event_seconds": [
+        1.866365966796875,
+        1.8681026611328124,
+        1.8661693115234375
+      ],
+      "peak_cuda_bytes": 128751104
+    },
+    {
+      "method": "seeded",
+      "batch": 128,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 2.166978385299444,
+      "median_seconds": 2.1622367203235626,
+      "min_seconds": 2.1622064039111137,
+      "max_seconds": 2.162285041064024,
+      "repetitions_seconds": [
+        2.162285041064024,
+        2.1622064039111137,
+        2.1622367203235626
+      ],
+      "cuda_event_seconds": [
+        2.16226708984375,
+        2.162188232421875,
+        2.162218017578125
+      ],
+      "peak_cuda_bytes": 3665418752
+    },
+    {
+      "method": "replay",
+      "batch": 128,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 3.071675108745694,
+      "median_seconds": 3.071666095405817,
+      "min_seconds": 3.071180075407028,
+      "max_seconds": 3.0717059448361397,
+      "repetitions_seconds": [
+        3.071666095405817,
+        3.071180075407028,
+        3.0717059448361397
+      ],
+      "cuda_event_seconds": [
+        3.0716435546875,
+        3.0711376953125,
+        3.07168359375
+      ],
+      "peak_cuda_bytes": 3326894080
+    },
+    {
+      "method": "cached",
+      "batch": 128,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 2.0188242439180613,
+      "median_seconds": 2.0265997666865587,
+      "min_seconds": 2.0260754991322756,
+      "max_seconds": 2.0288375671952963,
+      "repetitions_seconds": [
+        2.0265997666865587,
+        2.0288375671952963,
+        2.0260754991322756
+      ],
+      "cuda_event_seconds": [
+        2.0265379638671877,
+        2.0287662353515623,
+        2.0260106201171877
+      ],
+      "peak_cuda_bytes": 4952596480
+    },
+    {
+      "method": "scan",
+      "batch": 128,
+      "duration": 4.0,
+      "checkpoint": 256,
+      "group": 8,
+      "loss_group": 16,
+      "status": "passed",
+      "warmup_seconds": 4.251129487529397,
+      "median_seconds": 4.251250486820936,
+      "min_seconds": 4.25071233138442,
+      "max_seconds": 4.252796897664666,
+      "repetitions_seconds": [
+        4.251250486820936,
+        4.252796897664666,
+        4.25071233138442
+      ],
+      "cuda_event_seconds": [
+        4.25113623046875,
+        4.25271484375,
+        4.2506279296875
+      ],
+      "peak_cuda_bytes": 4952596480
+    }
+  ]
+}

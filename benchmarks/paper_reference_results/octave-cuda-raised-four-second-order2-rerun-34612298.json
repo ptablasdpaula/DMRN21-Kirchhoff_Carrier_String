@@ -1,0 +1,63 @@
+{
+  "mode": "long",
+  "duration_s": 4.0,
+  "steps": 529200,
+  "intervals": 176,
+  "spatial_order": 2,
+  "sample_rate": 132300,
+  "branch": "SAV=false",
+  "excitation": "raised_cosine",
+  "precision": "float64",
+  "output": "raw internal-rate midpoint, includes two startup samples",
+  "physical_parameters": {
+    "rho": 8050.000000000001,
+    "T0": 75.0,
+    "radius": 0.0003556,
+    "E": 174000000000.0,
+    "L": 1.0,
+    "amplitude": 0.002,
+    "sigma0": 0.9210340371976183,
+    "sigma1": 0.0002863929670587644
+  },
+  "stability_score": 0.1985295471800971,
+  "octave_seconds": 59.509694043081254,
+  "native_seconds_including_extension_load": 8.06100322585553,
+  "max_abs_error": 1.4619889530057418e-12,
+  "rms_error": 6.055387699405272e-13,
+  "normalized_l2_error": 1.934478436200976e-09,
+  "reference_first_samples": [
+    0.002,
+    0.001999999356157564,
+    0.0019997720819870846,
+    0.0019993182341945344
+  ],
+  "native_first_samples": [
+    0.002,
+    0.001999999356157564,
+    0.001999772081987084,
+    0.001999318234194535
+  ],
+  "reference_energies": {
+    "first_total": 0.0015354887248404227,
+    "last_total": 0.0015354887248274478,
+    "first_kinetic": 3.699009339891127e-07,
+    "first_linear_potential": 0.0015210378090391007,
+    "first_nonlinear_potential": 1.4081012263342759e-05
+  },
+  "native_first_energies": {
+    "first_total": 0.0015354887248404622,
+    "first_kinetic": 3.699009339888322e-07,
+    "first_linear_potential": 0.0015210378090391402,
+    "first_nonlinear_potential": 1.4081012263342885e-05
+  },
+  "cached_cuda": {
+    "1": {
+      "max_abs_audio_error_vs_octave": 1.8295923603857444e-12,
+      "relative_l2_audio_error_vs_octave": 2.4513765896576504e-09
+    },
+    "3": {
+      "max_abs_audio_error_vs_octave": 1.8295923603857444e-12,
+      "relative_l2_audio_error_vs_octave": 2.4513765896576504e-09
+    }
+  }
+}
