@@ -26,7 +26,7 @@ def torch_case(method, batch, duration, excitation='multimode', loss='mae'):
     from src.adjoint import simulate as replay
     from src.optimization import criterion_for
     from src.synthesis import Renderer
-    if method == 'fdtd':
+    if method in ('fdtd', 'fdtd_ckpt'):
         from experiments.figure_comparison.fdtd import simulate
     else:
         from experiments.scalar_cache.reconstruct import simulate
@@ -45,6 +45,7 @@ def torch_case(method, batch, duration, excitation='multimode', loss='mae'):
         args = (theta_from_physical(x), GRID.intervals, GRID.integration_rate, steps, excitation)
         if which == 'replay': raw = replay(*args, 256)
         elif which == 'fdtd': raw = simulate(*args)
+        elif which == 'fdtd_ckpt': raw = simulate(*args, checkpoint_steps=256)
         else: raw = simulate(*args, 256, 3 if which == 'cached3' else 1)
         audio = filter_audio(raw, renderer)
         loss = grouped_loss_backward(audio, criterion, 16)
@@ -86,13 +87,15 @@ def torch_case(method, batch, duration, excitation='multimode', loss='mae'):
             'validation': errors, 'gpu_name': torch.cuda.get_device_name(),
             'gpu_uuid': str(getattr(torch.cuda.get_device_properties(0), 'uuid', 'unavailable')),
             'torch_version': torch.__version__, 'cuda_runtime': torch.version.cuda,
-            'checkpoint_steps': 256 if method != 'fdtd' else None, 'excitation': excitation,
+            'checkpoint_steps': None if method == 'fdtd' else 256,
+            'rematerialisation': ('torch.utils.checkpoint (use_reentrant=False) over 256-step chunks of the spatial PyTorch loop'
+                                  if method == 'fdtd_ckpt' else None), 'excitation': excitation,
             'gradient_coordinates': ['density', 'tension', 'radius', 'young_modulus', 'length', 'amplitude', 'sigma_0', 'sigma_1', 'pluck_position', 'pickup_position'], 'loss': loss, 'loss_group': 16}
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--method', choices=('fdtd', 'cached1', 'cached3', 'diaz'), required=True)
+    ap.add_argument('--method', choices=('fdtd', 'fdtd_ckpt', 'cached1', 'cached3', 'diaz'), required=True)
     ap.add_argument('--batch', type=int, required=True)
     ap.add_argument('--duration', type=float, default=4.)
     ap.add_argument('--excitation', default='multimode')

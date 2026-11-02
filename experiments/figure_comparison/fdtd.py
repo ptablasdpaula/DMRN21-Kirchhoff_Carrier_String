@@ -1,16 +1,23 @@
 """Plain spatial Kirchhoff--Carrier FDTD with PyTorch reverse-mode autograd.
 
-This is deliberately a direct, uncheckpointed baseline: each time step is
-expressed in PyTorch and its complete computation graph is retained for the
-backward pass. The interface takes relative material multipliers, as do the
+This is deliberately a direct baseline: each time step is expressed in
+PyTorch and, by default, its complete computation graph is retained for the
+backward pass. With ``checkpoint_steps`` set, the loop is cut into chunks of
+that many steps and each chunk goes through ``torch.utils.checkpoint`` (the
+non-reentrant form), so only the two states at the chunk boundaries are kept
+and the chunk's graph is rebuilt during the backward pass: framework-level
+rematerialisation with the same 256-step segments as the cached adjoint, and
+nothing else changed. The interface takes relative material multipliers, as do the
 existing CUDA kernels. The output is the internal-rate pickup waveform,
 including the two initial samples; filtering and loss belong to the caller.
 The pluck centre and the pickup position (parameters 9 and 10, fractions of
 L) stay inside the graph: the raised cosine is built from the centre and the
 readout is the sine interpolant at the pickup, so both receive gradients.
 """
+import functools
 import math
 import torch
+from torch.utils.checkpoint import checkpoint
 
 from src.kc_string_forward import (SPATIAL_ORDER, STENCILS, PARAMETER_COUNT, excitation_shape, nominal_parameters,
                                    parse_excitation, sine_transform)
@@ -61,7 +68,34 @@ def _pickup_weights(intervals, pickup):
     return modal @ sine_transform(intervals, pickup.device)
 
 
-def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimode', order=SPATIAL_ORDER):
+def _advance(previous, current, readout, inv_h2, mass, tension_loss, bending, previous_mass, previous_loss,
+             q_scale, inverse_mass, *, steps, order):
+    """Run ``steps`` updates from (previous, current); returns the two final states and the (B, steps) pickup samples.
+
+    Every differentiable tensor is an explicit argument so that the chunk can be
+    rematerialised by ``torch.utils.checkpoint`` without closing over the graph.
+    """
+    samples = []
+    for _ in range(steps):
+        d2 = _second(current, inv_h2, order)
+        d4 = _second(d2, inv_h2, order)
+        p2 = _second(previous, inv_h2, order)
+        linear = (2 * mass * current + tension_loss * d2 - bending * d4
+                  + previous_mass * previous - previous_loss * p2)
+        direction = q_scale * d2
+        rhs = linear - direction * (direction * previous).sum(dim=1, keepdim=True)
+        mass_rhs = inverse_mass * rhs
+        mass_direction = inverse_mass * direction
+        denominator = 1 + (direction * mass_direction).sum(dim=1, keepdim=True)
+        projection = (direction * mass_rhs).sum(dim=1, keepdim=True)
+        following = mass_rhs - mass_direction * (projection / denominator)
+        samples.append((following * readout).sum(dim=1))
+        previous, current = current, following
+    return previous, current, torch.stack(samples, dim=1)
+
+
+def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimode', order=SPATIAL_ORDER,
+             checkpoint_steps=None):
     """Simulate a batch of independent strings using ordinary PyTorch AD.
 
     Args:
@@ -71,6 +105,9 @@ def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimo
         steps: recurrence steps after the two initial samples.
         excitation: one of the profiles accepted by ``excitation_shape``.
         order: spatial stencil order, 2 (three-point) or 4 (five-point).
+        checkpoint_steps: None keeps the whole graph (the plain baseline); a
+            positive integer rematerialises the loop in chunks of that many
+            steps with ``torch.utils.checkpoint`` (use_reentrant=False).
 
     Returns:
         Pickup displacement of shape (steps+2,) or (B, steps+2).
@@ -87,6 +124,9 @@ def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimo
         raise ValueError('intervals must be an even integer >= 4')
     if not math.isfinite(rate) or rate <= 0 or not isinstance(steps, int) or steps < 0:
         raise ValueError('rate must be positive and steps a nonnegative integer')
+    if checkpoint_steps is not None and (not isinstance(checkpoint_steps, int) or isinstance(checkpoint_steps, bool)
+                                         or checkpoint_steps < 1):
+        raise ValueError('checkpoint_steps must be a positive integer or None')
 
     # Values in each column are independent across batch items. Each material
     # parameter keeps a singleton spatial dimension to broadcast over nodes.
@@ -119,21 +159,16 @@ def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimo
     q_scale = 0.5 * dt * torch.sqrt(h * modulus * area / length)
 
     readout = _pickup_weights(intervals, pickup)
-    samples = [(previous * readout).sum(dim=1), (current * readout).sum(dim=1)]
-    for _ in range(steps):
-        d2 = _second(current, inv_h2, order)
-        d4 = _second(d2, inv_h2, order)
-        p2 = _second(previous, inv_h2, order)
-        linear = (2 * mass * current + tension_loss * d2 - bending * d4
-                  + previous_mass * previous - previous_loss * p2)
-        direction = q_scale * d2
-        rhs = linear - direction * (direction * previous).sum(dim=1, keepdim=True)
-        mass_rhs = inverse_mass * rhs
-        mass_direction = inverse_mass * direction
-        denominator = 1 + (direction * mass_direction).sum(dim=1, keepdim=True)
-        projection = (direction * mass_rhs).sum(dim=1, keepdim=True)
-        following = mass_rhs - mass_direction * (projection / denominator)
-        samples.append((following * readout).sum(dim=1))
-        previous, current = current, following
-    audio = torch.stack(samples, dim=1)
+    blocks = [torch.stack(((previous * readout).sum(dim=1), (current * readout).sum(dim=1)), dim=1)]
+    coefficients = (readout, inv_h2, mass, tension_loss, bending, previous_mass, previous_loss, q_scale, inverse_mass)
+    chunk = max(1, steps if checkpoint_steps is None else checkpoint_steps)
+    for start in range(0, steps, chunk):
+        operation = functools.partial(_advance, steps=min(chunk, steps - start), order=order)
+        if checkpoint_steps is None:
+            previous, current, samples = operation(previous, current, *coefficients)
+        else:
+            previous, current, samples = checkpoint(operation, previous, current, *coefficients,
+                                                    use_reentrant=False, preserve_rng_state=False)
+        blocks.append(samples)
+    audio = torch.cat(blocks, dim=1)
     return audio[0] if single else audio

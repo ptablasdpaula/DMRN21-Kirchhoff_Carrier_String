@@ -56,6 +56,35 @@ def test_dual_reference():
         torch.testing.assert_close(actual_grad, weight @ expected[:, 1:], rtol=5e-9, atol=1e-12)
 
 
+def test_checkpointed_chunks():
+    """Chunked torch.utils.checkpoint rematerialisation reproduces the plain path exactly."""
+    torch.manual_seed(905)
+    params = reference_parameters()
+    theta = (material_multipliers(params) * params.new_tensor([1.]*8 + [.9, 1.1]))
+    batch = torch.stack((theta, theta * theta.new_tensor([1., 1.01, 1., 1., 1., .9, 1., 1., 1.02, .97])))
+    for intervals, excitation in ((176, 'raised_cosine'), (16, 'multimode')):
+        for steps, chunk in ((36, 7), (36, 36), (36, 100), (5, 2), (0, 3), (1, 1)):
+            a = batch.detach().clone().requires_grad_()
+            b = batch.detach().clone().requires_grad_()
+            plain = simulate(a, intervals, 132300, steps, excitation)
+            chunked = simulate(b, intervals, 132300, steps, excitation, checkpoint_steps=chunk)
+            assert chunked.shape == (2, steps + 2)
+            torch.testing.assert_close(chunked, plain, rtol=1e-13, atol=1e-16)
+            if steps == 0:
+                continue
+            weight = torch.randn_like(plain)
+            grad_plain, = torch.autograd.grad((plain * weight).sum(), a)
+            grad_chunked, = torch.autograd.grad((chunked * weight).sum(), b)
+            torch.testing.assert_close(grad_chunked, grad_plain, rtol=1e-12, atol=1e-15)
+    for bad in (0, -1, 2.0, True):
+        try:
+            simulate(batch, 16, 132300, 4, checkpoint_steps=bad)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f'checkpoint_steps={bad!r} accepted')
+
+
 def test_batch_and_empty_steps():
     params = reference_parameters()
     theta = material_multipliers(params)
@@ -121,9 +150,11 @@ def test_cuda_replay():
 
 if __name__ == '__main__':
     test_dual_reference()
+    test_checkpointed_chunks()
     test_batch_and_empty_steps()
     test_physical_coordinates()
-    print('PASS: plain spatial FDTD waveform and all ten material and six perceptual gradients match independent dual reference; batches isolated')
+    print('PASS: plain spatial FDTD waveform and all ten material and six perceptual gradients match independent dual reference; '
+          'batches isolated; checkpointed chunks reproduce the plain values and gradients')
     if '--cuda' in sys.argv:
         if not torch.cuda.is_available():
             raise RuntimeError('--cuda requires a CUDA device')

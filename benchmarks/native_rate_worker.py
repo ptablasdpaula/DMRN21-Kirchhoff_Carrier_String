@@ -19,7 +19,7 @@ def emit(event, **kwargs):
     print(json.dumps({'event': event, **kwargs}, allow_nan=False), flush=True)
 
 
-def run_case(batch, duration, modes, rate, artifact, excitation='multimode', loss='mae'):
+def run_case(batch, duration, modes, rate, artifact, excitation='multimode', loss='mae', checkpoint_steps=None):
     import jax
     import jax.numpy as jnp
     import numpy as np
@@ -52,7 +52,7 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
         # When oversampled, retain the two extra points used by the project
         # anti-alias filter; at 1x, output exactly the requested number of samples.
         samples = internal_samples + 2 if rate != 44100 else internal_samples
-        raw = renderer(v, samples, rate, modes, GRID.intervals, excitation)
+        raw = renderer(v, samples, rate, modes, GRID.intervals, excitation, checkpoint_steps)
         audio = anti_alias(raw, kernel, count, GRID.oversampling) if rate != 44100 else raw
         value = sum(group_loss(audio[i:i+16], prepared)*min(16, batch-i)
                     for i in range(0, batch, 16))
@@ -113,7 +113,11 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
     device = jax.devices()[0]
     memory = device.memory_stats() or {}
     direct_url = Path(integrators.__file__).parent.parent / 'jaxdiffmodal-0.1.0.dist-info' / 'direct_url.json'
-    return {'method':f'diaz_{rate}', 'batch':batch, 'status':'ok', 'duration_seconds':duration,
+    name = f'diaz_{rate}' + ('_ckpt' if checkpoint_steps else '')
+    integrator = ('jaxdiffmodal.time_integrators.solve_tf' if not checkpoint_steps else
+                  'experiments.native_rate_study.renderer.solve_tf_checkpointed: the upstream recurrence as a nested '
+                  f'jax.lax.scan with jax.checkpoint on every {checkpoint_steps}-step segment')
+    return {'method':name, 'batch':batch, 'status':'ok', 'duration_seconds':duration, 'checkpoint_steps':checkpoint_steps,
             'median_seconds':statistics.median(samples), 'repetitions_seconds':samples,
             'compile_seconds':compile_seconds, 'warmup_seconds':warmup,
             'peak_framework_allocated_bytes':memory.get('peak_bytes_in_use'),
@@ -125,7 +129,7 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
             'initial_shape_note':f'{excitation} displacement sampled on the fixed {GRID.intervals}-interval grid and projected by h*(basis @ shape)',
             'first_item_diagnostic_artifact':str(artifact) if artifact is not None else None,
             'gradient_coordinates':['density', 'tension', 'radius', 'young_modulus', 'length', 'amplitude', 'sigma_0', 'sigma_1', 'pluck_position', 'pickup_position'],
-            'loss':loss, 'loss_group':16, 'integrator':'jaxdiffmodal.time_integrators.solve_tf',
+            'loss':loss, 'loss_group':16, 'integrator':integrator,
             'upstream_vcs_info':json.loads(direct_url.read_text()).get('vcs_info',{}) if direct_url.exists() else {},
             'upstream_integrator_sha256':hashlib.sha256(Path(integrators.__file__).read_bytes()).hexdigest()}
 
@@ -138,13 +142,16 @@ def main():
     p.add_argument('--artifact', type=Path)
     p.add_argument('--excitation', default='multimode')
     p.add_argument('--loss', default='mae', choices=('mae', 'cel'))
+    p.add_argument('--checkpoint-steps', type=int, default=None,
+                   help='Rematerialise the upstream recurrence in segments of this many steps (jax.checkpoint)')
     a = p.parse_args()
     try:
-        row = run_case(a.batch, a.duration, a.modes, a.rate, a.artifact, a.excitation, a.loss)
+        row = run_case(a.batch, a.duration, a.modes, a.rate, a.artifact, a.excitation, a.loss, a.checkpoint_steps)
     except Exception as exc:
         traceback.print_exc(); s = str(exc).lower()
         status = 'oom' if 'out of memory' in s or 'resource_exhausted' in s else 'error'
-        row = {'method':f'diaz_{a.rate}', 'batch':a.batch, 'status':status, 'excitation':a.excitation, 'loss':a.loss,
+        row = {'method':f'diaz_{a.rate}' + ('_ckpt' if a.checkpoint_steps else ''), 'batch':a.batch, 'status':status,
+               'excitation':a.excitation, 'loss':a.loss, 'checkpoint_steps':a.checkpoint_steps,
                'modes':a.modes, 'duration_seconds':a.duration, 'error':f'{type(exc).__name__}: {exc}'}
     emit('result', row=row)
 

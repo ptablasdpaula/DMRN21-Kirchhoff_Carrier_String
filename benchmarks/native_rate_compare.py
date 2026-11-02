@@ -30,13 +30,15 @@ def fingerprints():
 
 
 def native_case(batch, duration, timeout, python, outdir, modes, rate, interval=.01, host_limit=32*10**9,
-                excitation='multimode', loss='mae'):
+                excitation='multimode', loss='mae', checkpoint_steps=None):
     outdir.mkdir(parents=True, exist_ok=True)
-    logpath = outdir/f'diaz-{rate}-m{modes}-b{batch}.log'
-    artifact = outdir/f'diaz-{rate}-m{modes}-b{batch}.npz'
+    tag = '-ckpt' if checkpoint_steps else ''
+    logpath = outdir/f'diaz-{rate}-m{modes}-b{batch}{tag}.log'
+    artifact = outdir/f'diaz-{rate}-m{modes}-b{batch}{tag}.npz'
     command = [python, str(ROOT/'benchmarks/native_rate_worker.py'), '--batch', str(batch), '--duration', str(duration),
                '--modes', str(modes), '--rate', str(rate), '--artifact', str(artifact), '--excitation', excitation,
                '--loss', loss]
+    if checkpoint_steps: command += ['--checkpoint-steps', str(checkpoint_steps)]
     proc = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             text=True, bufsize=1, start_new_session=True)
     lines = queue.Queue()
@@ -77,8 +79,8 @@ def native_case(batch, duration, timeout, python, outdir, modes, rate, interval=
         text = ''.join(captured).lower()
         status = ('timeout' if timed_out else 'host_memory_limit' if host_limit_hit else
                   'oom' if 'out of memory' in text or 'resource_exhausted' in text else 'error')
-        result = {'method':f'diaz_{rate}', 'batch':batch, 'modes':modes, 'status':status,
-                  'error':f'exit={proc.returncode}; see {logpath}'}
+        result = {'method':f'diaz_{rate}{"_ckpt" if checkpoint_steps else ""}', 'batch':batch, 'modes':modes,
+                  'status':status, 'error':f'exit={proc.returncode}; see {logpath}'}
     result.update(peak_gpu_bytes=peak, gpu_memory_metric='NVML sampled process memory',
                   gpu_memory_samples=samples, gpu_memory_sample_interval_seconds=interval,
                   gpu_memory_error=memory_error, log=str(logpath), worker_exit_code=proc.returncode,
@@ -139,7 +141,8 @@ def main():
     sizes = [int(x) for x in a.batches.split(',')]
     methods = [internal_method if m == 'diaz_internal' else m for m in a.methods.split(',')]
     modes = [int(x) for x in a.modes.split(',')]
-    if any(m not in ('cached3','cached1','fdtd',internal_method,'diaz_44100') for m in methods): raise ValueError('Unknown method')
+    if any(m not in ('cached3','cached1','fdtd','fdtd_ckpt',internal_method,'diaz_44100','diaz_44100_ckpt') for m in methods):
+        raise ValueError('Unknown method')
     if not modes or any(not 1 <= m <= GRID.intervals-1 for m in modes) or len(set(modes)) != len(modes):
         raise ValueError(f'Mode counts must be distinct and lie in 1..{GRID.intervals-1}')
     host_limit = int(a.host_limit_gb*1e9)
@@ -153,6 +156,9 @@ def main():
               'cached_rate':internal, 'modal_rate':44100, 'output_rate':GRID.sample_rate,
               'oversampling':GRID.oversampling, 'intervals':GRID.intervals, 'spatial_order':GRID.order,
               'native_modal_modes':modes, 'primary_modal_modes':modes[0],
+              'baseline_rematerialisation':{
+                  'fdtd_ckpt':'torch.utils.checkpoint (use_reentrant=False) over 256-step chunks of the spatial PyTorch loop',
+                  'diaz_44100_ckpt':'upstream solve_tf recurrence as a nested jax.lax.scan with jax.checkpoint on each 256-step segment'},
               'memory_metric':'NVML sampled process memory incl. context/reservations',
               'sample_interval_seconds':.01, 'host_rss_limit_gb':a.host_limit_gb,
               'timeout_seconds_per_case':a.timeout, 'source_fingerprints':fingerprints(),
@@ -170,7 +176,7 @@ def main():
     save(); logs=a.output.parent/(a.output.stem+'-logs')
     for method in methods:
         for batch in sizes:
-            if method in ('cached3','cached1','fdtd'):
+            if method in ('cached3','cached1','fdtd','fdtd_ckpt'):
                 row = run_case(method,batch,a.duration,a.timeout,a.python,logs,.01,host_limit,a.excitation,a.loss)
                 row.update(internal_rate=internal,output_rate=GRID.sample_rate,oversampling=GRID.oversampling,
                            spatial_order=GRID.order,antialias_filter=GRID.oversampling>1,excitation=a.excitation,loss=a.loss)
@@ -182,7 +188,8 @@ def main():
                 mode_list = [modes[0]] if method == internal_method else modes
                 for mode in mode_list:
                     row=native_case(batch,a.duration,a.timeout,a.python,logs,mode,
-                                    internal if method == internal_method else 44100, excitation=a.excitation, loss=a.loss)
+                                    internal if method == internal_method else 44100, excitation=a.excitation, loss=a.loss,
+                                    checkpoint_steps=256 if method.endswith('_ckpt') else None)
                     result['rows'].append(row)
                     result['cross_comparisons']=compare_artifacts(logs, modes, internal)
                     save();print(json.dumps(row),flush=True)

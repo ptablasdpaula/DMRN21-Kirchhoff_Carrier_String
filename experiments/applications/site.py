@@ -162,6 +162,30 @@ def semantic_section(runs, base):
     return '\n'.join(out)
 
 
+def verification_section():
+    """Where the abstract's gradients are checked, with the numbers from the runs behind it."""
+    blob = REPO + '/blob/main/'
+    link = lambda path, text=None: f'<a href="{blob}{path}"><code>{e(text or path)}</code></a>'
+    return '\n'.join([
+        '<h2 id="verification">3. Verification of the gradients</h2>',
+        '<p>The abstract keeps its correctness claims out of the page and in the repository. '
+        'The cached adjoint is checked against three independent references; the numbers are from the runs behind the abstract.</p>',
+        '<ul>',
+        '<li><strong>Float64 PyTorch autodiff of the same scheme.</strong> In the benchmark sweep (job 34855605, 1 s, batches 1 to 32) '
+        'every evaluation is validated against the checkpointed replay adjoint outside the timed region: the cached adjoint\'s ten scaled gradients agree with it to '
+        '2.7&times;10<sup>&minus;11</sup> relative &#8467;<sub>2</sub> and autodiff\'s to 1.5&times;10<sup>&minus;9</sup>, so cached adjoint and autodiff agree to about 1.5&times;10<sup>&minus;9</sup> '
+        f'({link("benchmarks/native_rate_results/a100-sweep-1s-mae-si10-34855605.json")}, field <code>validation.scaled_gradient_relative_l2</code>).</li>',
+        '<li><strong>Central finite differences of the reference Octave code</strong> (the non-SAV scheme of Russo et al. with the five-point stencil substituted, '
+        'off-centre pluck and pickup): all ten gradients pass; the largest relative error is 4.3&times;10<sup>&minus;6</sup> on &sigma;<sub>1</sub>, whose gradient is '
+        '2&times;10<sup>&minus;6</sup> in magnitude, and the pluck and pickup position gradients agree to 1.3&times;10<sup>&minus;7</sup> and 8.7&times;10<sup>&minus;8</sup> '
+        f'({link("test/reference_paper_exact.py")} with <code>--order 4</code>; jobs 34846668 to 34846671).</li>',
+        f'<li><strong>Unit checks.</strong> The one-step algebra of the cached reverse pass against autograd in 96 float64 cases to 10<sup>&minus;11</sup> ({link("test/scalar_cache_algebra.py")}); '
+        f'the replay adjoint against an independent forward-mode Jacobian ({link("test/adjoint.py")}); the cached adjoint against the replay on 4 s batches ({link("test/scalar_cache_smoke.py")}); '
+        f'the spatial PyTorch baseline against a dual-number reference, positions included ({link("test/figure_fdtd.py")}, {link("test/positions.py")}).</li>',
+        '</ul>',
+        f'<p class="small muted">The derivation of the cached reverse pass and the full validation tables are in the <a href="{blob}paper_dmrn2026/technical_note.pdf">technical note</a>.</p>'])
+
+
 def build(results_path, semantic_runs, docs_dir, base='supplement'):
     docs_dir = Path(docs_dir)
     parts = [f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
@@ -178,6 +202,7 @@ def build(results_path, semantic_runs, docs_dir, base='supplement'):
             parts.append(sound_matching_section(json.load(handle), base+'/sound_matching'))
     if semantic_runs:
         parts.append(semantic_section(semantic_runs, base+'/semantic'))
+    parts.append(verification_section())
     parts.append('<h2 id="reproduce">Reproduction</h2><pre>'
                  'python -I experiments/applications/sound_matching/data.py --splits test\n'
                  'python experiments/applications/sound_matching/fit.py --manifest .../selected/manifest.json --families steel,nylon --output RUN\n'

@@ -41,6 +41,23 @@ def main():
         assert np.isfinite(float(value)) and np.isfinite(np.asarray(grad)).all()
         outputs[modes]=np.asarray(renderer(x,n,rate,modes,176,'raised_cosine'))
     assert not np.allclose(outputs[100],outputs[123],rtol=1e-9,atol=0)
+    # The checkpointed recurrence is the upstream recurrence: same values and
+    # gradients for full segments only, full segments plus a remainder, and a
+    # remainder alone (segment longer than the run).
+    n=300
+    plain=renderer(x,n,rate,100,176,'raised_cosine')
+    objective=lambda y,ck:jnp.sum(renderer(y,n,rate,100,176,'raised_cosine',ck)*jnp.sin(jnp.arange(n,dtype=jnp.float64)/7.))
+    base_value,base_grad=jax.value_and_grad(lambda y:objective(y,None))(x)
+    for segment in (13,64,256,600):
+        chunked=renderer(x,n,rate,100,176,'raised_cosine',segment)
+        np.testing.assert_allclose(chunked,plain,rtol=1e-13,atol=1e-15)
+        value,grad=jax.value_and_grad(lambda y:objective(y,segment))(x)
+        np.testing.assert_allclose(float(value),float(base_value),rtol=1e-12,atol=0)
+        np.testing.assert_allclose(np.asarray(grad)*scales,np.asarray(base_grad)*scales,rtol=1e-10,atol=1e-13)
+    for bad in (0,-1,2.0,True):
+        try: renderer(x,n,rate,100,176,'raised_cosine',bad)
+        except ValueError: pass
+        else: raise AssertionError(f'checkpoint_steps={bad!r} accepted')
     assert [p[2] for p in comparison_pairs([100,123],88200)]==['123 vs 100 modes at 44.1 kHz','44.1 vs 88.2 kHz, 100 modes']
     assert comparison_pairs([100],88200)[0][1]=='diaz-88200-m100-b1.npz'
     from tempfile import TemporaryDirectory
@@ -50,7 +67,8 @@ def main():
         checks=compare_artifacts(Path(tmp),[100,123],88200)
         assert len(checks)==2 and all(c['status']=='unavailable' for c in checks)
     print('PASS: native 175 matches upstream adapter; 8/123 modes preserve the fixed eight-mode excitation; '
-          'raised-cosine profiles match the FDTD solver and run at 100/123 modes')
+          'raised-cosine profiles match the FDTD solver and run at 100/123 modes; '
+          'the checkpointed recurrence reproduces upstream values and gradients')
 
 
 if __name__=='__main__':main()

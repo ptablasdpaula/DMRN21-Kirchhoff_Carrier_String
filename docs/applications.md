@@ -72,4 +72,9 @@ per prompt pair).
 
 `experiments/applications/site.py` renders `docs/index.html` from the
 sound-matching `results.json` and the CLAP `summary.json` files, copying the
-audio, images and GIFs under `docs/supplement/`.
+audio, images and GIFs under `docs/supplement/`. The page closes with a
+"Verification of the gradients" section (`verification_section()`): the
+abstract keeps its correctness claims in the repository, so the page quotes
+the gradient agreement with float64 autodiff (benchmark validation fields)
+and with finite differences of the reference Octave code, and links the
+tests.
