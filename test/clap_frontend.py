@@ -46,5 +46,5 @@ direction = torch.nn.functional.normalize(texts[0]-texts[1], dim=-1)
 start = quiet.detach()
 loss0 = directional_loss(quiet, start, direction)
 assert bool(torch.isfinite(loss0).all()) and bool((cosine_loss(quiet, texts[0]) > 0).all())
-assert float(barrier(torch.zeros(3, 9, dtype=torch.float64))) == 0 and float(barrier(torch.full((1, 9), 4.0))) > 0
+assert float(barrier(torch.zeros(3, 9, dtype=torch.float64)).sum()) == 0 and float(barrier(torch.full((1, 9), 4.0)).sum()) > 0
 print('clap_frontend: all checks passed')
