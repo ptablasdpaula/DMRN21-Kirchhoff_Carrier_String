@@ -65,7 +65,8 @@ def run_pair(pair, *, starts=32, grid='production', seed=0, device='cuda', sched
     direction = F.normalize(text[0]-text[1], dim=-1)
     d_hat = torch.stack((direction, -direction))             # per direction
     starts_z = sample_logits(box, starts, seed=seed, device=device)
-    starts_z[0] = encode_rows(box, box.defaults()).to(device)
+    # The paper's string sits on two box edges (steel end, 1 m); clamp its logits inside the barrier's region.
+    starts_z[0] = encode_rows(box, box.defaults()).to(device).clamp(-3.0, 3.0)
     logits0 = torch.cat([starts_z, starts_z.clone()])        # (2*starts, 9)
     which = torch.arange(2*starts, device=device)//starts    # direction of each item
     with torch.no_grad():
