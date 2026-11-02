@@ -34,7 +34,11 @@ def summarise(run_dir, manifest_path, assets_dir=None, top=3):
                                                      'amplitude', 'sigma_0', 'sigma_1', 'pluck_position', 'pickup_position')]
             fitted = cat.fitted_quantities(physical)
             matches = cat.match(fitted, fitted['f0_hz'], catalogue, top=top)
-            record = {'loss': fit['loss'], 'log_spectral_distance_db': fit['log_spectral_distance_db'],
+            names = ('material_density', 'tension', 'radius', 'young_modulus', 'length', 'amplitude', 'sigma_0', 'sigma_1', 'pluck_position', 'pickup_position')
+            family_box = fit['stages']['A']['box']
+            at_bounds = [n for n, v, (lo, hi) in zip(names, physical, family_box)
+                         if (hi-lo) > 0 and (abs(v-lo) <= 0.01*(hi-lo) or abs(v-hi) <= 0.01*(hi-lo))]
+            record = {'loss': fit['loss'], 'at_bounds': at_bounds, 'signal': fit.get('signal', 'displacement'), 'loss_variant': fit.get('loss', 'tlogcel'), 'log_spectral_distance_db': fit['log_spectral_distance_db'],
                       'f1_cents_vs_label': fit['f1_cents_vs_label'], 'derived': fit['derived'], 'physical': fit['physical'],
                       'fitted': fitted, 'catalogue': matches,
                       'stages': {s: {k: fit['stages'][s][k] for k in ('grid', 'evaluations', 'seconds', 'best_loss')} for s in ('A', 'B')},

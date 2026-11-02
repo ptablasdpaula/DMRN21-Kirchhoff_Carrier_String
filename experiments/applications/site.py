@@ -99,6 +99,8 @@ def sound_matching_section(results, base):
                 ['stage A / B grid', f"{rec['stages']['A']['grid']['intervals']} intervals at {rec['stages']['A']['grid']['integration_rate']//1000} kHz / "
                                      f"{rec['stages']['B']['grid']['intervals']} at {rec['stages']['B']['grid']['integration_rate']//1000} kHz"]], numeric=(1,)))
             p = rec['physical']
+            if rec.get('at_bounds'):
+                out.append(f'<p class="small muted">On a family-box bound: {e(", ".join(rec["at_bounds"]))}. The waveform does not pin these down individually; see the caveat above.</p>')
             out.append(table(['parameter', 'fitted'], [
                 ['density ρ', f"{fmt(p['material_density'], 4)} kg/m³"], ['tension T', f"{fmt(p['tension'], 4)} N"],
                 ['radius r', f"{fmt(p['radius']*1e3)} mm"], ['Young\'s modulus E', f"{fmt(p['young_modulus']/1e9)} GPa"],
