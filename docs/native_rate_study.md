@@ -331,9 +331,9 @@ exactly as before). The time factor over the plain solver is 1.3–1.5.
 
 Reading: with the same 256-step checkpointing, both baselines reach the
 cached adjoint's memory and every batch fits; what remains is the time. The
-cached adjoint is 760–1070× faster than checkpointed Autodiff and 1.7–2.1×
-faster than the checkpointed modal solver. The abstract's figure shows the
+cached adjoint is 760–1070× faster than checkpointed Autodiff and 1.7–2.2×
+faster than the checkpointed modal solver (1.5–1.7× faster than the plain one). The abstract's figure shows the
 checkpointed series as hollow dots and prints their time at the last batch;
 its text says "nearly three orders of magnitude faster than autodiff and
-1.7 to 2 times faster than jaxdiffmodal, checkpointed or not; checkpointing
+1.5 to 2.2 times faster than jaxdiffmodal, checkpointed or not; checkpointing
 brings both baselines down to our memory at 1.3 to 1.5 times their time".
