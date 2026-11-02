@@ -28,6 +28,9 @@ run "$PY" test/material_coordinates.py
 run "$PY" test/native_rate_plot.py
 run "$PY" test/figure_comparison_plot.py
 run "$PY" test/figure_comparison_driver.py
+run "$PY" test/applications_common.py
+run "$PY" test/sound_matching_cpu.py
+run "$PY" test/clap_frontend.py
 export PYTHONPATH=/data/scratch/acw794/kc-string-gpu/diaz-deps JAX_PLATFORMS=cpu JAX_ENABLE_X64=true
 run "$JAXPY" test/jax_loss_reference.py --device cpu --output "$TORCH_EXTENSIONS_DIR/jax-loss-reference-${SLURM_JOB_ID:-local}.json"
 run "$JAXPY" test/accuracy_study.py

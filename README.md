@@ -152,3 +152,5 @@ validation, internal batching and benchmark methodology.
 [Measured results](docs/gpu_results.md) compare all five CPU/GPU paths and batch throughput.
 [Highlighted H100 result](docs/highlighted_benchmark.md): 128 four-second strings,
 including the loss and gradients for f0 and B, in 1.589 seconds.
+
+Companion applications (sound matching on NSynth guitar notes, CLAP semantic conditioning) are described in [docs/applications.md](docs/applications.md); the online supplement is built into `docs/index.html`.
