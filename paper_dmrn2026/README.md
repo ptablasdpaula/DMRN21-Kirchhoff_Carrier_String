@@ -32,11 +32,17 @@ one second with the reference code's raised-cosine pluck, the mean absolute
 error of each waveform against the nominal string's is computed, and it is
 backpropagated to all ten parameters (`benchmarks/exact_methods.py:varied_material`,
 `--loss mae`). The excitation is the same as in the Octave validation; `figures/build_benchmark_dots.py label` draws peak GPU memory against
-batch size for Ours (the cached adjoint), jaxdiffmodal and Autodiff (direct
-PyTorch autodiff) from one native-rate sweep JSON, as small dots joined by
-dashed lines with the first and last evaluation time of each series printed
-and the series named in their colours; a curve simply ends at the last batch
-that fit in memory. The alternatives explored on the way (dual-axis figure,
+batch size from `figures/native-rate-sweep-merged.json` (the original sweep,
+job 34855605, merged by `figures/merge_sweeps.py` with the checkpointed
+baselines of jobs 35062741 and 35105080): Ours (the cached adjoint),
+jaxdiffmodal and Autodiff (direct PyTorch autodiff) as small filled dots
+joined by dashed lines, the two checkpointed baselines (`torch.utils.checkpoint`
+over 256-step chunks; the upstream jaxdiffmodal recurrence under
+`jax.checkpoint` with the pickup read inside the scan) as hollow dots joined
+by dotted lines in their method's colour, the first and last evaluation time
+of the filled series and the last of the hollow ones printed, the series
+named in their colours, and an x on the 80 GB line at the first batch that
+ran out of memory. The alternatives explored on the way (dual-axis figure,
 two-panel figure, rank/log-shaded heat-map table, dot-size figure) remain as
 scripts in `figures/` with their outputs in `figures/variants/`; the page
 variants built around them are kept in `variants/` for the record and no

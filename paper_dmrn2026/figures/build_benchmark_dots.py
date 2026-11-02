@@ -78,7 +78,7 @@ series = {key: dict(name=name, colour=colour, hollow=hollow, rows=select(method,
           for key, method, modes, name, colour, hollow in present}
 # Where each series prints its first and last time: above/below the dot, left/right of it, or not at all
 # (the checkpointed series are flat in time, so their last value says it all).
-TIME_SIDES = {'ours': ('below', 'below'), 'modal': ('below', 'right'), 'autodiff': ('above', 'right'),
+TIME_SIDES = {'ours': ('below', 'below'), 'modal': ('right', 'right'), 'autodiff': ('above', 'right'),
               'modal_ckpt': (None, 'right'), 'autodiff_ckpt': (None, 'right')}
 seconds = lambda r: r['median_seconds']
 gigabytes = lambda r: r['peak_gpu_bytes']/1e9

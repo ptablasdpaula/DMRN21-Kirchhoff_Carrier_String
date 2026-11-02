@@ -291,4 +291,49 @@ line.
 
 ### Results
 
-Pending: filled in from the sweep when it completes.
+Two jobs, both on A100 80 GB PCIe cards: 35062741 (`sae`, rdg7) ran
+`fdtd_ckpt` and `diaz_44100_ckpt` over batches 1–128
+(`benchmarks/native_rate_results/a100-ckpt-1s-mae-si10-35062741.json`);
+35105080 (`gpushort`, sbg4) ran `diaz_44100_ckptro`, the checkpointed
+recurrence with the pickup read inside the scan
+(`a100-ckptro-1s-mae-si10-35105080.json`). Both completed with every row
+`ok` and no source change. The merged figure data is
+`a100-sweep-1s-mae-si10-merged-34855605-35062741-35105080.json`, a copy of
+`paper_dmrn2026/figures/native-rate-sweep-merged.json`.
+
+| Method | batch 1 | batch 128 | per-item memory | first failure |
+|---|---|---|---|---|
+| Cached adjoint (34855605) | 0.240 s, 0.57 GB | 0.348 s, 1.51 GB | ~7 MB | none |
+| Autodiff, plain (34855605) | 169 s, 2.33 GB | 32: 177 s, 44.9 GB | ~1.4 GB | 64 (OOM) |
+| Autodiff, checkpointed (`fdtd_ckpt`) | 256 s, 0.57 GB | 264 s, 1.80 GB | ~10 MB | none |
+| Modal, plain (34855605) | 0.377 s, 1.53 GB | 64: 0.419 s, 39.3 GB | ~0.6 GB | 128 (OOM) |
+| Modal, checkpointed, trajectory returned (`diaz_44100_ckpt`) | 0.479 s, 0.99 GB | 0.615 s, 26.5 GB | ~0.2 GB | none |
+| Modal, checkpointed, readout in scan (`diaz_44100_ckptro`) | 0.497 s, 0.99 GB | 0.606 s, 1.27 GB | ~2 MB | none |
+
+Checkpointed Autodiff: 255.8, 255.9, 258.0, 257.3, 259.3, 263.3, 260.8,
+263.8 s over the batches, memory 0.57, 0.60, 0.60, 0.65, 0.72, 0.88, 1.17,
+1.80 GB; host RSS 9.5 GB at every batch as for the plain variant (the
+autograd graph of one chunk plus the Python objects). Its gradients agree
+with the replay adjoint to 0.6–1.5e-9 at every batch, like the plain
+variant's. The time factor over plain Autodiff is 1.5: the chunk's forward
+pass is recomputed during backward.
+
+Checkpointed Modal with the upstream interface (full modal trajectory and
+velocities returned as scan outputs): 0.479–0.615 s, 0.99 → 26.5 GB. The
+per-step residuals are gone but the two (steps, modes) float64 outputs and
+their cotangents remain, 0.2 GB per item against 0.6 GB for the plain
+solver. Reading the pickup inside the scan removes them: 0.497, 0.515,
+0.480, 0.518, 0.545, 0.561, 0.588, 0.606 s and 0.99, 0.99, 0.99, 0.72,
+0.72, 0.72, 1.02, 1.27 GB (the sampled values fluctuate with the allocator;
+the trend is flat). Its first-item waveform and gradients are the plain
+modal solver's to the printed digits (9.6e-3 and 1.3e-4 from the FDTD,
+exactly as before). The time factor over the plain solver is 1.3–1.5.
+
+Reading: with the same 256-step checkpointing, both baselines reach the
+cached adjoint's memory and every batch fits; what remains is the time. The
+cached adjoint is 760–1070× faster than checkpointed Autodiff and 1.7–2.1×
+faster than the checkpointed modal solver. The abstract's figure shows the
+checkpointed series as hollow dots and prints their time at the last batch;
+its text says "nearly three orders of magnitude faster than autodiff and
+1.7 to 2 times faster than jaxdiffmodal, checkpointed or not; checkpointing
+brings both baselines down to our memory at 1.3 to 1.5 times their time".

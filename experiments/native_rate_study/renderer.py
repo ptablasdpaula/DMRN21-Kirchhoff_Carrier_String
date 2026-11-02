@@ -84,7 +84,8 @@ def solve_tf_checkpointed(gamma2_mu, omega_mu_squared, dt, n_steps, nl_fn=None, 
         if remainder:
             state, y_rem = jax.checkpoint(lambda carry, _: run(carry, remainder))(state, None)
             pieces.append(y_rem)
-        samples = jnp.concatenate([jnp.stack((q0 @ weights, q1 @ weights))] + [p[:-1] for p in pieces[:-1]] + [pieces[-1][:-1]], axis=0)
+        # Upstream layout: q0, q1, then the n_steps-1 scan outputs with the last one dropped.
+        samples = jnp.concatenate([jnp.stack((q0 @ weights, q1 @ weights))] + pieces, axis=0)
         return state, samples[:n_steps]
     positions, velocities = [], []
     if full:

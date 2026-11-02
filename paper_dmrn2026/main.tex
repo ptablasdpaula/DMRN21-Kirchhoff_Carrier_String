@@ -62,9 +62,9 @@ backpropagation runs in a custom CUDA kernel that stores only periodic
 checkpoints and three scalars per time step: the nonlinearity is one global
 scalar, so every sine mode is stepped and differentiated independently, and
 a fourth-order spatial stencil removes grid dispersion at 2$\times$
-oversampling. Gradients are faster than
-with a state-of-the-art differentiable modal solver and \textcolor{red}{leaner
-than with either baseline, checkpointed or not}.
+oversampling. Gradients are faster than with a state-of-the-art
+differentiable modal solver and about a thousand times faster than
+checkpointed autodiff at the same memory.
 \end{abstract}
 
 \section{Introduction}
@@ -160,9 +160,9 @@ spatial grid and a \texttt{jaxdiffmodal} string~\cite{diaz2025} with 100 modes
 at 44.1 kHz, each as distributed and with 256-step checkpointing, on an A100
 80 GB in float64; the FDTD uses 176 intervals at 88.2 kHz, decimated to
 44.1 kHz. In Fig.~\ref{fig:benchmark} our method is nearly three orders of
-magnitude faster than autodiff and faster than \texttt{jaxdiffmodal},
-checkpointed or not\textcolor{red}{; checkpointing flattens their memory,
-not their time}. Gradient checks and the sound matching and semantic
+magnitude faster than autodiff and 1.7 to 2 times faster than
+\texttt{jaxdiffmodal}, checkpointed or not; checkpointing brings both
+baselines down to our memory at 1.3 to 1.5 times their time. Gradient checks and the sound matching and semantic
 conditioning applications are in the online
 supplement.\footnote{\scriptsize\url{ptablasdpaula.github.io/DMRN21-Kirchhoff_Carrier_String}}
 

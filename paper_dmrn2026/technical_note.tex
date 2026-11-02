@@ -114,6 +114,24 @@ Autodiff & 169\,s, 2.33\,GB & 32: 177\,s, 44.9\,GB & 64 (GPU OOM) \\
 \label{tab:sweep}
 \end{table}
 
+\textbf{Checkpointed baselines.} A reviewer of the abstract noted that both baselines run as distributed, without rematerialisation, so their linear memory growth confounds the comparison of methods with an implementation choice. Two variants isolate that choice, everything else unchanged (jobs 35062741 and 35105080, the same GPU model; \texttt{benchmarks/native\_rate\_results/a100-ckpt*-35062741.json}, \texttt{a100-ckptro-*-35105080.json}, merged with the original sweep by \texttt{paper\_dmrn2026/figures/merge\_sweeps.py}). \emph{Autodiff, checkpointed} cuts the spatial PyTorch loop into 256-step chunks and passes each through \texttt{torch.utils.checkpoint} (non-reentrant form), the same segments as the cached adjoint's checkpoints; its values and ten gradients equal the plain path bit for bit (\texttt{test/figure\_fdtd.py}) and its gradients agree with the replay adjoint to $1.5\times10^{-9}$ at every batch. \emph{Modal, checkpointed} rewrites the upstream \texttt{solve\_tf} recurrence (its coefficients, RK4 first step and two-term update) as a \texttt{jax.lax.scan} over 256-step segments whose body is wrapped in \texttt{jax.checkpoint}, the package itself untouched; values and gradients match upstream to $10^{-13}$ and $10^{-10}$ (\texttt{test/native\_rate\_study.py}). Returning the full modal trajectory and its velocities as the upstream interface does still costs two (steps, modes) arrays per item and their cotangents, 0.2\,GB per batch item (0.99 to 26.5\,GB over batches 1 to 128, a third of the plain variant), so the variant in the abstract's figure also reads the pickup inside the scan, as the FDTD kernels do, and returns the waveform only; its waveform is identical to the plain modal solver's. Table~\ref{tab:ckpt} gives the result: checkpointing brings both baselines to the cached adjoint's memory, every batch fits, and the time rises by a factor of 1.5 (Autodiff) and 1.3 to 1.5 (Modal), the price of recomputing each segment's forward pass. The cached adjoint remains 760 to 1070 times faster than checkpointed autodiff and 1.7 to 2.1 times faster than the checkpointed modal solver at matched memory: the flat memory is a property of checkpointing that the baselines share once they use it, the speed is the kernel's.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{llll}
+\hline
+Method & batch 1 & batch 128 & first failure \\
+\hline
+Cached adjoint (job 34855605) & 0.240\,s, 0.57\,GB & 0.348\,s, 1.51\,GB & none \\
+Autodiff, checkpointed & 256\,s, 0.57\,GB & 264\,s, 1.80\,GB & none \\
+Modal (100), checkpointed, trajectory returned & 0.479\,s, 0.99\,GB & 0.615\,s, 26.5\,GB & none \\
+Modal (100), checkpointed, readout in scan & 0.497\,s, 0.99\,GB & 0.606\,s, 1.27\,GB & none \\
+\hline
+\end{tabular}
+\caption{One-second sweep of the rematerialised baselines (ten parameters, MAE loss, $\pm3\%$ batch, A100 80\,GB): median seconds per evaluation and sampled GPU memory at the first and last batch. Plain Autodiff and Modal ran out of memory at batches 64 and 128 (Table~\ref{tab:sweep}).}
+\label{tab:ckpt}
+\end{table}
+
 \bibliographystyle{plain}
 \bibliography{references}
 \end{document}
