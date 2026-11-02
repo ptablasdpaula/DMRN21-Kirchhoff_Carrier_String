@@ -64,14 +64,22 @@ PURPLE, ORANGE, BLACK, GREY = '#7625a8', '#d55e00', '#151515', '#8c8c8c'
 SPECS = (('ours', 'cached3', None, 'Ours', PURPLE, False),
          ('modal', 'diaz_44100', primary, 'jaxdiffmodal', ORANGE, False),
          ('autodiff', 'fdtd', None, 'Autodiff', BLACK, False),
-         ('modal_ckpt', 'diaz_44100_ckpt', primary, 'jaxdiffmodal, checkpointed', ORANGE, True),
+         ('modal_ckpt', 'diaz_44100_ckptro', primary, 'jaxdiffmodal, checkpointed', ORANGE, True),
+         ('modal_ckpt_traj', 'diaz_44100_ckpt', primary, 'jaxdiffmodal, checkpointed', ORANGE, True),
          ('autodiff_ckpt', 'fdtd_ckpt', None, 'Autodiff, checkpointed', BLACK, True))
 present = [spec for spec in SPECS if spec[1] in metadata['methods'] and (MODE == 'label' or not spec[5])]
+# The checkpointed modal series is the readout-in-scan variant when the sweep has it;
+# the variant that returns the full modal trajectory stands in otherwise.
+if any(spec[0] == 'modal_ckpt' for spec in present):
+    present = [spec for spec in present if spec[0] != 'modal_ckpt_traj']
+else:
+    present = [(('modal_ckpt',) + spec[1:]) if spec[0] == 'modal_ckpt_traj' else spec for spec in present]
 series = {key: dict(name=name, colour=colour, hollow=hollow, rows=select(method, modes)[0], failed=select(method, modes)[1])
           for key, method, modes, name, colour, hollow in present}
-# Where each series prints its first and last time: above/below the dot, or left/right of it.
+# Where each series prints its first and last time: above/below the dot, left/right of it, or not at all
+# (the checkpointed series are flat in time, so their last value says it all).
 TIME_SIDES = {'ours': ('below', 'below'), 'modal': ('below', 'right'), 'autodiff': ('above', 'right'),
-              'modal_ckpt': ('above', 'right'), 'autodiff_ckpt': ('above', 'right')}
+              'modal_ckpt': (None, 'right'), 'autodiff_ckpt': (None, 'right')}
 seconds = lambda r: r['median_seconds']
 gigabytes = lambda r: r['peak_gpu_bytes']/1e9
 times = [seconds(r) for s in series.values() for r in s['rows']]
@@ -111,9 +119,11 @@ for key, s in sorted(series.items(), key=lambda item: -max(seconds(r) for r in i
         ax.scatter(x, y, s=2.6**2, c=colour, edgecolors='none', zorder=3)
     # Each series prints only its first and last time, with the unit.
     for r, side in zip((seq[0], seq[-1]), TIME_SIDES[key]):
-        annotate_time(r, time_text(seconds(r)) + ' s', side, colour)
+        if side is not None:
+            annotate_time(r, time_text(seconds(r)) + ' s', side, colour)
 ax.set_xscale('log', base=2)
-ax.set_xlim(batches[0]*.72, batches[-1]*1.38)
+# Room on the right for the labels printed beside the last dots.
+ax.set_xlim(batches[0]*.72, batches[-1]*(2.0 if MODE == 'label' else 1.38))
 ax.set_xticks(batches, [str(v) for v in batches])
 ax.set_yscale('log')
 memories = [gigabytes(r) for s in series.values() for r in s['rows']]
@@ -143,9 +153,6 @@ if MODE == 'label':
     # Direct labels in series colour.
     by_name = {key: s['rows'] for key, s in series.items()}
     at = lambda key, batch: next(gigabytes(r) for r in by_name[key] if r['batch'] == batch)
-    last = by_name['ours'][-1]
-    ax.annotate('Ours', (last['batch'], gigabytes(last)), xytext=(0, 4.5), textcoords='offset points',
-                ha='center', va='bottom', fontsize=TEXT, color=PURPLE)
     fig.subplots_adjust(left=.11, right=.99, bottom=.2, top=.97)
     fig.canvas.draw()                      # finalise transforms before measuring line angles
 
@@ -185,15 +192,16 @@ if MODE == 'label':
         y_text = y_line + (gap if side == 'above' else -gap)*fig.dpi/72
         text.set_position((xc, inverse.transform((0, y_text))[1]))
 
-    # (series, from batch, to batch, side) for every named series but Ours.
-    NAMES = {'autodiff': (2, 4, 'above'), 'modal': (32, 64, 'below'),
-             'autodiff_ckpt': (4, 16, 'above'), 'modal_ckpt': (32, 128, 'above')}
+    # (series, from batch, to batch, side): each name sits beside its own line.
+    NAMES = {'ours': (2, 8, 'below'), 'autodiff': (2, 4, 'above'), 'modal': (32, 64, 'below'),
+             'autodiff_ckpt': (4, 16, 'above'), 'modal_ckpt': (16, 64, 'above')}
     if DECORATED:
         along('autodiff', 2, 4, 'above')
         along('modal', 16, 32, 'below')
+        place('ours', 2, 8, 'below')
     else:
         for key, (b0, b1, side) in NAMES.items():
-            if key in series and key != 'ours':
+            if key in series:
                 place(key, b0, b1, side)
 else:
     handles = [Line2D([], [], marker='o', ls='none', color=s['colour'], ms=5, label=s['name']) for s in series.values()]

@@ -54,6 +54,17 @@ def main():
         value,grad=jax.value_and_grad(lambda y:objective(y,segment))(x)
         np.testing.assert_allclose(float(value),float(base_value),rtol=1e-12,atol=0)
         np.testing.assert_allclose(np.asarray(grad)*scales,np.asarray(base_grad)*scales,rtol=1e-10,atol=1e-13)
+        # Reading the pickup inside the scan changes the summation order of the
+        # readout only: same waveform and gradients to rounding.
+        folded=renderer(x,n,rate,100,176,'raised_cosine',segment,True)
+        assert folded.shape==plain.shape
+        np.testing.assert_allclose(folded,plain,rtol=1e-11,atol=1e-14)
+        value,grad=jax.value_and_grad(lambda y:jnp.sum(renderer(y,n,rate,100,176,'raised_cosine',segment,True)*jnp.sin(jnp.arange(n,dtype=jnp.float64)/7.)))(x)
+        np.testing.assert_allclose(float(value),float(base_value),rtol=1e-11,atol=0)
+        np.testing.assert_allclose(np.asarray(grad)*scales,np.asarray(base_grad)*scales,rtol=1e-9,atol=1e-12)
+    try: renderer(x,n,rate,100,176,'raised_cosine',None,True)
+    except ValueError: pass
+    else: raise AssertionError('readout_in_scan without checkpoint_steps accepted')
     for bad in (0,-1,2.0,True):
         try: renderer(x,n,rate,100,176,'raised_cosine',bad)
         except ValueError: pass

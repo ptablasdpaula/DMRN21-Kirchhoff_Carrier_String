@@ -14,7 +14,10 @@ coefficients and first RK4 step as upstream ``solve_tf``, but run as a nested
 ``jax.checkpoint``. Reverse mode then keeps the carry at each segment boundary
 and recomputes one segment at a time instead of storing every step. The
 values are the same; only the memory/time trade-off of the backward pass
-changes.
+changes. Returning the full modal trajectory and its velocities as upstream
+does still costs two (steps, modes) arrays per item plus their cotangents;
+``readout_in_scan`` instead reads the pickup inside the scan and returns the
+pickup waveform only, as the FDTD kernels do.
 """
 import jax
 import jax.numpy as jnp
@@ -26,7 +29,8 @@ from experiments.figure_comparison.diaz import initial_shape
 jax.config.update('jax_enable_x64', True)
 
 
-def solve_tf_checkpointed(gamma2_mu, omega_mu_squared, dt, n_steps, nl_fn=None, u0=None, v0=None, segment=256):
+def solve_tf_checkpointed(gamma2_mu, omega_mu_squared, dt, n_steps, nl_fn=None, u0=None, v0=None, segment=256,
+                          weights=None):
     """Unforced upstream ``solve_tf`` with its recurrence rematerialised in ``segment``-step pieces.
 
     Mirrors ``jaxdiffmodal.time_integrators.solve_tf`` (coefficients a1, a2, b1,
@@ -34,7 +38,10 @@ def solve_tf_checkpointed(gamma2_mu, omega_mu_squared, dt, n_steps, nl_fn=None, 
     the same ``(state, positions, velocities)``; the only difference is that the
     time loop is a scan over segments whose body, an inner scan of ``segment``
     steps, is wrapped in ``jax.checkpoint``. A shorter final segment covers the
-    remainder.
+    remainder. With ``weights`` (one value per mode) the scan emits the pickup
+    sample ``q @ weights`` of every step instead of the modal vectors and the
+    function returns ``(state, samples)`` with ``samples`` of length ``n_steps``,
+    so no (steps, modes) array is ever materialised.
     """
     if not isinstance(n_steps, int) or n_steps < 2: raise ValueError('n_steps must be an integer >= 2')
     if not isinstance(segment, int) or isinstance(segment, bool) or segment < 1:
@@ -59,6 +66,8 @@ def solve_tf_checkpointed(gamma2_mu, omega_mu_squared, dt, n_steps, nl_fn=None, 
         nl = apply_nl(q_curr)
         q_next = a1 * q_curr + a2 * q_prev - b1 * nl
         v_next = (q_next - q_prev) / (2.0 * dt)
+        if weights is not None:
+            return (q_curr, q_next, v_next), q_next @ weights
         return (q_curr, q_next, v_next), (q_next, v_next)
 
     def run(carry, length):
@@ -66,6 +75,17 @@ def solve_tf_checkpointed(gamma2_mu, omega_mu_squared, dt, n_steps, nl_fn=None, 
 
     full, remainder = divmod(n_steps - 1, segment)
     state = (q0, q1, v1)
+    if weights is not None:
+        pieces = []
+        if full:
+            body = jax.checkpoint(lambda carry, _: run(carry, segment))
+            state, y_seg = jax.lax.scan(body, state, None, length=full)
+            pieces.append(y_seg.reshape(full * segment))
+        if remainder:
+            state, y_rem = jax.checkpoint(lambda carry, _: run(carry, remainder))(state, None)
+            pieces.append(y_rem)
+        samples = jnp.concatenate([jnp.stack((q0 @ weights, q1 @ weights))] + [p[:-1] for p in pieces[:-1]] + [pieces[-1][:-1]], axis=0)
+        return state, samples[:n_steps]
     positions, velocities = [], []
     if full:
         body = jax.checkpoint(lambda carry, _: run(carry, segment))
@@ -82,7 +102,7 @@ def solve_tf_checkpointed(gamma2_mu, omega_mu_squared, dt, n_steps, nl_fn=None, 
     return state, full_positions[:n_steps], full_velocities[:n_steps]
 
 
-def _single(values, samples, rate, modes, reference_intervals, excitation, checkpoint_steps=None):
+def _single(values, samples, rate, modes, reference_intervals, excitation, checkpoint_steps=None, readout_in_scan=False):
     rho, tension, radius, modulus, length, amplitude, sigma0, sigma1, pluck, pickup = values
     area = jnp.pi * radius**2
     inertia = jnp.pi * radius**4 / 4.
@@ -98,6 +118,12 @@ def _single(values, samples, rate, modes, reference_intervals, excitation, check
     u0 = (length/reference_intervals)*(basis @ (amplitude*shape))
     factors = string_tau_with_density(params)*eig/(length/2.)
     nl = make_tm_nl_fn(eig, factors)
+    weights = jnp.sin(jnp.pi*indices*pickup)/(length/2.)  # modal readout at the pickup fraction
+    if checkpoint_steps and readout_in_scan:
+        _, output = solve_tf_checkpointed(damping_term(params,eig), stiffness_term(params,eig),
+                                          1./rate, n_steps=samples, nl_fn=nl,
+                                          u0=u0, v0=jnp.zeros_like(u0), segment=checkpoint_steps, weights=weights)
+        return output
     if checkpoint_steps:
         _, trajectory, _ = solve_tf_checkpointed(damping_term(params,eig), stiffness_term(params,eig),
                                                  1./rate, n_steps=samples, nl_fn=nl,
@@ -106,12 +132,11 @@ def _single(values, samples, rate, modes, reference_intervals, excitation, check
         _, trajectory, _ = solve_tf(damping_term(params,eig), stiffness_term(params,eig),
                                     1./rate, n_steps=samples, nl_fn=nl,
                                     u0=u0, v0=jnp.zeros_like(u0))
-    weights = jnp.sin(jnp.pi*indices*pickup)/(length/2.)  # modal readout at the pickup fraction
     return trajectory @ weights
 
 
 def renderer(values, samples, rate=44100, modes=175, reference_intervals=176, excitation='multimode',
-             checkpoint_steps=None):
+             checkpoint_steps=None, readout_in_scan=False):
     if values.ndim != 2 or values.shape[1] != 10: raise ValueError('Expected physical parameters (batch, 10)')
     if not isinstance(reference_intervals, int) or reference_intervals < 4 or reference_intervals % 2:
         raise ValueError('Use an even reference interval count >= 4')
@@ -120,4 +145,5 @@ def renderer(values, samples, rate=44100, modes=175, reference_intervals=176, ex
     if checkpoint_steps is not None and (not isinstance(checkpoint_steps, int) or isinstance(checkpoint_steps, bool)
                                          or checkpoint_steps < 1):
         raise ValueError('checkpoint_steps must be a positive integer or None')
-    return jax.vmap(lambda row:_single(row,samples,rate,modes,reference_intervals,excitation,checkpoint_steps))(values)
+    if readout_in_scan and not checkpoint_steps: raise ValueError('readout_in_scan requires checkpoint_steps')
+    return jax.vmap(lambda row:_single(row,samples,rate,modes,reference_intervals,excitation,checkpoint_steps,readout_in_scan))(values)
