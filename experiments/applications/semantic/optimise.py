@@ -25,7 +25,7 @@ from experiments.applications.common.render import BatchRenderer
 from experiments.applications.common.media import FrameLogger, animate, write_wave, save_spectrogram_png, spectrogram_db
 from experiments.applications.semantic.box import (WideStringBox, production_grid, pilot_grid, perceptual,
                                                    SAMPLE_RATE, DURATION, EXCITATION, FADE_SECONDS)
-from experiments.applications.semantic.clap import ClapScorer, directional_loss, cosine_loss, barrier
+from experiments.applications.semantic.clap import ClapScorer, directional_loss, margin_loss, barrier
 from experiments.applications.semantic.prompts import PAIRS, directions
 
 SCHEDULE = Schedule(initial_lr=0.05, factor=0.5, plateau_patience=15, threshold=1e-3, stop_patience=60,
@@ -49,8 +49,11 @@ def footer(material):
             f"L {L*100:.0f} cm · r {r*1e3:.2f} mm · pluck {pluck:.2f}")
 
 
+OBJECTIVES = {'margin': margin_loss, 'directional': directional_loss}
+
+
 def run_pair(pair, *, starts=32, grid='production', seed=0, device='cuda', schedule=SCHEDULE, group=16,
-             frames_per_run=100, output_dir=None, top=3):
+             frames_per_run=100, output_dir=None, top=3, objective_name='margin'):
     output_dir = Path(output_dir); output_dir.mkdir(parents=True, exist_ok=True)
     box = WideStringBox()
     grid_config = production_grid(box) if grid == 'production' else pilot_grid(box)
@@ -81,10 +84,9 @@ def run_pair(pair, *, starts=32, grid='production', seed=0, device='cuda', sched
         e = scorer.embed_audio(audio_chunk)                  # (k, 512) float32
         s_plus = (e*text[which[idx]]).sum(-1)
         s_minus = (e*text[1-which[idx]]).sum(-1)
-        if state['e0'] is None:
-            loss = cosine_loss(e, text[which[idx]])          # iteration 0: no displacement yet
-        else:
-            loss = directional_loss(e, state['e0'][idx], d_hat[which[idx]])
+        # Iteration 0: the displacement is zero, so the objective is its reference value (1 for both objectives).
+        e0 = e.detach() if state['e0'] is None else state['e0'][idx]
+        loss = OBJECTIVES[objective_name](e, e0, d_hat[which[idx]])
         return loss.to(torch.float64), e.detach(), s_plus.detach(), s_minus.detach()
 
     def objective(z, indices):
@@ -173,7 +175,7 @@ def run_pair(pair, *, starts=32, grid='production', seed=0, device='cuda', sched
                                         sample_rate=SAMPLE_RATE, hop=SPEC_HOP, fps=10, fmax=14000, frame_title='current best')))
             except Exception as error:
                 gifs.append(f'error: {error!r}')
-    summary = {'pair': pair, 'prompts': prompts, 'directions': [{'target': t, 'contrast': c} for t, c in dirs],
+    summary = {'pair': pair, 'objective': objective_name, 'prompts': prompts, 'directions': [{'target': t, 'contrast': c} for t, c in dirs],
                'box': {'names': box.names, 'ranges': box.ranges}, 'grid': renderer.describe(), 'schedule': schedule.__dict__,
                'starts': starts, 'seed': seed, 'group': group, 'git': git_revision(), 'torch': torch.__version__,
                'gpu': torch.cuda.get_device_name() if device != 'cpu' and torch.cuda.is_available() else None,
@@ -194,6 +196,7 @@ def main(argv=None):
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--group', type=int, default=16)
     parser.add_argument('--max-iter', type=int, default=None)
+    parser.add_argument('--objective', default='margin', choices=sorted(OBJECTIVES))
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args(argv)
     torch.set_num_threads(1)
@@ -202,7 +205,7 @@ def main(argv=None):
         schedule = Schedule(**{**SCHEDULE.__dict__, 'maximum_updates': args.max_iter,
                                'stop_patience': min(SCHEDULE.stop_patience, max(1, args.max_iter))})
     summary = run_pair(args.pair, starts=args.starts, grid=args.grid, seed=args.seed, device=args.device,
-                       schedule=schedule, group=args.group, output_dir=args.output)
+                       schedule=schedule, group=args.group, output_dir=args.output, objective_name=args.objective)
     best = max(summary['items'], key=lambda it: it['gain'])
     print(json.dumps({'pair': args.pair, 'evaluations': summary['evaluations'], 'seconds': round(summary['seconds']),
                       'best_gain': round(best['gain'], 4), 'best_prompt': best['prompt'],

@@ -94,6 +94,16 @@ def directional_loss(audio_embedding, start_embedding, direction, tau=1e-3):
     return 1 - (delta*direction).sum(-1)/(delta.norm(dim=-1) + tau)
 
 
+def margin_loss(audio_embedding, start_embedding, direction):
+    """Directional margin: 1 - (e - e0)·d_hat, i.e. one minus the displacement projected on the prompt direction.
+
+    With d_hat = normalize(t_target - t_contrast) this maximises the similarity
+    margin (s_plus - s_minus) relative to the start; it is exactly 1 at the
+    start, so lowest-loss retention and plateau detection work from iteration 0.
+    """
+    return 1 - ((audio_embedding - start_embedding)*direction).sum(-1)
+
+
 def barrier(logits, edge=3.0, weight=0.05):
     """Quadratic penalty outside |z| <= edge (about 95 % of each log range) to avoid sigmoid saturation."""
     return weight*F.relu(logits.abs()-edge).square().mean(-1)
