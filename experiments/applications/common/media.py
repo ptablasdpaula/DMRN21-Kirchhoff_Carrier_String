@@ -112,8 +112,13 @@ class FrameLogger:
 
 
 def animate(frames_npz, frames_jsonl, out_gif, *, sample_rate, hop=256, fps=12, dpi=72, fmax=None,
-            vmin=-80.0, vmax=0.0, target_title='target', frame_title='current best', width=7.0, height=3.2):
-    """Write a GIF from saved frames: target panel (if any) on the left, the logged best candidate on the right."""
+            vmin=-80.0, vmax=0.0, target_title='target', frame_title='current best', width=7.0, height=3.8,
+            title_width=95, footer_width=120):
+    """Write a GIF from saved frames: target panel (if any) on the left, the logged best candidate on the right.
+
+    The title and footer are wrapped so long parameter lines stay inside the figure.
+    """
+    import textwrap
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -125,29 +130,32 @@ def animate(frames_npz, frames_jsonl, out_gif, *, sample_rate, hop=256, fps=12, 
         meta = [json.loads(line) for line in handle if line.strip()]
     if len(frames) == 0 or len(meta) != len(frames):
         raise ValueError('frames and metadata do not match or are empty')
+    wrap_title = lambda s: textwrap.fill(s, title_width)
+    wrap_footer = lambda s: textwrap.fill(s, footer_width)
     panels = 2 if target is not None else 1
-    fig, axes = plt.subplots(1, panels, figsize=(width, height), squeeze=False, constrained_layout=True)
+    fig, axes = plt.subplots(1, panels, figsize=(width, height), squeeze=False)
+    fig.subplots_adjust(left=0.09, right=0.98, top=0.80, bottom=0.30, wspace=0.18)
     axes = axes[0]
     extent = _axes_extent(frames[0], sample_rate, hop)
     if target is not None:
         axes[0].imshow(target, origin='lower', aspect='auto', cmap=CMAP, vmin=vmin, vmax=vmax, extent=extent, interpolation='nearest')
-        axes[0].set_title(target_title, fontsize=10)
+        axes[0].set_title(target_title, fontsize=9)
     image = axes[-1].imshow(frames[0], origin='lower', aspect='auto', cmap=CMAP, vmin=vmin, vmax=vmax, extent=extent, interpolation='nearest')
-    axes[-1].set_title(frame_title, fontsize=10)
+    axes[-1].set_title(frame_title, fontsize=9)
     for ax in axes:
-        ax.set_xlabel('Time (s)', fontsize=9); ax.tick_params(labelsize=8, length=2)
+        ax.set_xlabel('Time (s)', fontsize=8); ax.tick_params(labelsize=7, length=2)
         if fmax is not None:
             ax.set_ylim(0, fmax)
         for spine in ax.spines.values():
             spine.set_linewidth(0.5)
-    axes[0].set_ylabel('Frequency (Hz)', fontsize=9)
-    title = fig.suptitle(meta[0]['title'], fontsize=10)
-    footer = fig.text(0.5, 0.01, meta[0].get('footer', ''), ha='center', va='bottom', fontsize=8)
+    axes[0].set_ylabel('Frequency (Hz)', fontsize=8)
+    title = fig.text(0.5, 0.97, wrap_title(meta[0]['title']), ha='center', va='top', fontsize=8.5)
+    footer = fig.text(0.5, 0.02, wrap_footer(meta[0].get('footer', '')), ha='center', va='bottom', fontsize=7, color='#444444')
 
     def update(index):
         image.set_data(frames[index])
-        title.set_text(meta[index]['title'])
-        footer.set_text(meta[index].get('footer', ''))
+        title.set_text(wrap_title(meta[index]['title']))
+        footer.set_text(wrap_footer(meta[index].get('footer', '')))
         return image, title, footer
 
     animation = FuncAnimation(fig, update, frames=len(frames), blit=False)
