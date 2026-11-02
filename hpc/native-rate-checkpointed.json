@@ -8,7 +8,7 @@
    "1",
    "fdtd-b1"
   ],
-  "estimated_seconds": 2400
+  "estimated_seconds": 3000
  },
  {
   "id": "kc-ckpt-fdtd-b2",
@@ -19,7 +19,7 @@
    "2",
    "fdtd-b2"
   ],
-  "estimated_seconds": 2400
+  "estimated_seconds": 3000
  },
  {
   "id": "kc-ckpt-fdtd-b4",
@@ -30,7 +30,7 @@
    "4",
    "fdtd-b4"
   ],
-  "estimated_seconds": 2400
+  "estimated_seconds": 3000
  },
  {
   "id": "kc-ckpt-fdtd-b8",
@@ -41,7 +41,7 @@
    "8",
    "fdtd-b8"
   ],
-  "estimated_seconds": 2400
+  "estimated_seconds": 3000
  },
  {
   "id": "kc-ckpt-fdtd-b16",
@@ -52,7 +52,7 @@
    "16",
    "fdtd-b16"
   ],
-  "estimated_seconds": 2400
+  "estimated_seconds": 3000
  },
  {
   "id": "kc-ckpt-fdtd-b32",
@@ -63,7 +63,7 @@
    "32",
    "fdtd-b32"
   ],
-  "estimated_seconds": 2400
+  "estimated_seconds": 3000
  },
  {
   "id": "kc-ckpt-fdtd-b64",
@@ -74,7 +74,7 @@
    "64",
    "fdtd-b64"
   ],
-  "estimated_seconds": 2400
+  "estimated_seconds": 3000
  },
  {
   "id": "kc-ckpt-fdtd-b128",
@@ -85,7 +85,7 @@
    "128",
    "fdtd-b128"
   ],
-  "estimated_seconds": 2400
+  "estimated_seconds": 3000
  },
  {
   "id": "kc-ckpt-diaz",

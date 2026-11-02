@@ -244,3 +244,51 @@ previous sweep, 0.348 s against 0.371 s at batch 128). The abstract's figure
 (`build_benchmark_dots.py label`) and its sentence "nearly three orders of
 magnitude faster than plain autodifferentiation and faster than
 jaxdiffmodal" are unchanged in substance by the new definition.
+
+## Checkpointed baselines (2026-11-02, review response)
+
+A reviewer of the abstract pointed out that both baselines run as
+distributed, without rematerialisation, so their linear memory growth mixes
+an implementation choice with the comparison of methods. Two variants isolate
+that choice; everything else (workload, grid, rates, loss, batch, timing and
+memory measurement) is the one-second ten-parameter MAE sweep above.
+
+- `fdtd_ckpt` (`experiments/figure_comparison/fdtd.py`, `checkpoint_steps=256`):
+  the spatial PyTorch loop is cut into 256-step chunks and each chunk goes
+  through `torch.utils.checkpoint` (non-reentrant form, every differentiable
+  tensor passed explicitly). Only the two states at the chunk boundaries are
+  kept; the chunk's graph is rebuilt during the backward pass. Same segments
+  as the cached adjoint's checkpoints. `test/figure_fdtd.py` checks that the
+  values and all ten gradients equal the plain path bit for bit, including a
+  partial final chunk and a chunk longer than the run.
+- `diaz_44100_ckpt` (`experiments/native_rate_study/renderer.py`,
+  `solve_tf_checkpointed`): the upstream `solve_tf` recurrence (coefficients
+  a1, a2, b1, RK4 first step, two-term update, output layout) rewritten as a
+  `jax.lax.scan` over 256-step segments whose body, an inner scan with the
+  upstream `unroll=8`, is wrapped in `jax.checkpoint`; a shorter final segment
+  covers the remainder (44 099 steps = 172 × 256 + 67). The upstream package
+  is untouched. `test/native_rate_study.py` checks values (1e-13) and
+  gradients (1e-10) against upstream `solve_tf` for segments of 13, 64, 256
+  and a segment longer than the run.
+
+Jobs: `hpc/native-rate-checkpointed.sh [methods] [batches] [tag]` runs
+`benchmarks/native_rate_compare.py` with the sweep's flags for the methods
+given and writes `$KC_SCRATCH/native-rate-ckpt/<tag>-<job>.json`; the live
+per-case plot is skipped because it only knows the three original methods.
+`hpc/native-rate-checkpointed.json` splits the Autodiff variant into one task
+per batch (each about four evaluations of several minutes) so that the tasks
+also fit the one-hour `gpushort` partition, and runs the JAX variant in one
+task. `hpc/native-rate-checkpointed-smoke.{sh,json}` first runs the two tests
+on a GPU node and a 50 ms sweep of both variants at batches 1 and 2 (the
+worker validates `fdtd_ckpt` against the replay adjoint like every other
+PyTorch method). `paper_dmrn2026/figures/merge_sweeps.py` concatenates the
+new rows with job 34855605's into `native-rate-sweep-merged.json`, checking
+that duration, loss, excitation, grid, rates and mode counts agree and that
+every input ran on the same GPU model; `build_benchmark_dots.py` draws the
+checkpointed series as hollow dots (colour = method, fill = checkpointing)
+and marks each baseline's first out-of-memory batch with an x on the 80 GB
+line.
+
+### Results
+
+Pending: filled in from the sweep when it completes.
