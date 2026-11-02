@@ -53,9 +53,9 @@ def footer_text(physical):
 
 
 def run_stage(name, box, grid, target, logits0, schedule, *, duration, excitation, device, frames, frame_every,
-              target_spec, log_handle, label_f0=None):
-    renderer = BatchRenderer(grid, duration, excitation, device=device)
-    criterion = make_criterion(grid.sample_rate)
+              target_spec, log_handle, label_f0=None, derivative=0, loss_variant='logcel'):
+    renderer = BatchRenderer(grid, duration, excitation, device=device, derivative=derivative)
+    criterion = make_criterion(grid.sample_rate, loss_variant)
     target_t = torch.as_tensor(target, dtype=torch.float64, device=device)
     peak_ref = spectrogram_db(unit_rms(target_t), SPEC_FFT, SPEC_HOP)  # only to share the reference; spectrogram_db re-normalises
     state = {'evaluation': 0}
@@ -107,7 +107,10 @@ def distinct_top(physical, losses, k=TOP_K, min_cents=DISTINCT_CENTS):
 
 
 def fit_note(target, family, *, starts=128, seed=0, device='cuda', duration=3.0, excitation=EXCITATION,
-             schedule_a=STAGE_A, schedule_b=STAGE_B, output_dir=None, label_f0=None, frames_per_stage=90):
+             schedule_a=STAGE_A, schedule_b=STAGE_B, output_dir=None, label_f0=None, frames_per_stage=90,
+             derivative=0, sigma1_max=None, loss_variant='logcel'):
+    from experiments.applications.sound_matching.boxes import SIGMA1_MAX
+    sigma1_max = SIGMA1_MAX if sigma1_max is None else sigma1_max
     output_dir = Path(output_dir) if output_dir is not None else None
     if output_dir is not None:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -116,21 +119,21 @@ def fit_note(target, family, *, starts=128, seed=0, device='cuda', duration=3.0,
     target_spec = spectrogram_db(unit_rms(target_t), SPEC_FFT, SPEC_HOP)
     frames = FrameLogger(every=max(1, math.ceil(schedule_a.maximum_updates/frames_per_stage)), target=target_spec)
     # Stage A: the whole family on its coarse grid.
-    box_a, grid_a = family_box(family), stage_a_grid(family)
+    box_a, grid_a = family_box(family, sigma1_max), stage_a_grid(family, sigma1_max=sigma1_max)
     logits_a = sample_logits(box_a, starts, seed=seed, device=device)
     stage_a = run_stage('A', box_a, grid_a, target, logits_a, schedule_a, duration=duration, excitation=excitation,
                         device=device, frames=frames, frame_every=frames.every, target_spec=target_spec,
-                        log_handle=log_handle, label_f0=label_f0)
+                        log_handle=log_handle, label_f0=label_f0, derivative=derivative, loss_variant=loss_variant)
     top = distinct_top(stage_a['physical'], stage_a['result'].best_loss)
     center = stage_a['physical'][top[0]]
     # Stage B: a narrow box around the winner, many more intervals.
-    box_b = refinement_box(center, family)
+    box_b = refinement_box(center, family, sigma1_max=sigma1_max)
     grid_b = choose_grid(box_b)
     frames.every = max(1, math.ceil(schedule_b.maximum_updates/50))
     logits_b = encode_rows(box_b, stage_a['physical'][top].to(device))
     stage_b = run_stage('B', box_b, grid_b, target, logits_b, schedule_b, duration=duration, excitation=excitation,
                         device=device, frames=frames, frame_every=frames.every, target_spec=target_spec,
-                        log_handle=log_handle, label_f0=label_f0)
+                        log_handle=log_handle, label_f0=label_f0, derivative=derivative, loss_variant=loss_variant)
     log_handle.close()
     best = int(stage_b['result'].best_loss.argmin())
     physical = stage_b['physical'][best]
@@ -142,6 +145,7 @@ def fit_note(target, family, *, starts=128, seed=0, device='cuda', duration=3.0,
     d = derived(physical)
     report = {
         'family': family, 'duration_s': duration, 'excitation': excitation, 'starts': starts, 'seed': seed,
+        'signal': 'velocity' if derivative else 'displacement', 'sigma1_max': sigma1_max, 'loss': loss_variant,
         'stages': {
             'A': {'grid': stage_a['renderer'].describe(), 'box': stage_a['box'].ranges, 'schedule': schedule_a.__dict__,
                   'evaluations': stage_a['result'].evaluations, 'seconds': stage_a['result'].seconds,
@@ -190,6 +194,9 @@ def main(argv=None):
     parser.add_argument('--excitation', default=EXCITATION)
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--smoke', action='store_true', help='0.5 s, 8 starts, a handful of iterations per stage')
+    parser.add_argument('--signal', default='displacement', choices=('displacement', 'velocity'), help='pickup signal compared with the recording')
+    parser.add_argument('--sigma1-max', type=float, default=None, help='upper bound of the frequency-dependent damping (m^2/s)')
+    parser.add_argument('--loss', default='logcel', choices=('logcel', 'tlogcel', 'cel'))
     args = parser.parse_args(argv)
     torch.set_num_threads(1)
     with open(args.manifest) as handle:
@@ -215,7 +222,8 @@ def main(argv=None):
             print(f"== {note['note_str']} / {family} ({time.strftime('%H:%M:%S')})", flush=True)
             report = fit_note(target, family, starts=starts, seed=args.seed, device=args.device, duration=duration,
                               excitation=args.excitation, schedule_a=schedule_a, schedule_b=schedule_b,
-                              output_dir=folder/family, label_f0=note['label_f0_hz'])
+                              output_dir=folder/family, label_f0=note['label_f0_hz'],
+                              derivative=1 if args.signal == 'velocity' else 0, sigma1_max=args.sigma1_max, loss_variant=args.loss)
             summary['families'][family] = {k: report[k] for k in ('loss', 'log_spectral_distance_db', 'derived', 'physical', 'f1_cents_vs_label')}
             print(json.dumps({'family': family, 'loss': report['loss'], 'f0_hz': report['derived']['f0_hz'],
                               'cents_vs_label': report['f1_cents_vs_label'],

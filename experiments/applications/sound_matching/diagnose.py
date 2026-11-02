@@ -54,14 +54,17 @@ def main(argv=None):
     # Sweep f0 by scaling the tension (f0 ∝ sqrt(T)); keep everything else fixed. Grid: stable for the whole sweep.
     f0s = torch.linspace(0.75*args.label_f0, 1.3*args.label_f0, args.points, dtype=torch.float64)
     report = {'fit_f0_hz': f0_fit, 'label_f0_hz': args.label_f0, 'f0_hz': f0s.tolist(), 'variants': {}}
-    variants = {'fitted_pluck': (float(base[8]), float(base[9]), 'raised_cosine:0.08'),
-                'pluck_0.20': (0.20, float(base[9]), 'raised_cosine:0.08'),
-                'pluck_0.20_sharp': (0.20, float(base[9]), 'raised_cosine:0.02'),
-                'pluck_0.12_sharp_pickup_0.3': (0.12, 0.30, 'raised_cosine:0.02')}
-    for name, (pluck, pickup, excitation) in variants.items():
+    # (pluck, pickup, excitation, sigma1 override or None, output derivative order)
+    variants = {}
+    for sigma1 in (2e-3, 5e-3, 1e-2):
+        for pluck in (float(base[8]), 0.3, 0.2, 0.12):
+            variants[f'sigma1_{sigma1:g}_pluck_{pluck:.2f}'] = (pluck, float(base[9]), 'raised_cosine:0.08', sigma1, 0)
+    for name, (pluck, pickup, excitation, sigma1, derivative) in variants.items():
         rows = base.repeat(len(f0s), 1)
         rows[:, 1] = base[1]*(f0s/f0_fit)**2
         rows[:, 8], rows[:, 9] = pluck, pickup
+        if sigma1 is not None:
+            rows[:, 7] = sigma1
         # grid from a box covering the sweep
         lo, hi = rows.min(0).values, rows.max(0).values
         from src.parameters import MaterialParameterBox
@@ -77,6 +80,8 @@ def main(argv=None):
         renderer = BatchRenderer(grid, 3.0, excitation, device='cuda')
         with torch.no_grad():
             audio = renderer(rows.cuda())
+            if derivative:
+                audio = torch.diff(audio, dim=-1, prepend=audio[:, :1])*SAMPLE_RATE
         res = losses_for(audio, target)
         res['grid'] = renderer.describe()
         best = {k: float(f0s[int(np.argmin(v))]) for k, v in res.items() if isinstance(v, list)}

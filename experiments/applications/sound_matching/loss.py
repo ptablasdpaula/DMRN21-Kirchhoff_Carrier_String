@@ -12,10 +12,16 @@ def unit_rms(audio, eps=1e-12):
     return centred/(centred.pow(2).mean(dim=-1, keepdim=True).sqrt() + eps)
 
 
-def make_criterion(sample_rate=16000, log_weighting=True, directions=(Direction.RIGHT_UP, Direction.RIGHT_DOWN)):
-    """The frozen 'tlogCeL' configuration of ICASSP27-Phrase, unreduced so every item keeps its own loss."""
-    return STFTCumulativeEnergyLoss(sample_rate=sample_rate, n_fft=N_FFT, hop_length=HOP, directions=directions,
-                                    log_weighting=log_weighting, reduction='none')
+VARIANTS = {
+    'logcel': dict(log_weighting=True),                                                             # four diagonals, log-frequency weights
+    'tlogcel': dict(log_weighting=True, directions=(Direction.RIGHT_UP, Direction.RIGHT_DOWN)),     # time-forward diagonals only
+    'cel': dict(),                                                                                  # four diagonals, linear weights
+}
+
+
+def make_criterion(sample_rate=16000, variant='logcel'):
+    """A frozen ICASSP27-Phrase CeL configuration, unreduced so every item keeps its own loss."""
+    return STFTCumulativeEnergyLoss(sample_rate=sample_rate, n_fft=N_FFT, hop_length=HOP, reduction='none', **VARIANTS[variant])
 
 
 def per_item_loss(criterion, candidate, target):

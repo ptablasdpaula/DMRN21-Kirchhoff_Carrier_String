@@ -42,12 +42,15 @@ class BatchRenderer:
     pickup displacement in metres.
     """
     def __init__(self, grid, duration, excitation='raised_cosine:0.08', device='cuda',
-                 checkpoint=256, cache_count=3, fade_seconds=0.0, max_steps=50_000_000):
+                 checkpoint=256, cache_count=3, fade_seconds=0.0, max_steps=50_000_000, derivative=0):
         self.device = torch.device(device)
         if not math.isfinite(duration) or duration <= 0:
             raise ValueError('Duration must be finite and positive.')
         self.grid, self.duration, self.excitation = grid, float(duration), excitation
         self.checkpoint, self.cache_count = checkpoint, cache_count
+        if derivative not in (0, 1):
+            raise ValueError('derivative must be 0 (displacement) or 1 (velocity).')
+        self.derivative = derivative
         self.steps = round(duration*grid.integration_rate)
         self.samples = round(duration*grid.sample_rate)
         if self.steps > max_steps:
@@ -70,10 +73,13 @@ class BatchRenderer:
         raw = self.raw(physical)
         audio = decimate_batch(raw, self.grid.oversampling, self.samples, self.kernel) if self.kernel is not None \
             else raw[:, :self.samples]
+        if self.derivative:   # pickup velocity: first difference at the output rate (a 6 dB/octave tilt)
+            audio = torch.diff(audio, dim=-1, prepend=audio[:, :1])*self.grid.sample_rate
         return audio*self.fade if self.fade is not None else audio
 
     def describe(self):
         return {'sample_rate': self.grid.sample_rate, 'oversampling': self.grid.oversampling,
                 'integration_rate': self.grid.integration_rate, 'intervals': self.grid.intervals,
                 'order': self.grid.order, 'duration': self.duration, 'steps': self.steps, 'samples': self.samples,
-                'excitation': self.excitation, 'checkpoint': self.checkpoint, 'cache_count': self.cache_count}
+                'excitation': self.excitation, 'checkpoint': self.checkpoint, 'cache_count': self.cache_count,
+                'signal': 'velocity' if self.derivative else 'displacement'}

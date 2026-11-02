@@ -15,7 +15,12 @@ from experiments.applications.common.boxes import largest_stable_intervals, f0_r
 SAMPLE_RATE = 16000
 EXCITATION = 'raised_cosine:0.08'
 # amplitude (m), sigma_0 (1/s), sigma_1 (m^2/s), pluck (fraction of L, one half only), pickup
-COMMON = ((2e-4, 5e-3), (0.0, 5.0), (0.0, 3e-4), (0.05, 0.5), (0.05, 0.95))
+SIGMA1_MAX = 5e-3   # the recordings' upper partials decay fast; a low cap forced the pitch down (see diagnose.py)
+COMMON = ((2e-4, 5e-3), (0.0, 5.0), (0.0, SIGMA1_MAX), (0.05, 0.5), (0.05, 0.95))
+
+
+def common_ranges(sigma1_max=SIGMA1_MAX):
+    return ((2e-4, 5e-3), (0.0, 5.0), (0.0, float(sigma1_max)), (0.05, 0.5), (0.05, 0.95))
 # rho (kg/m^3), T (N), r (m), E (Pa), L (m)
 FAMILIES = {
     'steel': ((7000., 8100.), (45., 180.), (0.15e-3, 0.45e-3), (10e9, 220e9), (0.325, 0.65)),
@@ -26,29 +31,29 @@ REFINEMENT_FACTORS = {'rho': 1.1, 'T': 1.15, 'r': 1.15, 'E': 1.5, 'L': 1.05}
 POSITION_MARGIN = 0.1
 
 
-def family_box(family):
+def family_box(family, sigma1_max=SIGMA1_MAX):
     if family not in FAMILIES:
         raise ValueError(f'Unknown family {family!r}; choose from {sorted(FAMILIES)}.')
-    return MaterialParameterBox(ranges=FAMILIES[family] + COMMON)
+    return MaterialParameterBox(ranges=FAMILIES[family] + common_ranges(sigma1_max))
 
 
-def refinement_box(center, family, factors=REFINEMENT_FACTORS, position_margin=POSITION_MARGIN):
+def refinement_box(center, family, factors=REFINEMENT_FACTORS, position_margin=POSITION_MARGIN, sigma1_max=SIGMA1_MAX):
     """Multiplicative box around a stage-A winner, intersected with its family box."""
-    outer = family_box(family)
+    outer = family_box(family, sigma1_max)
     center = [float(v) for v in center]
     ranges = []
     for i, key in enumerate(('rho', 'T', 'r', 'E', 'L')):
         low, high = outer.ranges[i]
         ranges.append((max(low, center[i]/factors[key]), min(high, center[i]*factors[key])))
-    ranges += list(COMMON[:3])
+    ranges += list(common_ranges(sigma1_max)[:3])
     for i in (8, 9):
         low, high = outer.ranges[i]
         ranges.append((max(low, center[i]-position_margin), min(high, center[i]+position_margin)))
     return MaterialParameterBox(ranges=tuple(ranges))
 
 
-def stage_a_grid(family, oversampling=STAGE_A_OVERSAMPLING, sample_rate=SAMPLE_RATE):
-    box = family_box(family)
+def stage_a_grid(family, oversampling=STAGE_A_OVERSAMPLING, sample_rate=SAMPLE_RATE, sigma1_max=SIGMA1_MAX):
+    box = family_box(family, sigma1_max)
     intervals = largest_stable_intervals(box, oversampling, sample_rate)
     if intervals is None:
         raise ValueError(f'{family} family box is not stable at {oversampling}x.')
