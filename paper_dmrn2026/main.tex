@@ -14,6 +14,9 @@
 \renewcommand{\thesection}{\Roman{section}}
 \newcommand{\head}[1]{\par\vspace{2pt}\noindent\textbf{#1.}\ \ignorespaces}
 \providecommand{\bstctlentry}[1]{\nocite{#1}}
+% No extra space between reference entries.
+\let\oldthebibliography\thebibliography
+\renewcommand{\thebibliography}[1]{\oldthebibliography{#1}\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 % Layout economies after the DMRN+15 auraloss one-pager: tighter title block,
 % 7 pt footer close to the page edge, taller text block. The style file is unchanged.
 \setlength{\textheight}{266truemm}\setlength{\footskip}{0.2in}
@@ -27,14 +30,14 @@
  \begin{minipage}{0.5\textwidth}
  \hfill\hbox{\includegraphics[width=6cm]{DMRN_Logo_high_res.jpg}}
  \end{minipage}
- \vskip 1em \begin{center}
- {\large \bf \@title \par} \vskip 0.8em {\large
+ \vskip 0.6em \begin{center}
+ {\large \bf \@title \par} \vskip 0.5em {\large
 \begin{tabular}[t]{c}\@name \\ \@address
  \end{tabular}
  \par}
  \end{center}
  \par
- \vskip 0.6em}
+ \vskip 0.3em}
 \makeatother
 
 \title{Efficient Backprop for an FDTD Kirchhoff--Carrier String}
@@ -57,10 +60,9 @@ than with a state-of-the-art differentiable modal solver.
 
 \section{Introduction}
 Although FDTD synthesis is increasingly leaner~\cite{bilbao2024guitar},
-differentiable frameworks~\cite{engel2020ddsp} largely keep away from it,
-since backpropagating through a time-stepping scheme results in deep
-recurrent differentiation graphs, expensive in time and memory. Instead, the
-literature has favoured cheaper approaches like digital
+differentiable frameworks~\cite{engel2020ddsp} largely keep away from it:
+backpropagating through a time-stepping scheme builds deep recurrent graphs,
+expensive in time and memory. Instead, the literature has favoured digital
 waveguides~\cite{tablas2026waveguides,tablas2026sound}, which do not
 naturally capture nonlinearities and collisions, and modal
 synthesis~\cite{diaz2025}. In this work we demonstrate that an FDTD string
@@ -121,18 +123,17 @@ and, per step, only $\alpha^n$ and the two inner products behind
 (\ref{eq:alpha}), $q^{\mathsf T}q$ and
 $q^{\mathsf T}(\mathbf{B}u^{n}+\mathbf{C}u^{n-1})$. On the reverse pass each
 segment is re-run from its checkpoint, cheaply since with $\alpha^n$ known
-(\ref{eq:update}) is diagonal, and differentiated backwards with the stored
-inner products supplying the derivatives of $\alpha^n$ through
-(\ref{eq:alpha}). A CUDA kernel runs this in parallel over modes and batch
+(\ref{eq:update}) is diagonal, and differentiated backwards, the stored
+inner products supplying the derivatives of $\alpha^n$ through (\ref{eq:alpha}). A CUDA kernel runs this in parallel over modes and batch
 items.
 
 \head{Spatial stencil}
 Spatial derivatives use the fourth-order five-point stencil with parameter
 $7/6$ of~\cite[Sec.~6.3.1]{bilbao2009}, closed at the simply supported ends
-by odd reflection; it is diagonal in the same sine basis, so only the mode
-eigenvalues change, and on our 176-interval grid the waveform error against
-a converged solution of Russo et al.'s scheme~\cite{russo2026} drops from
-11.7\% to 1\% at 2$\times$ oversampling.
+by odd reflection. It is diagonal in the same sine basis, so only the mode
+eigenvalues change; on our 176-interval grid the waveform error against a
+converged solution of~\cite{russo2026} drops from 11.7\% to 1\% at 2$\times$
+oversampling.
 
 \section{Evaluation}
 Each evaluation is one sound-matching step: a batch of strings is simulated
@@ -142,15 +143,15 @@ computed, and backpropagated to ten parameters: the eight physical ones of
 string ($\rho=8050$ kg/m$^3$, $T_0=75$ N, $r=0.356$ mm, $E=174$ GPa,
 $L=1$ m, $\sigma_0=0.92$ s$^{-1}$, $\sigma_1=2.9\times10^{-4}$ m$^2$/s), plucked
 at its centre with a 2 mm raised cosine of half-width $L/4$ and read at its
-midpoint; the batch perturbs every parameter by up to $\pm3\%$. We compare our
-method with direct PyTorch autodiff of the same FDTD and a 100-mode
-\texttt{jaxdiffmodal} Kirchhoff--Carrier string~\cite{diaz2025} on an A100
-80 GB in float64; the FDTD uses 176 intervals at 88.2 kHz, decimated to
-44.1 kHz. As seen in
-Fig.~\ref{fig:benchmark}, our method is nearly three orders of magnitude
-faster than plain autodiff and faster than \texttt{jaxdiffmodal}, and its
-memory grows slowly with batch size, whereas both baselines grow linearly and
-eventually run out.
+midpoint; the batch perturbs every parameter by up to $\pm3\%$. We compare with
+direct PyTorch autodiff of the same FDTD and a 100-mode
+\texttt{jaxdiffmodal} string~\cite{diaz2025} on an A100 80 GB in float64;
+the FDTD uses 176 intervals at 88.2 kHz, decimated to 44.1 kHz. In
+Fig.~\ref{fig:benchmark} our method is nearly three orders of magnitude
+faster than autodiff and faster than \texttt{jaxdiffmodal}, and its memory
+grows slowly with batch size while both baselines grow linearly and run out.
+We explore sound matching and semantic conditioning applications in the
+online supplement.\footnote{\url{ptablasdpaula.github.io/DMRN21-Kirchhoff_Carrier_String}}
 
 \begin{figure}[t]
  \centering
