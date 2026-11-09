@@ -3,13 +3,15 @@
 \documentclass[a4paper]{article}
 \usepackage[T1]{fontenc}
 \usepackage{caption}
-\usepackage{times,amsmath,graphicx,url,dmrn2026}
+\usepackage{times,amsmath,amssymb,graphicx,url,dmrn2026}
 \usepackage{indentfirst}
-\usepackage{xcolor}
+\usepackage[table]{xcolor}
+\definecolor{heatpurple}{HTML}{DDD0EE}
 \captionsetup[figure]{skip=2pt}\setlength{\intextsep}{3pt plus 1pt minus 1pt}
 \setlength{\parskip}{0.1em}
 \captionsetup[figure]{font=footnotesize,labelfont=footnotesize}
-\captionsetup[table]{font=footnotesize,labelfont=footnotesize}
+\captionsetup[table]{font=footnotesize,labelfont=footnotesize,skip=2pt}
+\setlength{\textfloatsep}{3pt plus 1pt minus 1pt}
 \setlength{\belowcaptionskip}{0pt}
 \renewcommand{\thesection}{\Roman{section}}
 \newcommand{\head}[1]{\par\vspace{1pt}\noindent\textbf{#1.}\ \ignorespaces}
@@ -70,13 +72,13 @@ checkpointed autodiff at the same memory.
 \section{Introduction}
 Although FDTD synthesis is increasingly leaner~\cite{bilbao2024guitar} and
 runs on the GPU~\cite{lee2024string}, differentiable
-frameworks~\cite{engel2020ddsp} largely keep away from it: backpropagating
-through a time-stepping scheme builds deep, expensive recurrent graphs. The
+frameworks~\cite{hayes2024review} largely keep away from it because
+backpropagating through a time-stepping scheme builds deep and expensive
+recurrent graphs. Hence, the
 literature has favoured digital waveguides~\cite{tablas2026sound} and modal
-synthesis~\cite{diaz2025}; hand-written adjoints have so far targeted
-recursive filters~\cite{yu2024allpole}. Here a cached
-adjoint makes an FDTD string cheaper to backpropagate than a current
-differentiable modal solver.
+synthesis~\cite{diaz2025}. Hand-written adjoints have successfully targeted
+recursive filters~\cite{yu2024allpole}, a technique we extend here to the
+FDTD Kirchhoff--Carrier string.
 
 \section{Model and method}
 The string is the damped Kirchhoff--Carrier stiff string, simply supported at
@@ -127,7 +129,7 @@ diagonal, so with $\alpha^n$ known (\ref{eq:update}) updates each mode
 independently.
 
 \head{Cached adjoint}
-We keep $(u^{n},u^{n-1})$ every 256 steps and, per step, only $\alpha^n$ and
+We keep $(u^{n},u^{n-1})$ at periodic checkpoints and, per step, only $\alpha^n$ and
 the two inner products behind (\ref{eq:alpha}), $q^{\mathsf T}q$ and
 $q^{\mathsf T}(\mathbf{B}u^{n}+\mathbf{C}u^{n-1})$. On the reverse pass the
 states are regenerated backwards from each checkpoint by inverting
@@ -137,13 +139,12 @@ the adjoint of $\alpha^n$ needs a reduction over modes. A CUDA kernel runs
 this in parallel over modes and batch items.
 
 \head{Spatial stencil}
-Spatial derivatives use the fourth-order five-point stencil with parameter
-$7/6$ of~\cite[Sec.~6.3.1]{bilbao2009}, closed at the simply supported ends
-by odd reflection, for $D_{xx}$ throughout (\ref{eq:update}) with
-$D_{xxxx}=D_{xx}^2$. It is diagonal in the same sine basis, so only the mode
-eigenvalues change; on our 176-interval grid the waveform error against a
-converged solution of~\cite{russo2026} drops from 11.7\% to 1\% at 2$\times$
-oversampling.
+To reduce numerical dispersion, we use a fourth-order five-point
+stencil~\cite[Sec.~6.3.1]{bilbao2009} for $D_{xx}$, with $D_{xxxx}=D_{xx}^2$
+and odd reflection at simply supported ends. Only the eigenvalues change
+in the diagonal sine basis. For the benchmark pluck, waveform error against
+a converged solution from~\cite{russo2026} falls from 11.7\% to 1\%,
+albeit reducing oversampling from 3$\times$ to 2$\times$.
 
 \section{Evaluation}
 Each evaluation is one sound-matching step: a batch of strings is simulated
@@ -159,19 +160,21 @@ $\pm3\%$. We compare with direct PyTorch autodiff of the same scheme on the
 spatial grid and a \texttt{jaxdiffmodal} string~\cite{diaz2025} with 100 modes
 at 44.1 kHz, each as distributed and with 256-step checkpointing, on an A100
 80 GB in float64; the FDTD uses 176 intervals at 88.2 kHz, decimated to
-44.1 kHz. In Fig.~\ref{fig:benchmark} our method is nearly three orders of
+44.1 kHz. In Table~\ref{tab:benchmark} our method is nearly three orders of
 magnitude faster than autodiff and 1.5 to 2.2 times faster than
 \texttt{jaxdiffmodal}, checkpointed or not; checkpointing brings both
 baselines down to our memory at 1.3 to 1.5 times their time. Gradient checks and the sound matching and semantic
 conditioning applications are in the online
 supplement.\footnote{\scriptsize\url{ptablasdpaula.github.io/DMRN21-Kirchhoff_Carrier_String}}
 
-\begin{figure}[t]
+\begin{table}[t]
  \centering
- \includegraphics[width=\columnwidth]{figures/benchmark-dots-label.pdf}
- \caption{Peak memory and time per step at the first and last batch sizes.}
- \label{fig:benchmark}
-\end{figure}
+ \setlength{\tabcolsep}{8pt}
+ \renewcommand{\arraystretch}{0.82}
+ \resizebox{\columnwidth}{!}{\input{figures/benchmark-table.tex}}
+ \caption{FDTD (Auto, Ours) and modal synthesis performance. $\circlearrowleft$: checkpointed; \textemdash: exceeds the A100\textquotesingle s 80\,GB memory limit.}
+ \label{tab:benchmark}
+\end{table}
 
 \bibliographystyle{IEEEtran}
 {\footnotesize\bibliography{references}}
