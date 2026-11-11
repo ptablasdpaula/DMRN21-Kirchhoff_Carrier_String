@@ -337,3 +337,362 @@ checkpointed series as hollow dots and prints their time at the last batch;
 its text says "nearly three orders of magnitude faster than autodiff and
 1.5 to 2.2 times faster than jaxdiffmodal, checkpointed or not; checkpointing
 brings both baselines down to our memory at 1.3 to 1.5 times their time".
+
+## Replay adjoint as a timed stage (2026-11-10)
+
+The abstract now compares four FDTD stages and no longer includes
+jaxdiffmodal: Autodiff, Autodiff checkpointed, the replay adjoint and the
+cached adjoint. The replay adjoint (`src/adjoint.py`, `src/kc_adjoint.cu`)
+is the same CUDA kernel, sine basis, 256-step checkpoints and Python wrapper
+as the cached adjoint, but stores nothing per step: on the reverse pass it
+re-runs each segment forward from its checkpoint into a `(B, 258, n)` state
+buffer (three reductions per step) and then reverses through it (five
+reductions per step). The cached adjoint stores three scalars per step,
+regenerates the states backwards by inverting the step and needs one
+reduction per step.
+
+Until now replay was only the untimed validation reference of every PyTorch
+case (`reference_seconds`, a single first run: 0.9 to 1.3 s, not a warmed
+median). It is now a method of `benchmarks/figure_comparison_worker.py` and
+`benchmarks/native_rate_compare.py`; its own validation is against itself
+(`validation_reference: self`), and `test/figure_fdtd.py --cuda` (run at the
+start of the job, passed) and the `fdtd` rows tie it to autodiff.
+
+Job 35706349 (`hpc/native-rate-replay.sh`, `gpushort`, `a100&80G`, node
+sbg1, NVIDIA A100 80GB PCIe; the cached adjoint's rows are from rdg11, the
+same GPU model), same one-second MAE workload, result
+`a100-replay-1s-mae-si10-35706349.json`, merged into
+`a100-sweep-1s-mae-si10-merged-34855605-35062741-35105080-35706349.json`:
+
+| batch | replay | cached adjoint | ratio |
+|---|---|---|---|
+| 1 | 0.371 s, 0.57 GB | 0.240 s, 0.57 GB | 1.54 |
+| 2 | 0.373 s, 0.59 GB | 0.243 s, 0.59 GB | 1.54 |
+| 4 | 0.374 s, 0.58 GB | 0.247 s, 0.60 GB | 1.52 |
+| 8 | 0.375 s, 0.60 GB | 0.254 s, 0.62 GB | 1.48 |
+| 16 | 0.378 s, 0.66 GB | 0.257 s, 0.69 GB | 1.47 |
+| 32 | 0.382 s, 0.75 GB | 0.261 s, 0.82 GB | 1.46 |
+| 64 | 0.389 s, 0.93 GB | 0.266 s, 1.07 GB | 1.46 |
+| 128 | 0.515 s, 1.24 GB | 0.348 s, 1.51 GB | 1.48 |
+
+Reading: the hand-written kernel adjoint accounts for almost all of the
+gain over checkpointed Autodiff (510 to 690 times); the three cached
+scalars give a further factor of 1.5, for about 2 MB more memory per item
+(the scalar cache, 88,200 steps x 3 float64). The abstract's text says "The
+replay adjoint is then 510 to 690 times faster, and the cached scalars a
+further 1.5 times: 760 to 1070 times faster than checkpointed autodiff".
+
+## Checkpointed adjoint and compiled autodiff baselines (2026-11-10 and 11)
+
+The abstract is reframed. Its method is now the adjoint method with
+checkpointing, an established technique in physics simulation (the default
+of Diffrax, `RecursiveCheckpointAdjoint`; Kidger's thesis,
+arXiv:2202.02435), and that is the `replay` kernel of the previous section.
+The text calls it the *checkpointed adjoint* and the figure the *Adjoint
+kernel*. The cached adjoint is no longer in the paper or its figure; its
+rows stay in the merged data, and the supplement, whose applications ran on
+it, says so. The previous source is
+`paper_dmrn2026/variants/main-before-checkpointed-adjoint.tex`.
+
+With the kernel as the method, the comparison with `fdtd` and `fdtd_ckpt`
+was unfair in one respect: both are eager PyTorch, where every time step
+issues about eighty small GPU operations, 88,200 times. Most of the
+kernel's 510 to 690 times over `fdtd_ckpt` is that dispatch and not the
+method. Compiled autodiff baselines separate the two.
+
+- `fdtd_jax`, `fdtd_jax_ckpt` (`experiments/figure_comparison/fdtd_jax.py`,
+  `basis='grid'`): the PyTorch baseline's arithmetic, operation for
+  operation (five-point stencil with odd reflection, start-up step, pluck
+  profile, pickup interpolant, rank-one solve), written for one string and
+  `jax.vmap`ped over the batch. The time loop is a `jax.lax.scan` that reads
+  the pickup in its body; loss and gradient are one `jax.jit`. With
+  checkpoints it is an outer scan over 256-step segments whose body, the
+  inner scan, is wrapped in `jax.checkpoint`, and a shorter checkpointed
+  segment covers the remainder: the construction of `diaz_44100_ckptro`.
+- `fdtd_jax_sine`, `fdtd_jax_sine_ckpt` (the same file, `basis='sine'`): the
+  same scheme stepped in the discrete sine basis. The states are the grid
+  states under an orthonormal change of coordinates, the two stencils become
+  one multiplication per mode by the eigenvalue table, and the pickup is
+  read with modal weights. This is the kernel's formulation, so this row
+  compares compiler with hand-written kernel and nothing else.
+- `fdtd_compiled`, `fdtd_ckpt_compiled` (`experiments/figure_comparison/fdtd.py`,
+  `simulate(compile_block=n, compile_mode=..., checkpoint_reentrant=...)`):
+  `_advance` over n steps compiled by `torch.compile` (TorchInductor,
+  `dynamic=False`) and called repeatedly, inside each 256-step
+  `torch.utils.checkpoint` chunk for the checkpointed variant; a second
+  compiled size covers remainders. `torch.compile` has no loop construct: it
+  traces the Python loop, so a block of n steps is a graph of n unrolled
+  steps and n is limited by compilation time.
+
+Checks. `test/figure_fdtd_jax.py` compares the JAX twin with the PyTorch
+baseline in 25 cases per basis (five grids, excitations and orders times
+five combinations of steps, checkpoint length and unroll, including no
+steps, a remainder only and exact division): waveform to 1e-10 and the ten
+gradients to 5e-9 relative, passed for both bases on CPU. `test/figure_fdtd.py
+--cuda --compiled` compares the compiled blocks with the eager loop on the
+GPU. In the sweep, the worker asserts every JAX case's first item against
+the 88.2 kHz FDTD reference (waveform 1e-6, scaled gradient 1e-5) and
+validates every `torch.compile` case against the replay adjoint, as for the
+other PyTorch methods.
+
+Jobs: `hpc/native-rate-jit.sh [methods] [batches] [tag] [duration]
+[driver options]` runs `benchmarks/native_rate_compare.py` on the
+one-second MAE workload and writes
+`$KC_SCRATCH/native-rate-jit/<tag>-<job>.json`; compiler caches are
+node-local and fresh per job, and compilation is outside the medians (the
+warm-up call for `torch.compile`, `compile_seconds` for `jax.jit`).
+`hpc/native-rate-jit-smoke.sh` runs batch 1 for a quarter of a second to
+choose the settings, and `hpc/native-rate-jit-sweep.sh METHOD [BATCHES]`
+runs one method of the sweep with them.
+
+### Smoke runs: choosing the settings
+
+Batch 1, 0.25 s, A100 40 GB (`gpushort` and `andrena`), seconds per
+evaluation:
+
+| `jax.lax.scan` unroll | 1 | 8 | 32 | 64 |
+|---|---|---|---|---|
+| `fdtd_jax_ckpt` (grid) | 1.67 | 0.87 | 0.76 | |
+| `fdtd_jax` (grid) | 1.41 | 0.72 | 0.62 | |
+| `fdtd_jax_sine_ckpt` | 1.47 | 0.61 | 0.54 | 0.51 |
+| `fdtd_jax_sine` | 1.25 | 0.53 | 0.47 | 0.45 |
+
+Unrolling pays up to 32 to 64 steps per loop iteration; compilation then
+takes 25 to 60 s instead of 2 to 6 s. The sweep uses 32 on the grid and 64
+in the sine basis. The sine basis is 1.4 to 1.5 times faster than the grid
+at equal unroll.
+
+`torch.compile`, checkpointed (`fdtd_ckpt_compiled`), same workload. Eager
+`fdtd_ckpt` takes 104 to 108 s on it on these nodes (sbg21), not the 64 s
+that a quarter of the 80 GB card's 256 s would suggest: eager PyTorch is
+bound by the host CPU, so eager times are only compared within one node
+type.
+
+| block | mode | checkpoint form | result |
+|---|---|---|---|
+| 256 steps | default | non-reentrant | no compiled block after 25 min (time limit) |
+| 256 steps | reduce-overhead | non-reentrant | the same |
+| 64 steps | default | non-reentrant | 7.93 s; warm-up 471 s; 2.53 GB |
+| 64 steps | default | reentrant | 4.38 s; warm-up 641 s; 2.53 GB |
+| 16 steps | default | non-reentrant | 8.10 s; warm-up 80 s; 0.65 GB |
+| 16 steps | default | reentrant | 4.93 s; warm-up 105 s; 0.65 GB |
+| 16 steps | reduce-overhead | non-reentrant | fails: "accessing gradient tensor output of CUDAGraphs that has been overwritten by a subsequent run" |
+
+Gradients agree with the replay adjoint to 1.4 to 2.6e-11 wherever it runs.
+The block length hardly changes the time (8.10 against 7.93 s, 4.93 against
+4.38 s) but multiplies compilation by six and memory by four, so the sweep
+uses 16-step blocks. The checkpoint form matters more: the reentrant form
+runs each chunk's first pass under `no_grad`, where the compiled block is a
+plain inference graph, and is 1.6 to 1.8 times faster than the non-reentrant
+form, whose first pass still runs the differentiable graph. `reduce-overhead`
+replays each block as a CUDA graph with static output buffers, which
+checkpointing's recomputation overwrites while the earlier outputs are still
+needed for the backward pass; it is not usable here.
+`test/figure_fdtd.py --cuda --compiled` passes in the default mode for the
+plain loop and for both checkpoint forms (job 35744947), and fails in
+`reduce-overhead` with the same error once checkpoints are on.
+
+### Sweep results: the compiled baselines and the kernel
+
+One second, MAE, ten gradients, A100 80 GB PCIe on the `sbg` nodes
+(`gpushort`, constraint `a100&80G`), float64. Seconds per evaluation (median
+of three after a warm-up) and peak sampled GPU memory in GB:
+
+| batch | 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 |
+|---|---|---|---|---|---|---|---|---|
+| `replay`, s (job 35706349, sbg1) | 0.371 | 0.373 | 0.374 | 0.375 | 0.378 | 0.382 | 0.389 | 0.515 |
+| GB | 0.57 | 0.59 | 0.58 | 0.60 | 0.66 | 0.75 | 0.93 | 1.24 |
+| `fdtd_jax_sine_ckpt`, s (job 35743913, sbg4) | 2.01 | 1.86 | 2.34 | 3.05 | 3.22 | 3.32 | 3.53 | 3.65 |
+| GB | 0.74 | 0.75 | 0.75 | 0.75 | 0.75 | 1.02 | 1.29 | 2.10 |
+| `fdtd_ckpt_compiled`, reentrant, s (job 35744964, sbg4) | 21.7 | 21.5 | 22.0 | 22.0 | 21.8 | 21.7 | 27.0 | 22.1 |
+| GB | 0.66 | 1.02 | 1.02 | 1.07 | 1.11 | 1.22 | 1.44 | 1.83 |
+| `fdtd_ckpt_compiled`, non-reentrant, s (job 35744004, sbg4) | | | | | 33.9 | 33.5 | 33.8 | 33.9 |
+| GB | | | | | 1.10 | 1.22 | 1.43 | 1.82 |
+
+- JAX: compilation takes 36 to 40 s per batch size and is outside the
+  medians. The first item of every case agrees with the 88.2 kHz FDTD
+  reference to 3.9e-11 in waveform and 1.2 to 1.3e-10 in the scaled
+  gradient.
+- `torch.compile`: the warm-up call, which compiles the 16-step block and
+  the remainder block for the forward and the reverse pass, takes 122 to
+  154 s (reentrant) and 101 to 111 s (non-reentrant). Every case agrees with
+  the replay adjoint to 2.9 to 4.1e-10 in waveform and 4.9e-10 to 1.4e-9 in
+  the scaled gradient. Batch 64 of the reentrant sweep is an outlier in all
+  three repetitions (26.8, 28.6 and 27.0 s against 21.5 to 22.1 s at every
+  other batch, including 128); the time does not depend on the batch, so
+  this is the node at that moment and not the method.
+- Job 35744004 ran the non-reentrant form before the smoke runs had shown
+  the reentrant one to be faster; it covers batches 16 to 128 and stays as a
+  standalone file
+  (`benchmarks/native_rate_results/a100-jit-torch-ckpt-nonreentrant-b16_128-1s-mae-si10-35744004.json`),
+  not merged into the figure data. The reentrant form is 1.5 to 1.6 times
+  faster at batches 16, 32 and 128, and 1.25 times at the outlying batch 64.
+
+### The eager checkpointed baseline: checkpoint form and host (2026-11-11)
+
+Two things about the eager PyTorch rows came out of the compiled work.
+
+**Checkpoint form.** `fdtd_ckpt` uses `torch.utils.checkpoint` with
+`use_reentrant=False`, the form PyTorch recommends: each chunk's first pass
+runs the differentiable graph with saved-tensor hooks. With
+`use_reentrant=True` the first pass runs under `no_grad` and each chunk is
+re-run with its own backward pass. A probe on the eager loop (job 35744978,
+sbg21, A100 40 GB, batch 1, a quarter of a second) gives 108.0 and 103.6 s
+non-reentrant against 73.9 and 73.6 s reentrant, 1.4 times faster, with
+gradients equal to 2.7e-11 relative. The reentrant form is therefore the
+fairer eager baseline. It is the new method `fdtd_ckpt_reentrant`
+(`simulate(checkpoint_steps=256, checkpoint_reentrant=True)`; worker, driver
+and `hpc/native-rate-jit.sh`), checked in `test/figure_fdtd.py`
+(`test_checkpointed_chunks`: values to 1e-13, gradients to 5e-9, because a
+backward pass per chunk sums the parameter gradients in a different order;
+this form only supports `.backward()`, not `autograd.grad`).
+
+**Host.** Eager PyTorch issues about eighty small GPU operations per step
+and is bound by the host CPU, not the GPU. The eager rows of the figure
+(jobs 34855605 and 35062741) ran on the `rdg` nodes (partition `sae`); the
+kernel, JAX and `torch.compile` rows ran on the `sbg` nodes (`gpushort`).
+Both carry the A100 80 GB PCIe, but the hosts differ:
+
+| eager case, one second of audio | host | seconds |
+|---|---|---|
+| `fdtd`, batches 1 to 32 (job 34855605) | rdg11 | 169 to 177 |
+| `fdtd_ckpt` (non-reentrant), batches 1 to 128 (job 35062741) | rdg7 | 256 to 264 |
+| `fdtd`, batches 16 and 32 (job 35745903) | sbg4 | 277.3 and 285.2 |
+| `fdtd_ckpt_reentrant`, batch 16 (job 35745148, timed out in batch 32) | sbg4 | 307.8 (320.0, 305.5, 307.8) |
+| `fdtd_ckpt_reentrant`, batch 16 (job 35745897) | sbg4 | 350.0 (348.8, 350.0, 350.1) |
+| `fdtd_ckpt_reentrant`, batch 32 (job 35745897) | sbg4 | 412.3 (415.0, 411.7, 412.3) |
+| `fdtd_ckpt` (non-reentrant), batch 1, four times the 0.25 s probe | sbg21 | 414 to 432 |
+| `fdtd_ckpt_reentrant`, batch 1, four times the 0.25 s probe | sbg21 | 294 to 295 |
+
+sbg4 is a Xeon Gold 6242 at 2.8 GHz (`host_cpu`, recorded in the metadata
+from job 35745897 on). On it the faster checkpoint form takes longer than the
+slower form does on rdg7, and the same case moves by 14 % between two jobs
+an hour apart (307.8 and 350.0 s at batch 16) while the three repetitions
+inside a case agree to 1 %: the eager time follows the load on a shared
+node. The plain loop is 1.6 times slower on sbg4 than on rdg11 (277 and 285 s
+against 174 and 177 s at batches 16 and 32, with the same 22.8 and 44.9 GB),
+which the earlier smoke runs already showed (`fdtd`, 0.03 s of audio on sbg4
+in 7.4 to 7.8 s, jobs 34612294 and 34852079). The two complete sbg4 files
+are kept as records and not merged:
+`benchmarks/native_rate_results/a100-eager-sbg4-plain-b16_32-1s-mae-si10-35745903.json`
+and `a100-eager-sbg4-ckpt-reentrant-b16_32-1s-mae-si10-35745897.json`.
+
+Consequences for the abstract as it stood then (four-series figure; superseded by
+the ladder below, whose rows all come from the `rdg` hosts):
+
+- The figure's eager times (169 to 177 s and 256 to 264 s) are the lowest
+  eager times measured anywhere, so every ratio of an eager row to a
+  compiled row or to the kernel is a lower bound for the hardware on which
+  the compiled rows ran.
+- The text states the ratios to eager PyTorch only to an order of magnitude
+  (about 10 times for `torch.compile`, about 100 times for JAX). Measured:
+  256 to 264 s over 21.5 to 22.1 s is 11.7 to 12.2 batch by batch (9.7 at the
+  outlying batch 64); over JAX's 1.86 to 3.65 s it is 72 to 138; on sbg4
+  alone, 308 to 412 s over the same rows gives about 14 to 19 and 85 to 220.
+- The kernel's 5 to 9 times over JAX compares two rows from the `sbg` hosts
+  and is unaffected.
+- The same sweep of the two eager methods on the `sbg` nodes was started and
+  cancelled after jobs 35745897 and 35745903
+  (`hpc/native-rate-eager-reentrant.json`, `hpc/native-rate-eager-plain.json`):
+  the `sbg` timings are too dependent on load to quote. A re-measurement of
+  the other rows on the `rdg` nodes was queued instead; the ladder below
+  decides which rows it needs.
+
+### The ladder of the abstract (2026-11-11)
+
+Mixing eager and compiled, grid and sine basis, with and without
+checkpoints made the comparison hard to read. The abstract now shows one
+ladder of five implementations of the same gradient, each adding exactly one
+ingredient to the one before, in a table of memory and time against batch
+size (`paper_dmrn2026/figures/build_benchmark_summary_table.py`, the design
+of commit 2d5372d):
+
+| row | method | framework | stepping | compiled | checkpoints | adjoint |
+|---|---|---|---|---|---|---|
+| Autodiff | `fdtd` | PyTorch | grid | no | no | autodiff |
+| + compiler | `fdtd_jax` | JAX | grid | yes | no | autodiff |
+| + checkpoints | `fdtd_jax_ckpt` | JAX | grid | yes | every 256 steps | autodiff |
+| + modes | `fdtd_jax_sine_ckpt` | JAX | sine basis | yes | every 256 steps | autodiff |
+| Hand-written | `replay` | CUDA, called from PyTorch | sine basis | yes | every 256 steps | derived by hand |
+
+Reverse-mode autodiff of the scheme is its discrete adjoint, derived by the
+framework, so "+ checkpoints" is already adjoint plus checkpointing (what
+Diffrax's default does) and "Hand-written" is not a different method: it is
+the same adjoint with the same checkpoints, derived by hand and compiled
+with the forward pass into one kernel. The discrete sine basis is ours and
+not part of the published scheme, which works on the grid (a rank-one solve
+per step in `src/kc_string.py`, the port of the Octave reference): with
+simply supported ends the discrete sine transform diagonalises both
+stencils, the modes interact only through the tension, and the result equals
+the grid scheme to rounding. No Diffrax row was added: Diffrax integrates
+ODEs with its own time-steppers, and with our scheme as a custom solver it
+would reduce to the "+ checkpoints" row with its per-step bookkeeping.
+
+Out of the abstract, kept here: eager PyTorch with checkpoints (two rows
+whose times depend on host and checkpoint form), `torch.compile`, the sine
+basis without checkpoints and the cached adjoint.
+
+Seconds per evaluation and peak GPU memory in GB; `sbg` nodes except the
+Autodiff row (rdg11):
+
+| batch | 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 |
+|---|---|---|---|---|---|---|---|---|
+| Autodiff `fdtd`, s (job 34855605) | 169 | 169 | 171 | 171 | 174 | 177 | oom | oom |
+| GB | 2.3 | 3.8 | 6.3 | 11.8 | 22.8 | 44.9 | | |
+| + compiler `fdtd_jax`, s (job 35743473) | 2.46 | 2.27 | 2.48 | 2.99 | 3.18 | oom | oom | oom |
+| GB | 5.0 | 9.5 | 18.8 | 36.0 | 64.3 | | | |
+| + checkpoints `fdtd_jax_ckpt`, s (job 35743472) | 3.03 | 2.68 | 3.20 | 4.01 | 4.23 | 4.21 | 4.46 | 4.55 |
+| GB | 0.74 | 0.61 | 0.74 | 0.61 | 0.74 | 1.01 | 1.28 | 2.09 |
+| + modes `fdtd_jax_sine_ckpt`, s (job 35743913) | 2.01 | 1.86 | 2.34 | 3.05 | 3.22 | 3.32 | 3.53 | 3.65 |
+| GB | 0.74 | 0.75 | 0.75 | 0.75 | 0.75 | 1.02 | 1.29 | 2.10 |
+| Hand-written `replay`, s (job 35706349) | 0.371 | 0.373 | 0.374 | 0.375 | 0.378 | 0.382 | 0.389 | 0.515 |
+| GB | 0.57 | 0.59 | 0.58 | 0.60 | 0.66 | 0.75 | 0.93 | 1.24 |
+| off the ladder: `fdtd_jax_sine` (no checkpoints), s (job 35743914) | 1.77 | 1.58 | 1.82 | 2.41 | 2.56 | oom | oom | oom |
+| GB | 5.3 | 9.6 | 18.3 | 36.0 | 64.3 | | | |
+
+What each step buys:
+
+- Compiler: 55 to 74 times faster than eager PyTorch (with the Autodiff
+  row from the faster host, so a lower bound), but 2.2 to 3.1 times the
+  memory: 4 GB per string and second against 1.4 GB, so that batch 32, which
+  eager PyTorch still fits in 44.9 GB, runs out of the 80 GB (the XLA
+  program asks for 95.9 GiB). Compilation fixes time and not memory.
+- Checkpoints: memory falls to 0.6 to 2.1 GB (64.3 to 0.74 GB at batch 16),
+  for 1.18 to 1.34 times the time.
+- Modes: 1.25 to 1.51 times faster at the same memory.
+- Hand-written: a further 5.0 to 9.1 times faster, with the lowest memory at
+  every batch size (0.57 to 1.24 GB).
+
+Every JAX case's first item agrees with the 88.2 kHz FDTD reference: on the
+grid to 5e-13 to 9e-13 in waveform and 1e-12 to 2e-10 in the scaled
+gradient, in the sine basis to 3.9e-11 and 1e-10 to 4e-10. Compilation takes
+16 to 21 s without checkpoints and 28 to 40 s with them, outside the
+medians.
+
+Same-host re-measurement (the abstract's table). The four JAX rows and the
+kernel were measured again on the `rdg` nodes, where the Autodiff row ran
+(Xeon Gold 6442Y, from `host_cpu`; `hpc/native-rate-rdg-short.json`,
+`hpc/native-rate-rdg-jax-grid.json`, `hpc/native-rate-rdg-jax-sine-plain.json`),
+and merged with job 34855605 into
+`paper_dmrn2026/figures/native-rate-one-host-merged.json`, which the table
+script prefers:
+
+| batch | 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 |
+|---|---|---|---|---|---|---|---|---|
+| Autodiff `fdtd`, s (job 34855605, rdg11) | 169 | 169 | 171 | 171 | 174 | 177 | oom | oom |
+| + compiler `fdtd_jax`, s (job 35747154, rdg8) | 2.41 | 2.26 | 2.49 | 2.99 | 3.13 | oom | oom | oom |
+| + checkpoints `fdtd_jax_ckpt`, s (job 35747153, rdg13) | 3.04 | 2.68 | 3.18 | 4.01 | 4.25 | 4.23 | 4.45 | 4.56 |
+| + modes `fdtd_jax_sine_ckpt`, s (job 35746438, rdg6) | 2.02 | 1.88 | 2.34 | 3.04 | 3.22 | 3.33 | 3.51 | 3.65 |
+| Hand-written `replay`, s (job 35746439, rdg6) | 0.369 | 0.371 | 0.371 | 0.372 | 0.375 | 0.379 | 0.384 | 0.511 |
+| off the ladder: `fdtd_jax_sine`, s (job 35747074, rdg7) | 1.78 | 1.59 | 1.82 | 2.42 | 2.58 | oom | oom | oom |
+
+Memory is the same as on the `sbg` nodes to the displayed digit. The times
+of the JAX rows and of the kernel agree with their `sbg` measurements to 2 %:
+unlike eager PyTorch, they do not depend on the host. On this table the
+steps read: compiler 55 to 75 times faster (174 to 3.1 s at batch 16) for 2.2
+to 3.1 times the memory, with batch 32 out of memory; checkpoints 64.3 to
+0.74 GB at batch 16 for 1.19 to 1.36 times the time; modes 1.25 to 1.50 times
+faster; hand-written a further 5.1 to 9.1 times faster with the lowest memory
+at every batch size. The `rdg` jobs for `torch.compile` and
+`fdtd_ckpt_reentrant` (35746441 to 35746445) were cancelled: those rows are
+no longer in the abstract.

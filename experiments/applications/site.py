@@ -12,7 +12,7 @@ from pathlib import Path
 import shutil
 
 ROOT = Path(__file__).resolve().parents[2]
-TITLE = 'Efficient Backprop for an FDTD Kirchhoff–Carrier String: online supplement'
+TITLE = 'Efficient Backpropagation for Finite-Difference Nonlinear String Synthesis: online supplement'
 REPO = 'https://github.com/ptablasdpaula/DMRN21-Kirchhoff_Carrier_String'
 
 CSS = """
@@ -122,7 +122,7 @@ def sound_matching_section(results, base):
 
 
 def semantic_section(runs, base):
-    out = ['<h2 id="semantic">2. Semantic conditioning with CLAP</h2>',
+    out = ['<h2 id="semantic">2. Text-guided sound design with CLAP</h2>',
            '<p>Following Text2FX, the string\'s parameters are optimised so that the CLAP audio embedding of the rendered sound moves along '
            'the direction from a contrasting prompt to a target prompt (the directional objective). The string box is wide: stress 50 MPa–1 GPa, '
            'radius 0.15–0.6 mm, length 0.5–1 m, a material axis from nylon to steel, dampings over three decades, and free pluck and pickup positions. '
@@ -169,21 +169,31 @@ def verification_section():
     return '\n'.join([
         '<h2 id="verification">3. Verification of the gradients</h2>',
         '<p>The abstract keeps its correctness claims out of the page and in the repository. '
-        'The cached adjoint is checked against three independent references; the numbers are from the runs behind the abstract.</p>',
+        f'The checkpointed adjoint ({link("src/adjoint.py")}: 256-step checkpoints, each segment re-run on the reverse pass) is checked against independent references; '
+        'the numbers are from the runs behind the abstract.</p>',
         '<ul>',
+        f'<li><strong>Forward-mode Jacobian.</strong> The hand-derived reverse pass against an independent forward-mode Jacobian of the same scheme ({link("test/adjoint.py")}).</li>',
         '<li><strong>Float64 PyTorch autodiff of the same scheme.</strong> In the benchmark sweep (job 34855605, 1 s, batches 1 to 32) '
-        'every evaluation is validated against the checkpointed replay adjoint outside the timed region: the cached adjoint\'s ten scaled gradients agree with it to '
-        '2.7&times;10<sup>&minus;11</sup> relative &#8467;<sub>2</sub> and autodiff\'s to 1.5&times;10<sup>&minus;9</sup>, so cached adjoint and autodiff agree to about 1.5&times;10<sup>&minus;9</sup> '
+        'every evaluation is validated against the checkpointed adjoint outside the timed region: autodiff\'s ten scaled gradients agree with it to '
+        '1.5&times;10<sup>&minus;9</sup> relative &#8467;<sub>2</sub> '
         f'({link("benchmarks/native_rate_results/a100-sweep-1s-mae-si10-34855605.json")}, field <code>validation.scaled_gradient_relative_l2</code>).</li>',
+        '<li><strong>Compiled autodiff of the same scheme.</strong> The abstract\'s three compiled rows, the scheme under <code>jax.jit</code> on the grid without and with '
+        f'256-step checkpoints and in the discrete sine basis with them ({link("experiments/figure_comparison/fdtd_jax.py")}), are checked in every benchmark case against the project\'s reference FDTD solver '
+        '(first item of each batch, jobs 35747154, 35747153 and 35746438): waveform to 3.9&times;10<sup>&minus;11</sup> and ten scaled gradients to 1.5&times;10<sup>&minus;10</sup> relative &#8467;<sub>2</sub> '
+        f'({link("benchmarks/native_rate_results/a100-jit-jax-sine-ckpt-rdg-35746438-1s-mae-si10.json")}); on short runs they reproduce the PyTorch baseline to '
+        f'10<sup>&minus;10</sup> in waveform and 5&times;10<sup>&minus;9</sup> in gradients ({link("test/figure_fdtd_jax.py")}).</li>',
+        '<li><strong>Scalar-cached variant, used for the applications above.</strong> The sound matching and CLAP optimisations ran on a variant of the kernel that also caches '
+        'three scalars per time step and regenerates the states backwards from each checkpoint instead of re-running the segment. In the same sweep its ten scaled gradients '
+        'agree with the checkpointed adjoint to 2.7&times;10<sup>&minus;11</sup> relative &#8467;<sub>2</sub>, and the two are compared on 4 s batches in '
+        f'{link("test/scalar_cache_smoke.py")}; the one-step algebra of its reverse pass is checked against autograd in 96 float64 cases to 10<sup>&minus;11</sup> '
+        f'({link("test/scalar_cache_algebra.py")}).</li>',
         '<li><strong>Central finite differences of the reference Octave code</strong> (the non-SAV scheme of Russo et al. with the five-point stencil substituted, '
-        'off-centre pluck and pickup): all ten gradients pass; the largest relative error is 4.3&times;10<sup>&minus;6</sup> on &sigma;<sub>1</sub>, whose gradient is '
+        'off-centre pluck and pickup), run on the scalar-cached variant: all ten gradients pass; the largest relative error is 4.3&times;10<sup>&minus;6</sup> on &sigma;<sub>1</sub>, whose gradient is '
         '2&times;10<sup>&minus;6</sup> in magnitude, and the pluck and pickup position gradients agree to 1.3&times;10<sup>&minus;7</sup> and 8.7&times;10<sup>&minus;8</sup> '
         f'({link("test/reference_paper_exact.py")} with <code>--order 4</code>; jobs 34846668 to 34846671).</li>',
-        f'<li><strong>Unit checks.</strong> The one-step algebra of the cached reverse pass against autograd in 96 float64 cases to 10<sup>&minus;11</sup> ({link("test/scalar_cache_algebra.py")}); '
-        f'the replay adjoint against an independent forward-mode Jacobian ({link("test/adjoint.py")}); the cached adjoint against the replay on 4 s batches ({link("test/scalar_cache_smoke.py")}); '
-        f'the spatial PyTorch baseline against a dual-number reference, positions included ({link("test/figure_fdtd.py")}, {link("test/positions.py")}).</li>',
+        f'<li><strong>Unit checks.</strong> The spatial PyTorch baseline against a dual-number reference, positions included ({link("test/figure_fdtd.py")}, {link("test/positions.py")}).</li>',
         '</ul>',
-        f'<p class="small muted">The derivation of the cached reverse pass and the full validation tables are in the <a href="{blob}paper_dmrn2026/technical_note.pdf">technical note</a>.</p>'])
+        f'<p class="small muted">The derivation of the scalar-cached variant and the full validation tables are in the <a href="{blob}paper_dmrn2026/technical_note.pdf">technical note</a>.</p>'])
 
 
 def build(results_path, semantic_runs, docs_dir, base='supplement'):
@@ -193,8 +203,11 @@ def build(results_path, semantic_runs, docs_dir, base='supplement'):
              f'<h1>{e(TITLE)}</h1>',
              '<p class="muted">Companion to the DMRN+21 abstract by Pablo Tablas de Paula, Emmanouil Benetos and Joshua D. Reiss (Centre for Digital Music, Queen Mary University of London). '
              f'Code: <a href="{REPO}">{REPO.replace("https://", "")}</a>.</p>',
-             '<p>The abstract shows that a nonlinear FDTD Kirchhoff–Carrier string can be backpropagated quickly and in flat memory with a cached CUDA adjoint. '
+             '<p>The abstract shows that a nonlinear FDTD Kirchhoff–Carrier string can be backpropagated quickly and in flat memory with the adjoint method and '
+             'checkpointing, compiled into a CUDA kernel. '
              'This page shows two things those gradients are for: fitting the string to recorded guitar notes, and steering it with text through a CLAP embedding. '
+             'The optimisations below ran on a variant of that kernel which also caches three scalars per time step; its gradients agree with the '
+             'checkpointed adjoint to 2.7&times;10<sup>&minus;11</sup> (<a href="#verification">Section 3</a>). '
              'Every optimisation below keeps the string\'s physical parameters inside a box by a sigmoid reparameterisation, uses Adam with per-candidate plateau decay, '
              'and runs many candidates as one GPU batch.</p>']
     if results_path is not None:

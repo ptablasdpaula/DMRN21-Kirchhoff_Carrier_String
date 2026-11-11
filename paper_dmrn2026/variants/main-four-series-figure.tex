@@ -1,0 +1,174 @@
+% DMRN+21: the official 2026 kit ships the 2025 style; its event header and
+% footer are updated in the local copy, without changing its page layout.
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{caption}
+\usepackage{times,amsmath,graphicx,url,dmrn2026}
+\usepackage{indentfirst}
+\usepackage{xcolor}
+\captionsetup[figure]{skip=2pt}\setlength{\intextsep}{3pt plus 1pt minus 1pt}
+\setlength{\parskip}{0.1em}
+\captionsetup[figure]{font=footnotesize,labelfont=footnotesize}
+\captionsetup[table]{font=footnotesize,labelfont=footnotesize}
+\setlength{\textfloatsep}{3pt plus 1pt minus 1pt}
+\setlength{\belowcaptionskip}{0pt}
+\renewcommand{\thesection}{\Roman{section}}
+\newcommand{\head}[1]{\par\vspace{1pt}\noindent\textbf{#1.}\ \ignorespaces}
+% Tighter display spacing. \ninept makes \normalsize an alias of \small, which
+% resets the display skips at every size switch, so the reduced values are
+% appended to \small itself.
+\makeatletter
+\g@addto@macro\small{\abovedisplayskip 4pt plus 1pt minus 1pt \belowdisplayskip 4pt plus 1pt minus 1pt
+ \abovedisplayshortskip 2pt \belowdisplayshortskip 2pt plus 1pt}
+\makeatother
+% No extra space between reference entries.
+\let\oldthebibliography\thebibliography
+\renewcommand{\thebibliography}[1]{\oldthebibliography{#1}\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+% Layout economies after the DMRN+15 auraloss one-pager: tighter title block,
+% 7 pt footer close to the page edge, taller text block. The style file is unchanged.
+\setlength{\textheight}{266truemm}\setlength{\footskip}{0.2in}
+\cfoot{\fontsize{7}{8}\selectfont\textsc{DMRN+21: DIGITAL MUSIC RESEARCH NETWORK ONE-DAY WORKSHOP 2026, KING'S COLLEGE LONDON, FRI 11 DECEMBER 2026}}
+\makeatletter
+\def\@maketitle{\newpage
+ \null
+ \begin{minipage}{0.5\textwidth}
+ \textsc{DMRN+21: Digital Music Research Network\\One-day Workshop 2026}\vspace{3mm}\\\textsc{King's College London}\\\textsc{Fri 11 December 2026}
+ \end{minipage}%
+ \begin{minipage}{0.5\textwidth}
+ \hfill\hbox{\includegraphics[width=6cm]{DMRN_Logo_high_res.jpg}}
+ \end{minipage}
+ \vskip 0.4em \begin{center}
+ {\large \bf \@title \par} \vskip 0.35em {\large
+\begin{tabular}[t]{c}\@name \\ \@address
+ \end{tabular}
+ \par}
+ \end{center}
+ \par
+ \vskip 0.2em}
+\makeatother
+
+\title{Efficient Backpropagation for\\Finite-Difference Nonlinear String Synthesis}
+\name{\normalfont Pablo Tablas de Paula, Emmanouil Benetos and Joshua D. Reiss\thanks{This work was supported by UKRI grant EP/S022694.}}
+\address{\small Centre for Digital Music, Queen Mary University of London, p.tablasdepaula@qmul.ac.uk}
+
+\begin{document}
+\ninept
+\maketitle
+\begin{sloppy}
+\begin{abstract}
+Physical models of strings solved with finite-difference time-domain (FDTD)
+schemes are rarely used in differentiable sound synthesis, because
+backpropagating through tens of thousands of time steps is slow and
+memory-hungry. We show that the adjoint method with checkpointing, long
+established in physics simulation, removes this obstacle for a nonlinear
+string whose tension rises as it vibrates (the Kirchhoff--Carrier model),
+once scheme and adjoint are compiled. For a batch of 32 one-second strings, one
+sound-matching gradient step takes 3.3 s with an off-the-shelf compiler
+(JAX) and 0.38 s in a hand-written GPU kernel, against 263 s for uncompiled
+automatic differentiation with the same checkpoints. Gradient checks and
+applications are in the online
+supplement.\footnote{\fontsize{6}{7}\selectfont\url{ptablasdpaula.github.io/DMRN21-Kirchhoff_Carrier_String}}
+\end{abstract}
+
+\section{Introduction}
+Finite-difference time-domain (FDTD) string synthesis is increasingly
+leaner~\cite{bilbao2024guitar} and runs on the GPU~\cite{lee2024string}, yet differentiable
+frameworks~\cite{hayes2024review} largely avoid it because
+backpropagating through a time-stepping scheme builds deep and expensive
+recurrent graphs. Hence, the literature has favoured
+digital waveguides~\cite{tablas2026sound} and modal
+synthesis~\cite{diaz2025}. Physics simulation has long met the same obstacle
+with the adjoint method and checkpointing, now the default of
+differential-equation solvers such as Diffrax~\cite{kidger2021}, and
+hand-written adjoints already serve recursive audio
+filters~\cite{yu2024allpole}. We apply this recipe to a nonlinear FDTD
+string and measure what each ingredient buys.
+
+\section{Model and method}
+We model the Kirchhoff--Carrier string~\cite[Sec.~8.1]{bilbao2009}, a stiff
+and lossy string whose tension rises with its stretch, simply supported at
+both ends~\cite{russo2026}:
+\begin{equation}
+\begin{aligned}
+\rho A\frac{\partial^2u}{\partial t^2}={}&
+ \bigg[T_0+\frac{EA}{2L}\!\int_0^L\!\Big(\frac{\partial u}{\partial x}\Big)^{\!2}dx\bigg]
+ \frac{\partial^2u}{\partial x^2}
+ -EI\frac{\partial^4u}{\partial x^4}\\
+ &-2\rho A\Big(\sigma_0-\sigma_1\frac{\partial^2}{\partial x^2}\Big)
+ \frac{\partial u}{\partial t},
+\end{aligned}
+\label{eq:pde}
+\end{equation}
+with displacement $u(x,t)$, density $\rho$, cross-section $A$, Young's
+modulus $E$, second moment of area $I$, length $L$ and damping
+$\sigma_0,\sigma_1$. The bracket is the tension: its rest value $T_0$ plus a
+term that grows with the string's stretch, one number for the whole string,
+which is what bends the pitch of a hard pluck.
+
+\head{Time stepping}
+We integrate (\ref{eq:pde}) with the energy-conserving scheme
+of~\cite[Sec.~8.1.2]{bilbao2009}, extended with stiffness and loss
+in~\cite{russo2026}. Because the nonlinearity is a single number, each
+step solves for it in closed form, then advances every spatial sine mode
+independently.
+
+\head{Checkpointed adjoint}
+Backpropagation visits the time steps in reverse and needs the state at
+each one. Automatic differentiation (autodiff) stores them all, so its
+memory grows with duration. With checkpointing, the state is stored only
+every 256 steps: the reverse pass re-runs one segment at a time from its
+checkpoint, then steps the adjoint of the scheme, derived by hand, back
+through it. Memory is the checkpoints plus one segment, for the price of a
+second forward pass, and the gradient is still that of the discrete scheme.
+Both passes run in a single GPU (CUDA) kernel, in parallel over modes and
+batch items.
+
+\head{Spatial stencil}
+To reduce numerical dispersion, we use a fourth-order five-point
+stencil~\cite[Sec.~6.3.1]{bilbao2009} for the spatial differences. For the benchmark pluck,
+waveform error against a converged solution from~\cite{russo2026} falls from
+11.7\% to 1\%, even with oversampling reduced from 3$\times$ to 2$\times$.
+
+\section{Evaluation}
+Each evaluation is one sound-matching step: a batch of strings is simulated
+for 1 s, the mean absolute error of each waveform against the target's is
+computed, and backpropagated to ten parameters:
+$\rho$, $T_0$, $r$ ($A=\pi r^2$, $I=\pi r^4/4$), $E$, $L$, $\sigma_0$,
+$\sigma_1$, the pluck amplitude and the pluck and pickup positions. The target
+is a steel string ($\rho=8050$ kg/m$^3$, $T_0=75$ N, $r=0.356$ mm, $E=174$ GPa,
+$L=1$ m, $\sigma_0=0.92$ s$^{-1}$, $\sigma_1=2.9\times10^{-4}$ m$^2$/s), plucked
+at its centre with a 2 mm raised cosine of half-width $0.24L$, its
+displacement read at its midpoint; the batch perturbs every parameter by up to
+$\pm3\%$. The scheme uses 176 intervals at 88.2 kHz, decimated to 44.1 kHz,
+on an A100 80 GB in float64. Fig.~\ref{fig:benchmark} compares four ways of
+obtaining the same gradient: \emph{Autodiff}, eager PyTorch autodiff of the
+scheme on the grid; \emph{Autodiff, checkpointed}, the same with 256-step
+checkpoints; \emph{Compiled autodiff}, the checkpointed scheme in the sine
+basis, compiled by JAX; and the \emph{Adjoint kernel} above. Checkpointing
+fixes memory: at batch 32, autodiff falls from 44.9 GB to 0.9 GB, for 1.5
+times the time. Compilation fixes time: at the same checkpoints, PyTorch's
+compiler, limited to 16-step blocks, is ${\sim}10$ times faster than eager
+PyTorch; JAX, compiling the whole loop, ${\sim}100$ times; and our kernel a
+further 5 to 9 times.
+
+\begin{figure}[t]
+ \centering
+ \includegraphics[width=\columnwidth]{figures/benchmark-dots-label.pdf}
+ \caption{Peak memory and time per step at the first and last batch sizes.}
+ \label{fig:benchmark}
+\end{figure}
+
+{\footnotesize
+\begin{thebibliography}{10}
+\bibitem{bilbao2024guitar} S.~Bilbao \emph{et~al.}, ``Real-time guitar synthesis,'' \emph{Proc. DAFx}, 2024.
+\bibitem{lee2024string} J.~W.~Lee \emph{et~al.}, ``String sound synthesizer on GPU-accelerated finite difference scheme,'' \emph{Proc. ICASSP}, 2024.
+\bibitem{hayes2024review} B.~Hayes \emph{et~al.}, ``A review of differentiable digital signal processing for music and speech synthesis,'' \emph{Front. Sig. Proc.}, v.~3, 1284100, 2024.
+\bibitem{tablas2026sound} P.~Tablas~de~Paula \emph{et~al.}, ``Sound matching with a differentiable Karplus-Strong algorithm,'' \emph{Proc. DAFx}, 2026.
+\bibitem{diaz2025} R.~Diaz and M.~Sandler, ``Fast differentiable modal simulation of non-linear strings, membranes, and plates,'' \emph{Proc. DAFx}, 2025.
+\bibitem{kidger2021} P.~Kidger, ``On neural differential equations,'' DPhil thesis, Oxford, 2021.
+\bibitem{yu2024allpole} C.-Y.~Yu \emph{et~al.}, ``Differentiable all-pole filters for time-varying audio systems,'' \emph{Proc. DAFx}, 2024.
+\bibitem{bilbao2009} S.~Bilbao, \emph{Numerical Sound Synthesis: Finite Difference Schemes and Simulation in Musical Acoustics}, Wiley, 2009.
+\bibitem{russo2026} R.~Russo \emph{et~al.}, ``Numerical convergence of the scalar auxiliary variable method applied to nonlinear stiff string models,'' \emph{Nonlinear Dyn.}, v.~114, 2026.
+\end{thebibliography}}
+\end{sloppy}
+\end{document}

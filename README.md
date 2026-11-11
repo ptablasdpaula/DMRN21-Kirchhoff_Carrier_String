@@ -1,4 +1,4 @@
-Accompanying code for the DMRN+21 submission "Differentiable Kirchhoff Carrier Stiff String" to the [Digital Music Research Network One-day Workshop 2026](https://www.qmul.ac.uk/dmrn/dmrn21/), scheduled for Friday, 11 December 2026. The implementation is based on [Russo, Ducceschi & Bilbao (2026)](https://github.com/Nemus-Project/nLinStringsConv-SAV/blob/main/KCstring/KCStringSAV_noSplit.m)'s `KCStringSAV_nosplit.m` with `SAV = false`.
+Accompanying code for the DMRN+21 submission "Efficient Backpropagation for Finite-Difference Nonlinear String Synthesis" to the [Digital Music Research Network One-day Workshop 2026](https://www.qmul.ac.uk/dmrn/dmrn21/), scheduled for Friday, 11 December 2026. The implementation is based on [Russo, Ducceschi & Bilbao (2026)](https://github.com/Nemus-Project/nLinStringsConv-SAV/blob/main/KCstring/KCStringSAV_noSplit.m)'s `KCStringSAV_nosplit.m` with `SAV = false`.
 
 ## Installation
 
@@ -153,4 +153,4 @@ validation, internal batching and benchmark methodology.
 [Highlighted H100 result](docs/highlighted_benchmark.md): 128 four-second strings,
 including the loss and gradients for f0 and B, in 1.589 seconds.
 
-Companion applications (sound matching on NSynth guitar notes, CLAP semantic conditioning) are described in [docs/applications.md](docs/applications.md); the online supplement is built into `docs/index.html`.
+Companion applications (sound matching on NSynth guitar notes, text-guided sound design with CLAP) are described in [docs/applications.md](docs/applications.md); the online supplement is built into `docs/index.html`.

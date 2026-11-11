@@ -3,16 +3,23 @@
 Usage: build_benchmark_dots.py size|label [sweep.json] [output-prefix] [decorated]
 
 One dot per measured (method, batch), y = peak sampled GPU memory on a log
-axis: Ours (``cached3``), jaxdiffmodal (``diaz_44100`` at the sweep's primary
-mode count) and Autodiff (``fdtd``), plus, when the sweep contains them, the
-rematerialised baselines ``diaz_44100_ckpt`` and ``fdtd_ckpt`` as hollow dots
-in their method's colour (colour = method, fill = checkpointing). Mode
-``label`` draws small dots joined by thin dashed (solid series) or dotted
-(hollow series) lines, prints the seconds per evaluation next to the first
-and last measured dot of each series, names each series directly in its own
-colour instead of a legend, and marks the first batch that ran out of memory
-with an x on the benchmark GPU's 80 GB line. Mode ``size`` is the older
-variant that encodes time in the dot diameter for the three solid series.
+axis, for the four stages of the paper: Autodiff (``fdtd``, eager PyTorch),
+Autodiff, checkpointed (``fdtd_ckpt_reentrant``: eager PyTorch with the
+reentrant form of torch.utils.checkpoint, hollow dots in the same colour),
+Compiled autodiff (``fdtd_jax_sine_ckpt``: the checkpointed scheme under
+jax.jit in the sine basis) and Adjoint kernel (``replay``: the checkpointed
+adjoint in CUDA). Eager PyTorch is bound by the host CPU, so the preferred
+source is ``native-rate-one-host-merged.json``, which holds only rows measured on
+one host type; until it exists the script falls back to
+``native-rate-sweep-merged.json``, whose eager rows come from the rdg hosts
+and the others from the sbg hosts, and whose checkpointed eager row is
+``fdtd_ckpt`` (the non-reentrant form). Mode ``label`` draws small dots joined
+by thin dashed (solid series) or dotted (hollow series) lines, prints the
+seconds per evaluation next to the first and last measured dot of each
+series, names each series directly in its own colour instead of a legend,
+and marks the first batch that ran out of memory with an x on the benchmark
+GPU's 80 GB line. Mode ``size`` is the older variant that encodes time in
+the dot diameter for the solid series.
 """
 import json
 from pathlib import Path
@@ -29,9 +36,10 @@ MODE = sys.argv[1] if len(sys.argv) > 1 else 'size'
 if MODE not in ('size', 'label'):
     raise SystemExit('mode must be size or label')
 folder = Path(__file__).resolve().parent
-source = Path(sys.argv[2]) if len(sys.argv) > 2 else folder/'native-rate-sweep-merged.json'
+one_host = folder/'native-rate-one-host-merged.json'
+source = Path(sys.argv[2]) if len(sys.argv) > 2 else one_host if one_host.exists() else folder/'native-rate-sweep-merged.json'
 prefix = Path(sys.argv[3]) if len(sys.argv) > 3 else folder/f'benchmark-dots-{MODE}'
-WIDTH, HEIGHT = 3.5, 1.62
+WIDTH, HEIGHT = 3.5, 1.42
 COLUMN_SCALE = 1.035   # tight-bbox PDF width over the printed column width (240.9 pt measured on the page)
 TEXT = 8*COLUMN_SCALE    # every label prints at the abstract's caption size (8 pt) in a Times-compatible face
 DECORATED = len(sys.argv) > 4 and sys.argv[4] == 'decorated'
@@ -61,25 +69,21 @@ def select(method, modes=None):
 
 PURPLE, ORANGE, BLACK, GREY = '#7625a8', '#d55e00', '#151515', '#8c8c8c'
 # key, method, modes, printed name, colour, hollow
-SPECS = (('ours', 'cached3', None, 'Ours', PURPLE, False),
-         ('modal', 'diaz_44100', primary, 'jaxdiffmodal', ORANGE, False),
+EAGER_CKPT = 'fdtd_ckpt_reentrant' if 'fdtd_ckpt_reentrant' in metadata['methods'] else 'fdtd_ckpt'
+SPECS = (('kernel', 'replay', None, 'Adjoint kernel', PURPLE, False),
+         ('compiled', 'fdtd_jax_sine_ckpt', None, 'Compiled autodiff', ORANGE, False),
          ('autodiff', 'fdtd', None, 'Autodiff', BLACK, False),
-         ('modal_ckpt', 'diaz_44100_ckptro', primary, 'jaxdiffmodal, checkpointed', ORANGE, True),
-         ('modal_ckpt_traj', 'diaz_44100_ckpt', primary, 'jaxdiffmodal, checkpointed', ORANGE, True),
-         ('autodiff_ckpt', 'fdtd_ckpt', None, 'Autodiff, checkpointed', BLACK, True))
+         ('autodiff_ckpt', EAGER_CKPT, None, 'Autodiff, checkpointed', BLACK, True))
 present = [spec for spec in SPECS if spec[1] in metadata['methods'] and (MODE == 'label' or not spec[5])]
-# The checkpointed modal series is the readout-in-scan variant when the sweep has it;
-# the variant that returns the full modal trajectory stands in otherwise.
-if any(spec[0] == 'modal_ckpt' for spec in present):
-    present = [spec for spec in present if spec[0] != 'modal_ckpt_traj']
-else:
-    present = [(('modal_ckpt',) + spec[1:]) if spec[0] == 'modal_ckpt_traj' else spec for spec in present]
 series = {key: dict(name=name, colour=colour, hollow=hollow, rows=select(method, modes)[0], failed=select(method, modes)[1])
           for key, method, modes, name, colour, hollow in present}
-# Where each series prints its first and last time: above/below the dot, left/right of it, or not at all
-# (the checkpointed series are flat in time, so their last value says it all).
-TIME_SIDES = {'ours': ('below', 'below'), 'modal': ('right', 'right'), 'autodiff': ('above', 'right'),
-              'modal_ckpt': (None, 'right'), 'autodiff_ckpt': (None, 'right')}
+# Where each series prints its first and last time: a side of the dot (above, below, left, right) or an
+# explicit (dx, dy, ha, va) offset in points. The adjoint kernel, compiled autodiff and checkpointed autodiff
+# share almost the same memory, so their times fan out around the first and last dots.
+# At the last batch the three lines lie in the order compiled autodiff, checkpointed autodiff, kernel
+# from the top, and so do their times.
+TIME_SIDES = {'kernel': ('below', (4.0, -6.0, 'left', 'center')), 'compiled': ('left', (4.0, 9.5, 'left', 'center')),
+              'autodiff': ('above', 'right'), 'autodiff_ckpt': ((0, 6.5, 'center', 'bottom'), (4.0, 1.5, 'left', 'center'))}
 seconds = lambda r: r['median_seconds']
 gigabytes = lambda r: r['peak_gpu_bytes']/1e9
 times = [seconds(r) for s in series.values() for r in s['rows']]
@@ -96,9 +100,12 @@ fig, ax = plt.subplots(figsize=(WIDTH, HEIGHT))
 
 
 def annotate_time(r, text, side, colour):
-    offset = {'above': (0, 3.6), 'below': (0, -3.6), 'left': (-4.0, 0), 'right': (4.0, 0)}[side]
-    ha = {'above': 'center', 'below': 'center', 'left': 'right', 'right': 'left'}[side]
-    va = {'above': 'bottom', 'below': 'top', 'left': 'center', 'right': 'center'}[side]
+    if isinstance(side, tuple):
+        offset, ha, va = side[:2], side[2], side[3]
+    else:
+        offset = {'above': (0, 3.6), 'below': (0, -3.6), 'left': (-4.0, 0), 'right': (4.0, 0)}[side]
+        ha = {'above': 'center', 'below': 'center', 'left': 'right', 'right': 'left'}[side]
+        va = {'above': 'bottom', 'below': 'top', 'left': 'center', 'right': 'center'}[side]
     ax.annotate(text, (r['batch'], gigabytes(r)), xytext=offset, textcoords='offset points',
                 ha=ha, va=va, fontsize=TEXT, color=colour, zorder=4)
 
@@ -123,7 +130,8 @@ for key, s in sorted(series.items(), key=lambda item: -max(seconds(r) for r in i
             annotate_time(r, time_text(seconds(r)) + ' s', side, colour)
 ax.set_xscale('log', base=2)
 # Room on the right for the labels printed beside the last dots.
-ax.set_xlim(batches[0]*.72, batches[-1]*(2.0 if MODE == 'label' else 1.38))
+LEFT = batches[0]*(.45 if MODE == 'label' else .72)   # room on the left for compiled autodiff's first time
+ax.set_xlim(LEFT, batches[-1]*(2.0 if MODE == 'label' else 1.38))
 ax.set_xticks(batches, [str(v) for v in batches])
 ax.set_yscale('log')
 memories = [gigabytes(r) for s in series.values() for r in s['rows']]
@@ -145,7 +153,7 @@ if MODE == 'label':
     # Out-of-memory failures: an x in the series colour on the GPU's memory limit.
     if any(s['failed'] for s in series.values()):
         ax.axhline(GPU_LIMIT_GB, color=GREY, ls=(0, (1, 2)), lw=.6, zorder=1)
-        ax.annotate(f'{GPU_LIMIT_GB} GB', (batches[0]*.72, GPU_LIMIT_GB), xytext=(1.5, 1.2), textcoords='offset points',
+        ax.annotate(f'{GPU_LIMIT_GB} GB', (LEFT, GPU_LIMIT_GB), xytext=(1.5, 1.2), textcoords='offset points',
                     ha='left', va='bottom', fontsize=TEXT-.5, color=GREY, zorder=4)
         for s in series.values():
             if s['failed']:
@@ -193,12 +201,11 @@ if MODE == 'label':
         text.set_position((xc, inverse.transform((0, y_text))[1]))
 
     # (series, from batch, to batch, side): each name sits beside its own line.
-    NAMES = {'ours': (2, 8, 'below'), 'autodiff': (2, 4, 'above'), 'modal': (32, 64, 'below'),
-             'autodiff_ckpt': (4, 16, 'above'), 'modal_ckpt': (16, 64, 'above')}
+    NAMES = {'kernel': (2, 4, 'below'), 'compiled': (16, 64, 'below'), 'autodiff': (2, 4, 'above'),
+             'autodiff_ckpt': (4, 32, 'above')}
     if DECORATED:
         along('autodiff', 2, 4, 'above')
-        along('modal', 16, 32, 'below')
-        place('ours', 2, 8, 'below')
+        place('kernel', 2, 8, 'below')
     else:
         for key, (b0, b1, side) in NAMES.items():
             if key in series:

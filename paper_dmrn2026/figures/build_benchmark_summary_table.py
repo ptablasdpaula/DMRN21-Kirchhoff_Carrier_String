@@ -1,18 +1,39 @@
-"""Build the paper's five-model table from the same merged data as the figure."""
+"""Build the paper's memory and time table: five implementations of one gradient, each adding one ingredient.
+
+Usage: build_benchmark_summary_table.py [draft]
+
+Rows, from the merged sweep data:
+    Autodiff        fdtd                 eager PyTorch autodiff of the scheme on the grid
+    + compiler      fdtd_jax             the same arithmetic compiled by JAX (jax.jit), every step kept
+    + checkpoints   fdtd_jax_ckpt        the same with a checkpoint every 256 steps
+    + modes         fdtd_jax_sine_ckpt   the same stepped in the discrete sine basis (mode by mode)
+    Hand-written    replay               the hand-derived adjoint, same checkpoints and modes, in one CUDA kernel
+The three middle rows are prefixed with the paper's \\step arrow: each builds on the row above.
+
+The preferred source is native-rate-one-host-merged.json (every row measured on one host type, because
+the eager and the host-driven compiled loops are bound by the host CPU); until it exists the script falls
+back to native-rate-sweep-merged.json. With ``draft``, a row that has not been measured yet is filled
+with question marks so that the page layout can be checked; without it a missing row is an error.
+
+The five-model version of this table (Auto, Modal and the cached adjoint) is in commit 2d5372d.
+"""
 import json
 from pathlib import Path
+import sys
 
+DRAFT = 'draft' in sys.argv[1:]
 folder = Path(__file__).resolve().parent
-source = folder / 'native-rate-sweep-merged.json'
+one_host = folder / 'native-rate-one-host-merged.json'
+source = one_host if one_host.exists() else folder / 'native-rate-sweep-merged.json'
 data = json.loads(source.read_text())
 meta = data['metadata']
 assert meta['status'] == 'complete' and not meta.get('source_changed_during_run')
 batches = meta['batch_sizes']
-primary = meta.get('primary_modal_modes') or meta['native_modal_modes'][0]
-models = [('Auto', 'fdtd', False), ('Auto', 'fdtd_ckpt', True),
-          ('Modal', 'diaz_44100', False),
-          ('Modal', 'diaz_44100_ckptro', True),
-          ('Ours', 'cached3', True)]
+models = [('Autodiff', 'fdtd'),
+          (r'\step\,+ compiler', 'fdtd_jax'),
+          (r'\step\,+ checkpoints', 'fdtd_jax_ckpt'),
+          (r'\step\,+ modes', 'fdtd_jax_sine_ckpt'),
+          ('Hand-written', 'replay')]
 lines = [r'\begin{tabular}{@{}l*{8}{c}}',
          r' & \multicolumn{8}{c}{Batch Size}\\',
          r'Method & ' + ' & '.join(map(str, batches)) + r'\\', r'\hline']
@@ -21,27 +42,28 @@ for label, field, factor in [('Peak memory (GB)', 'peak_gpu_bytes', 1e-9),
     lines += [r'\noalign{\vskip 2pt}',
               r' & \multicolumn{8}{c}{' + label + r'}\\[2pt]']
     block = []
-    for name, method, checkpointed in models:
-        rows = [r for r in data['rows'] if r['method'] == method and
-                (not method.startswith('diaz') or r['modes'] == primary)]
-        assert len(rows) == len(batches) and {r['batch'] for r in rows} == set(batches)
+    for name, method in models:
+        rows = [r for r in data['rows'] if r['method'] == method]
+        if not rows and DRAFT:
+            block.append((name, ['?'] * len(batches)))
+            continue
+        assert len(rows) == len(batches) and {r['batch'] for r in rows} == set(batches), method
         cells = []
         for batch in batches:
             row = next(r for r in rows if r['batch'] == batch)
             if row['status'] != 'ok':
-                assert row['status'] == 'oom', row['status']
+                assert row['status'] == 'oom', (method, batch, row['status'])
                 cells.append('-')
             else:
                 value = row[field] * factor
                 cells.append(f'{value:.1f}' if factor != 1 else (f'{value:.2f}' if value < 10 else f'{value:.0f}'))
-        if checkpointed:
-            name += r"$^{\circlearrowleft}$"
         block.append((name, cells))
+    measured = lambda cell: cell not in ('-', '?')
     # Compare models within each batch, retaining ties at displayed precision.
-    minima = [min(float(cells[i]) for _, cells in block if cells[i] != '-')
+    minima = [min(float(cells[i]) for _, cells in block if measured(cells[i]))
               for i in range(len(batches))]
     # Equal colour steps between distinct displayed values, separately per metric.
-    ranked = sorted({float(cell) for _, cells in block for cell in cells if cell != '-'})
+    ranked = sorted({float(cell) for _, cells in block for cell in cells if measured(cell)})
     shades = {value: 100 * rank / (len(ranked) - 1) if len(ranked) > 1 else 0
               for rank, value in enumerate(ranked)}
     for name, cells in block:
@@ -49,6 +71,9 @@ for label, field, factor in [('Peak memory (GB)', 'peak_gpu_bytes', 1e-9),
         for i, cell in enumerate(cells):
             if cell == '-':
                 formatted.append(r'\cellcolor{heatpurple}\textemdash')
+                continue
+            if cell == '?':
+                formatted.append('?')
                 continue
             value = float(cell)
             body = r'\textbf{' + cell + '}' if value == minima[i] else cell
@@ -59,4 +84,7 @@ for label, field, factor in [('Peak memory (GB)', 'peak_gpu_bytes', 1e-9),
         lines.append(name + ' & ' + ' & '.join(formatted) + r'\\')
     lines.append(r'\noalign{\vskip 2pt}\cline{2-9}' if factor != 1 else r'\hline')
 lines.append(r'\end{tabular}')
-(folder / 'benchmark-table.tex').write_text('% Generated by build_benchmark_summary_table.py\n' + '\n'.join(lines) + '\n')
+(folder / 'benchmark-table.tex').write_text('% Generated by build_benchmark_summary_table.py from ' + source.name
+                                            + (' (DRAFT: unmeasured rows are question marks)' if DRAFT else '') + '\n'
+                                            + '\n'.join(lines) + '\n')
+print('Wrote', folder / 'benchmark-table.tex', 'from', source.name, '(draft)' if DRAFT else '')

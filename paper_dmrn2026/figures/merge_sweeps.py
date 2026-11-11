@@ -40,6 +40,7 @@ def merge(base_path, extra_paths):
     def describe(path, data):
         meta = data['metadata']
         return {'file': Path(path).name, 'job_id': meta.get('job_id'), 'hostname': meta.get('hostname'),
+                'host_cpu': meta.get('host_cpu'),
                 'methods': meta.get('methods'), 'batch_sizes': meta.get('batch_sizes'),
                 'gpu_names': sorted({r.get('gpu_name') for r in data['rows'] if r.get('gpu_name')}),
                 'source_fingerprints': meta.get('source_fingerprints'),
