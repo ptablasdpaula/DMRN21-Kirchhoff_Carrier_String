@@ -1,0 +1,110 @@
+[
+ {
+  "id": "kc-jit-smoke-jax",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit-smoke.sh",
+   "jax"
+  ],
+  "estimated_seconds": 1200
+ },
+ {
+  "id": "kc-jit-smoke-torch-test",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit-smoke.sh",
+   "torch-test"
+  ],
+  "estimated_seconds": 700
+ },
+ {
+  "id": "kc-jit-smoke-torch-default-b16",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit-smoke.sh",
+   "torch",
+   "default",
+   "16"
+  ],
+  "estimated_seconds": 1000
+ },
+ {
+  "id": "kc-jit-smoke-torch-default-b64",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit-smoke.sh",
+   "torch",
+   "default",
+   "64"
+  ],
+  "estimated_seconds": 1000
+ },
+ {
+  "id": "kc-jit-smoke-torch-default-b256",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit-smoke.sh",
+   "torch",
+   "default",
+   "256"
+  ],
+  "estimated_seconds": 1500
+ },
+ {
+  "id": "kc-jit-smoke-torch-default-b64-reentrant",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit-smoke.sh",
+   "torch",
+   "default",
+   "64",
+   "reentrant"
+  ],
+  "estimated_seconds": 1000
+ },
+ {
+  "id": "kc-jit-smoke-torch-reduce-overhead-b16",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit-smoke.sh",
+   "torch",
+   "reduce-overhead",
+   "16"
+  ],
+  "estimated_seconds": 1000
+ },
+ {
+  "id": "kc-jit-smoke-torch-reduce-overhead-b64",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit-smoke.sh",
+   "torch",
+   "reduce-overhead",
+   "64"
+  ],
+  "estimated_seconds": 1000
+ },
+ {
+  "id": "kc-jit-smoke-torch-reduce-overhead-b256",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit-smoke.sh",
+   "torch",
+   "reduce-overhead",
+   "256"
+  ],
+  "estimated_seconds": 1500
+ },
+ {
+  "id": "kc-jit-smoke-torch-reduce-overhead-b64-reentrant",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit-smoke.sh",
+   "torch",
+   "reduce-overhead",
+   "64",
+   "reentrant"
+  ],
+  "estimated_seconds": 1000
+ }
+]

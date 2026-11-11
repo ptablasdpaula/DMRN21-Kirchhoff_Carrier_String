@@ -57,7 +57,7 @@ def test_dual_reference():
 
 
 def test_checkpointed_chunks():
-    """Chunked torch.utils.checkpoint rematerialisation reproduces the plain path exactly."""
+    """Chunked torch.utils.checkpoint rematerialisation reproduces the plain path exactly, in both of its forms."""
     torch.manual_seed(905)
     params = reference_parameters()
     theta = (material_multipliers(params) * params.new_tensor([1.]*8 + [.9, 1.1]))
@@ -70,12 +70,21 @@ def test_checkpointed_chunks():
             chunked = simulate(b, intervals, 132300, steps, excitation, checkpoint_steps=chunk)
             assert chunked.shape == (2, steps + 2)
             torch.testing.assert_close(chunked, plain, rtol=1e-13, atol=1e-16)
+            c = batch.detach().clone().requires_grad_()
+            reentrant = simulate(c, intervals, 132300, steps, excitation, checkpoint_steps=chunk,
+                                 checkpoint_reentrant=True)
+            torch.testing.assert_close(reentrant, plain, rtol=1e-13, atol=1e-16)
             if steps == 0:
                 continue
             weight = torch.randn_like(plain)
             grad_plain, = torch.autograd.grad((plain * weight).sum(), a)
             grad_chunked, = torch.autograd.grad((chunked * weight).sum(), b)
             torch.testing.assert_close(grad_chunked, grad_plain, rtol=1e-12, atol=1e-15)
+            # The reentrant form only supports .backward(), not autograd.grad(). Each chunk runs its own
+            # backward pass, so the parameter gradients are summed in a different order: equal to rounding
+            # (about 4e-11 on components that are small by cancellation), not bit for bit.
+            (reentrant * weight).sum().backward()
+            torch.testing.assert_close(c.grad, grad_plain, rtol=5e-9, atol=1e-12)
     for bad in (0, -1, 2.0, True):
         try:
             simulate(batch, 16, 132300, 4, checkpoint_steps=bad)
@@ -148,14 +157,44 @@ def test_cuda_replay():
     print('PASS: CUDA spatial autodiff agrees with replay waveform and ten physical gradients (multimode, raised cosine)')
 
 
+def test_cuda_compiled(modes=(None,)):
+    """torch.compile blocks reproduce the eager loop: waveform and ten gradients, plain and checkpointed."""
+    torch.manual_seed(312)
+    device = torch.device('cuda')
+    values = physical_values(2).to(device)
+    scale = gradient_scales(device)
+    for mode in modes:
+        # 77 steps in 32-step chunks of 8-step blocks: whole blocks, a remainder block and a short last chunk.
+        for chunk, reentrant in ((None, False), (32, False), (32, True)):
+            a = values.detach().clone().requires_grad_()
+            b = values.detach().clone().requires_grad_()
+            eager = simulate(theta_from_physical(a), 176, 132300, 77, 'raised_cosine')
+            compiled = simulate(theta_from_physical(b), 176, 132300, 77, 'raised_cosine', checkpoint_steps=chunk,
+                                compile_block=8, compile_mode=mode, checkpoint_reentrant=reentrant)
+            weight = torch.randn_like(eager)
+            grad_a, = torch.autograd.grad((eager * weight).sum(), a)
+            # The reentrant checkpoint only supports .backward(), not autograd.grad().
+            (compiled * weight).sum().backward()
+            grad_b = b.grad
+            torch.testing.assert_close(compiled, eager, rtol=1e-10, atol=1e-13)
+            torch.testing.assert_close(grad_b * scale, grad_a * scale, rtol=5e-8, atol=1e-12)
+            print(f'ok: mode={mode or "default"} checkpoint_steps={chunk} reentrant={reentrant}', flush=True)
+    print('PASS: torch.compile blocks agree with the eager spatial loop, waveform and ten physical gradients '
+          f'(modes: {", ".join(m or "default" for m in modes)})')
+
+
 if __name__ == '__main__':
     test_dual_reference()
     test_checkpointed_chunks()
     test_batch_and_empty_steps()
     test_physical_coordinates()
     print('PASS: plain spatial FDTD waveform and all ten material and six perceptual gradients match independent dual reference; '
-          'batches isolated; checkpointed chunks reproduce the plain values and gradients')
+          'batches isolated; checkpointed chunks (non-reentrant and reentrant) reproduce the plain values and gradients')
     if '--cuda' in sys.argv:
         if not torch.cuda.is_available():
             raise RuntimeError('--cuda requires a CUDA device')
         test_cuda_replay()
+        if '--compiled' in sys.argv:
+            test_cuda_compiled()
+        if '--compiled-cudagraphs' in sys.argv:
+            test_cuda_compiled(('reduce-overhead',))

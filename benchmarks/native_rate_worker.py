@@ -1,4 +1,11 @@
-"""JAX modal solver at 44.1 kHz: one isolated batch/loss/gradient case."""
+"""One isolated JAX batch/loss/gradient case: the modal solver, or the FDTD scheme under jax.jit.
+
+``--scheme modal`` (default) is the jaxdiffmodal solver at 44.1 kHz or the
+FDTD internal rate. ``--scheme fdtd`` is ``experiments.figure_comparison.
+fdtd_jax``: the spatial FDTD scheme of the PyTorch baseline, compiled by XLA,
+at the FDTD internal rate; being the same scheme as the reference, its first
+item must reproduce the reference waveform and gradient, which is asserted.
+"""
 import argparse
 import hashlib
 import json
@@ -19,8 +26,13 @@ def emit(event, **kwargs):
     print(json.dumps({'event': event, **kwargs}, allow_nan=False), flush=True)
 
 
+def method_name(scheme, rate, checkpoint_steps, readout_in_scan, basis='grid'):
+    if scheme == 'fdtd': return 'fdtd_jax' + ('_sine' if basis == 'sine' else '') + ('_ckpt' if checkpoint_steps else '')
+    return f'diaz_{rate}' + ('_ckptro' if checkpoint_steps and readout_in_scan else '_ckpt' if checkpoint_steps else '')
+
+
 def run_case(batch, duration, modes, rate, artifact, excitation='multimode', loss='mae', checkpoint_steps=None,
-             readout_in_scan=False):
+             readout_in_scan=False, scheme='modal', unroll=8, basis='grid'):
     import jax
     import jax.numpy as jnp
     import numpy as np
@@ -28,6 +40,7 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
     import jaxdiffmodal.time_integrators as integrators
     from benchmarks.exact_methods import BOX, GRID
     from experiments.native_rate_study.renderer import renderer
+    from experiments.figure_comparison.fdtd_jax import renderer as fdtd_renderer
     from experiments.figure_comparison.physical import physical_values, gradient_scales
     from experiments.jax_loss_benchmark import cel, mae, prepare_target, prepare_mae_target, anti_alias
     from src.optimization import criterion_for
@@ -38,6 +51,8 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
     if jax.default_backend() != 'gpu': raise RuntimeError('Requires JAX GPU backend')
     if rate not in (44100, GRID.integration_rate):
         raise ValueError(f'Only the native rate and the FDTD internal rate ({GRID.integration_rate} Hz) are supported')
+    if scheme == 'fdtd' and (rate != GRID.integration_rate or rate == 44100 or readout_in_scan):
+        raise ValueError('The FDTD scheme runs at the oversampled FDTD internal rate and always reads the pickup in the scan')
     count = round(duration * 44100)
     internal_samples = round(duration*rate)
     if loss == 'cel' and count < 1024: raise ValueError('Target is too short for the CeL STFT')
@@ -53,7 +68,11 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
         # When oversampled, retain the two extra points used by the project
         # anti-alias filter; at 1x, output exactly the requested number of samples.
         samples = internal_samples + 2 if rate != 44100 else internal_samples
-        raw = renderer(v, samples, rate, modes, GRID.intervals, excitation, checkpoint_steps, readout_in_scan)
+        if scheme == 'fdtd':
+            raw = fdtd_renderer(v, internal_samples, GRID.intervals, rate, excitation, GRID.order, checkpoint_steps, unroll,
+                                basis)
+        else:
+            raw = renderer(v, samples, rate, modes, GRID.intervals, excitation, checkpoint_steps, readout_in_scan)
         audio = anti_alias(raw, kernel, count, GRID.oversampling) if rate != 44100 else raw
         value = sum(group_loss(audio[i:i+16], prepared)*min(16, batch-i)
                     for i in range(0, batch, 16))
@@ -95,6 +114,12 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
         'first_item_fdtd_gradient': ref_grad_np.tolist(),
         'finite': True,
     }
+    if scheme == 'fdtd':
+        # The same scheme as the reference: agreement is a requirement, not a diagnostic.
+        audio_error = diagnostic['first_item_audio_relative_l2_vs_fdtd']
+        gradient_error = diagnostic['first_item_scaled_gradient_relative_l2_vs_fdtd']
+        if not (audio_error < 1e-6 and gradient_error < 1e-5):
+            raise RuntimeError(f'JAX FDTD disagrees with the reference: audio {audio_error:.3e}, gradient {gradient_error:.3e}')
     # Save compact first-item diagnostics outside timing. Comparing these
     # artifacts across rates/mode counts never creates extra timed GPU memory.
     if artifact is not None:
@@ -114,8 +139,13 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
     device = jax.devices()[0]
     memory = device.memory_stats() or {}
     direct_url = Path(integrators.__file__).parent.parent / 'jaxdiffmodal-0.1.0.dist-info' / 'direct_url.json'
-    name = f'diaz_{rate}' + ('_ckptro' if checkpoint_steps and readout_in_scan else '_ckpt' if checkpoint_steps else '')
-    integrator = ('jaxdiffmodal.time_integrators.solve_tf' if not checkpoint_steps else
+    name = method_name(scheme, rate, checkpoint_steps, readout_in_scan, basis)
+    integrator = ('experiments.figure_comparison.fdtd_jax.renderer: the spatial FDTD scheme of the PyTorch baseline '
+                  + ('stepped in the discrete sine basis ' if basis == 'sine' else 'on the grid ') +
+                  f'as a jax.lax.scan (unroll={unroll}) under jax.jit, pickup read inside the scan'
+                  + (f', jax.checkpoint on every {checkpoint_steps}-step segment' if checkpoint_steps else
+                     ', every step kept for the reverse pass') if scheme == 'fdtd' else
+                  'jaxdiffmodal.time_integrators.solve_tf' if not checkpoint_steps else
                   'experiments.native_rate_study.renderer.solve_tf_checkpointed: the upstream recurrence as a nested '
                   f'jax.lax.scan with jax.checkpoint on every {checkpoint_steps}-step segment'
                   + (', pickup read inside the scan (no modal trajectory returned)' if readout_in_scan else
@@ -128,7 +158,11 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
             'framework_memory_stats_scope':'JAX cumulative device stats including compilation/warm-up',
             'validation':diagnostic, 'gpu_name':device.device_kind, 'jax_version':jax.__version__,
             'internal_rate':rate, 'output_rate':44100, 'output_samples':count,
-            'oversampling':rate//44100, 'antialias_filter':rate!=44100, 'modes':modes, 'excitation':excitation,
+            'oversampling':rate//44100, 'antialias_filter':rate!=44100, 'modes':None if scheme == 'fdtd' else modes,
+            'scheme':scheme, 'basis':basis if scheme == 'fdtd' else None,
+            'compilation':({'compiler':'jax.jit (XLA)', 'unroll':unroll,
+                                             'note':'compile_seconds is separate from the timed repetitions'}
+                                            if scheme == 'fdtd' else None), 'excitation':excitation,
             'fdtd_spatial_order':GRID.order,
             'initial_shape_note':f'{excitation} displacement sampled on the fixed {GRID.intervals}-interval grid and projected by h*(basis @ shape)',
             'first_item_diagnostic_artifact':str(artifact) if artifact is not None else None,
@@ -150,17 +184,23 @@ def main():
                    help='Rematerialise the upstream recurrence in segments of this many steps (jax.checkpoint)')
     p.add_argument('--readout-in-scan', action='store_true',
                    help='With --checkpoint-steps: read the pickup inside the scan instead of returning the modal trajectory')
+    p.add_argument('--scheme', default='modal', choices=('modal', 'fdtd'),
+                   help='modal: jaxdiffmodal; fdtd: the spatial FDTD scheme under jax.jit')
+    p.add_argument('--unroll', type=int, default=8, help='--scheme fdtd: time steps unrolled per compiled loop iteration')
+    p.add_argument('--basis', default='grid', choices=('grid', 'sine'),
+                   help='--scheme fdtd: step on the grid with the stencils, or in the discrete sine basis')
     a = p.parse_args()
     try:
         row = run_case(a.batch, a.duration, a.modes, a.rate, a.artifact, a.excitation, a.loss, a.checkpoint_steps,
-                       a.readout_in_scan)
+                       a.readout_in_scan, a.scheme, a.unroll, a.basis)
     except Exception as exc:
         traceback.print_exc(); s = str(exc).lower()
         status = 'oom' if 'out of memory' in s or 'resource_exhausted' in s else 'error'
-        row = {'method':f'diaz_{a.rate}' + ('_ckptro' if a.checkpoint_steps and a.readout_in_scan else '_ckpt' if a.checkpoint_steps else ''),
+        row = {'method':method_name(a.scheme, a.rate, a.checkpoint_steps, a.readout_in_scan, a.basis),
                'batch':a.batch, 'status':status,
                'excitation':a.excitation, 'loss':a.loss, 'checkpoint_steps':a.checkpoint_steps,
-               'modes':a.modes, 'duration_seconds':a.duration, 'error':f'{type(exc).__name__}: {exc}'}
+               'modes':None if a.scheme == 'fdtd' else a.modes, 'duration_seconds':a.duration,
+               'error':f'{type(exc).__name__}: {exc}'}
     emit('result', row=row)
 
 

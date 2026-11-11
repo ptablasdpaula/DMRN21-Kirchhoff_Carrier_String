@@ -112,12 +112,12 @@ def rss_bytes(pid):
 
 
 def run_case(method, batch, duration, timeout, python, output_dir, poll_interval, host_limit_bytes,
-             excitation='multimode', loss='mae'):
+             excitation='multimode', loss='mae', extra=()):
     output_dir.mkdir(parents=True, exist_ok=True)
     log_path = output_dir / f'{method}-b{batch}.log'
     cmd = [python, str(ROOT/'benchmarks/figure_comparison_worker.py'),
            '--method', method, '--batch', str(batch), '--duration', str(duration),
-           '--excitation', excitation, '--loss', loss]
+           '--excitation', excitation, '--loss', loss, *extra]
     proc = subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             text=True, bufsize=1, start_new_session=True)
     lines = queue.Queue()

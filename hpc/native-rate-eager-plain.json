@@ -1,0 +1,38 @@
+[
+ {
+  "id": "kc-eager-plain-b16_32",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit.sh",
+   "fdtd",
+   "16,32",
+   "fdtd-sbg-b16_32",
+   "1"
+  ],
+  "estimated_seconds": 2710
+ },
+ {
+  "id": "kc-eager-plain-b1_2",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit.sh",
+   "fdtd",
+   "1,2",
+   "fdtd-sbg-b1_2",
+   "1"
+  ],
+  "estimated_seconds": 2700
+ },
+ {
+  "id": "kc-eager-plain-b4_8_64_128",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit.sh",
+   "fdtd",
+   "4,8,64,128",
+   "fdtd-sbg-b4_8_64_128",
+   "1"
+  ],
+  "estimated_seconds": 3000
+ }
+]

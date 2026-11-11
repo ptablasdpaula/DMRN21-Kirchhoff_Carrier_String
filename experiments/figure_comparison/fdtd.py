@@ -13,6 +13,14 @@ including the two initial samples; filtering and loss belong to the caller.
 The pluck centre and the pickup position (parameters 9 and 10, fractions of
 L) stay inside the graph: the raised cosine is built from the centre and the
 readout is the sine interpolant at the pickup, so both receive gradients.
+
+With ``compile_block`` set, the same step arithmetic is run through
+``torch.compile`` (TorchDynamo, AOTAutograd and TorchInductor) in blocks of
+that many steps: the Python loop over a block is unrolled into one graph, its
+forward and backward are compiled once and then called block after block, so
+the per-operation dispatch of the eager loop is replaced by fused kernels.
+Compilation combines with ``checkpoint_steps`` (each chunk is a whole number
+of compiled blocks plus a compiled remainder) and changes no arithmetic.
 """
 import functools
 import math
@@ -94,8 +102,34 @@ def _advance(previous, current, readout, inv_h2, mass, tension_loss, bending, pr
     return previous, current, torch.stack(samples, dim=1)
 
 
+@functools.lru_cache(maxsize=None)
+def _compiled_block(steps, order, mode):
+    """``_advance`` over a fixed number of steps as one ``torch.compile`` graph (static shapes)."""
+    def block(previous, current, readout, inv_h2, mass, tension_loss, bending, previous_mass, previous_loss,
+              q_scale, inverse_mass):
+        return _advance(previous, current, readout, inv_h2, mass, tension_loss, bending, previous_mass,
+                        previous_loss, q_scale, inverse_mass, steps=steps, order=order)
+    return torch.compile(block, dynamic=False, mode=mode)
+
+
+def _advance_compiled(previous, current, *coefficients, steps, order, block, mode):
+    """``_advance`` as a sequence of compiled blocks of ``block`` steps and one compiled remainder.
+
+    Under ``mode='reduce-overhead'`` the compiled graphs replay as CUDA graphs
+    whose outputs live in a reused static pool, so each block's outputs are
+    cloned before the next call.
+    """
+    samples = []
+    for size in (block,) * (steps // block) + ((steps % block,) if steps % block else ()):
+        previous, current, piece = _compiled_block(size, order, mode)(previous, current, *coefficients)
+        if mode == 'reduce-overhead':
+            previous, current, piece = previous.clone(), current.clone(), piece.clone()
+        samples.append(piece)
+    return previous, current, torch.cat(samples, dim=1)
+
+
 def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimode', order=SPATIAL_ORDER,
-             checkpoint_steps=None):
+             checkpoint_steps=None, compile_block=None, compile_mode=None, checkpoint_reentrant=False):
     """Simulate a batch of independent strings using ordinary PyTorch AD.
 
     Args:
@@ -108,6 +142,13 @@ def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimo
         checkpoint_steps: None keeps the whole graph (the plain baseline); a
             positive integer rematerialises the loop in chunks of that many
             steps with ``torch.utils.checkpoint`` (use_reentrant=False).
+        compile_block: None runs the eager loop; a positive integer compiles
+            the loop with ``torch.compile`` in blocks of that many steps.
+        compile_mode: ``torch.compile`` mode for the blocks (None is the
+            default mode; ``'reduce-overhead'`` adds CUDA graphs).
+        checkpoint_reentrant: use the reentrant form of
+            ``torch.utils.checkpoint`` (forward under no_grad, a nested
+            backward per chunk) instead of the non-reentrant one.
 
     Returns:
         Pickup displacement of shape (steps+2,) or (B, steps+2).
@@ -127,6 +168,11 @@ def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimo
     if checkpoint_steps is not None and (not isinstance(checkpoint_steps, int) or isinstance(checkpoint_steps, bool)
                                          or checkpoint_steps < 1):
         raise ValueError('checkpoint_steps must be a positive integer or None')
+    if compile_block is not None and (not isinstance(compile_block, int) or isinstance(compile_block, bool)
+                                      or compile_block < 1):
+        raise ValueError('compile_block must be a positive integer or None')
+    if compile_mode is not None and compile_block is None:
+        raise ValueError('compile_mode requires compile_block')
 
     # Values in each column are independent across batch items. Each material
     # parameter keeps a singleton spatial dimension to broadcast over nodes.
@@ -163,12 +209,17 @@ def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimo
     coefficients = (readout, inv_h2, mass, tension_loss, bending, previous_mass, previous_loss, q_scale, inverse_mass)
     chunk = max(1, steps if checkpoint_steps is None else checkpoint_steps)
     for start in range(0, steps, chunk):
-        operation = functools.partial(_advance, steps=min(chunk, steps - start), order=order)
+        count = min(chunk, steps - start)
+        if compile_block is None:
+            operation = functools.partial(_advance, steps=count, order=order)
+        else:
+            operation = functools.partial(_advance_compiled, steps=count, order=order, block=compile_block,
+                                          mode=compile_mode)
         if checkpoint_steps is None:
             previous, current, samples = operation(previous, current, *coefficients)
         else:
             previous, current, samples = checkpoint(operation, previous, current, *coefficients,
-                                                    use_reentrant=False, preserve_rng_state=False)
+                                                    use_reentrant=checkpoint_reentrant, preserve_rng_state=False)
         blocks.append(samples)
     audio = torch.cat(blocks, dim=1)
     return audio[0] if single else audio

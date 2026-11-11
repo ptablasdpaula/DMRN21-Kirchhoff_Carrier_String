@@ -24,22 +24,25 @@ def fingerprints():
     result = source_fingerprints()
     for file in (Path(__file__), ROOT/'benchmarks/native_rate_worker.py', ROOT/'benchmarks/native_rate_plot.py',
                  ROOT/'experiments/native_rate_study/renderer.py',
-                 ROOT/'hpc/native-rate-pilot.sh', ROOT/'hpc/native-rate-sweep.sh'):
+                 ROOT/'hpc/native-rate-pilot.sh', ROOT/'hpc/native-rate-sweep.sh', ROOT/'hpc/native-rate-jit.sh'):
         if file.exists(): result[str(file.relative_to(ROOT))] = hashlib.sha256(file.read_bytes()).hexdigest()
     return result
 
 
 def native_case(batch, duration, timeout, python, outdir, modes, rate, interval=.01, host_limit=32*10**9,
-                excitation='multimode', loss='mae', checkpoint_steps=None, readout_in_scan=False):
+                excitation='multimode', loss='mae', checkpoint_steps=None, readout_in_scan=False, scheme='modal',
+                unroll=8, basis='grid'):
     outdir.mkdir(parents=True, exist_ok=True)
     tag = '-ckptro' if checkpoint_steps and readout_in_scan else '-ckpt' if checkpoint_steps else ''
-    logpath = outdir/f'diaz-{rate}-m{modes}-b{batch}{tag}.log'
-    artifact = outdir/f'diaz-{rate}-m{modes}-b{batch}{tag}.npz'
+    stem = f'fdtd-jax-{basis}-{rate}-b{batch}{tag}' if scheme == 'fdtd' else f'diaz-{rate}-m{modes}-b{batch}{tag}'
+    logpath = outdir/f'{stem}.log'
+    artifact = outdir/f'{stem}.npz'
     command = [python, str(ROOT/'benchmarks/native_rate_worker.py'), '--batch', str(batch), '--duration', str(duration),
                '--modes', str(modes), '--rate', str(rate), '--artifact', str(artifact), '--excitation', excitation,
                '--loss', loss]
     if checkpoint_steps: command += ['--checkpoint-steps', str(checkpoint_steps)]
     if readout_in_scan: command += ['--readout-in-scan']
+    if scheme == 'fdtd': command += ['--scheme', 'fdtd', '--unroll', str(unroll), '--basis', basis]
     proc = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             text=True, bufsize=1, start_new_session=True)
     lines = queue.Queue()
@@ -80,8 +83,9 @@ def native_case(batch, duration, timeout, python, outdir, modes, rate, interval=
         text = ''.join(captured).lower()
         status = ('timeout' if timed_out else 'host_memory_limit' if host_limit_hit else
                   'oom' if 'out of memory' in text or 'resource_exhausted' in text else 'error')
-        result = {'method':f'diaz_{rate}{"_ckptro" if checkpoint_steps and readout_in_scan else "_ckpt" if checkpoint_steps else ""}',
-                  'batch':batch, 'modes':modes,
+        result = {'method':(f'fdtd_jax{"_sine" if basis == "sine" else ""}{"_ckpt" if checkpoint_steps else ""}' if scheme == 'fdtd' else
+                            f'diaz_{rate}{"_ckptro" if checkpoint_steps and readout_in_scan else "_ckpt" if checkpoint_steps else ""}'),
+                  'batch':batch, 'modes':None if scheme == 'fdtd' else modes,
                   'status':status, 'error':f'exit={proc.returncode}; see {logpath}'}
     result.update(peak_gpu_bytes=peak, gpu_memory_metric='NVML sampled process memory',
                   gpu_memory_samples=samples, gpu_memory_sample_interval_seconds=interval,
@@ -124,6 +128,17 @@ def compare_artifacts(logs, modes=(175,123,8), internal_rate=132300):
     return checks
 
 
+def host_cpu():
+    """CPU model of the host: the eager PyTorch baselines are bound by it, not by the GPU."""
+    try:
+        for line in Path('/proc/cpuinfo').read_text().splitlines():
+            if line.startswith('model name'):
+                return line.split(':', 1)[1].strip()
+    except OSError:
+        pass
+    return None
+
+
 def main():
     p = argparse.ArgumentParser(); p.add_argument('--output', type=Path, required=True)
     p.add_argument('--batches', default='1,2,4,8,16,32,64,128')
@@ -137,19 +152,29 @@ def main():
     p.add_argument('--timeout', type=float, default=1800.)
     p.add_argument('--python', default=sys.executable)
     p.add_argument('--plot-prefix',type=Path,help='Update the figure and tables after each case')
+    p.add_argument('--compile-block', type=int, default=64,
+                   help='fdtd_compiled, fdtd_ckpt_compiled: time steps unrolled into one torch.compile graph')
+    p.add_argument('--compile-mode', default='default', choices=('default', 'reduce-overhead'),
+                   help='fdtd_compiled, fdtd_ckpt_compiled: torch.compile mode')
+    p.add_argument('--reentrant', action='store_true', help='fdtd_ckpt_compiled: reentrant torch.utils.checkpoint')
+    p.add_argument('--unroll', type=int, default=8,
+                   help='fdtd_jax, fdtd_jax_ckpt: time steps unrolled per iteration of the compiled scan')
     a = p.parse_args()
     from benchmarks.exact_methods import GRID
     internal = GRID.integration_rate; internal_method = f'diaz_{internal}'
     sizes = [int(x) for x in a.batches.split(',')]
     methods = [internal_method if m == 'diaz_internal' else m for m in a.methods.split(',')]
     modes = [int(x) for x in a.modes.split(',')]
-    if any(m not in ('cached3','cached1','fdtd','fdtd_ckpt',internal_method,'diaz_44100','diaz_44100_ckpt','diaz_44100_ckptro') for m in methods):
+    torch_methods = ('cached3','cached1','replay','fdtd','fdtd_ckpt','fdtd_ckpt_reentrant','fdtd_compiled','fdtd_ckpt_compiled')
+    jax_fdtd_methods = ('fdtd_jax','fdtd_jax_ckpt','fdtd_jax_sine','fdtd_jax_sine_ckpt')
+    if any(m not in (*torch_methods,*jax_fdtd_methods,internal_method,'diaz_44100','diaz_44100_ckpt','diaz_44100_ckptro') for m in methods):
         raise ValueError('Unknown method')
+    compile_extra = ['--compile-block', str(a.compile_block), '--compile-mode', a.compile_mode] + (['--reentrant'] if a.reentrant else [])
     if not modes or any(not 1 <= m <= GRID.intervals-1 for m in modes) or len(set(modes)) != len(modes):
         raise ValueError(f'Mode counts must be distinct and lie in 1..{GRID.intervals-1}')
     host_limit = int(a.host_limit_gb*1e9)
     result = {'metadata':{'status':'running', 'job_id':os.getenv('SLURM_JOB_ID'),
-              'hostname':os.uname().nodename, 'gpu_visibility':os.getenv('CUDA_VISIBLE_DEVICES'),
+              'hostname':os.uname().nodename, 'host_cpu':host_cpu(), 'gpu_visibility':os.getenv('CUDA_VISIBLE_DEVICES'),
               'duration_seconds':a.duration, 'batch_sizes':sizes, 'methods':methods,
               'excitation':a.excitation, 'loss':a.loss,
               'loss_definition':('sum over batch items of the mean absolute error of the 44.1 kHz waveform against the target'
@@ -160,8 +185,19 @@ def main():
               'native_modal_modes':modes, 'primary_modal_modes':modes[0],
               'baseline_rematerialisation':{
                   'fdtd_ckpt':'torch.utils.checkpoint (use_reentrant=False) over 256-step chunks of the spatial PyTorch loop',
+                  'fdtd_ckpt_reentrant':'the same eager chunks with use_reentrant=True: each chunk first runs under no_grad and is re-run with its own backward pass',
                   'diaz_44100_ckpt':'upstream solve_tf recurrence as a nested jax.lax.scan with jax.checkpoint on each 256-step segment, full modal trajectory returned as upstream',
-                  'diaz_44100_ckptro':'the same checkpointed recurrence with the pickup read inside the scan, so no modal trajectory is materialised'},
+                  'diaz_44100_ckptro':'the same checkpointed recurrence with the pickup read inside the scan, so no modal trajectory is materialised',
+                  'fdtd_ckpt_compiled':f'torch.utils.checkpoint (use_reentrant={a.reentrant}) over 256-step chunks of compiled blocks',
+                  'fdtd_jax_ckpt':'nested jax.lax.scan with jax.checkpoint on each 256-step segment, pickup read inside the scan'},
+              'baseline_compilation':{
+                  'fdtd_compiled':f'torch.compile (TorchInductor, mode {a.compile_mode}) of the spatial PyTorch loop in blocks of {a.compile_block} unrolled steps; every step kept for the reverse pass',
+                  'fdtd_ckpt_compiled':f'the same compiled blocks ({a.compile_block} steps, mode {a.compile_mode}) inside 256-step checkpointed chunks',
+                  'fdtd_jax':f'the same spatial scheme as a jax.lax.scan (unroll={a.unroll}) under jax.jit; every step kept for the reverse pass',
+                  'fdtd_jax_ckpt':f'the same jax.jit scan (unroll={a.unroll}) with jax.checkpoint on each 256-step segment',
+                  'fdtd_jax_sine':f'the same scheme stepped in the discrete sine basis (the CUDA adjoint\'s formulation) as a jax.jit scan (unroll={a.unroll}); every step kept',
+                  'fdtd_jax_sine_ckpt':f'the sine-basis jax.jit scan (unroll={a.unroll}) with jax.checkpoint on each 256-step segment',
+                  'timing':'compilation is excluded from the medians: it happens in the warm-up call (torch.compile) or is timed separately as compile_seconds (jax.jit)'},
               'memory_metric':'NVML sampled process memory incl. context/reservations',
               'sample_interval_seconds':.01, 'host_rss_limit_gb':a.host_limit_gb,
               'timeout_seconds_per_case':a.timeout, 'source_fingerprints':fingerprints(),
@@ -179,8 +215,16 @@ def main():
     save(); logs=a.output.parent/(a.output.stem+'-logs')
     for method in methods:
         for batch in sizes:
-            if method in ('cached3','cached1','fdtd','fdtd_ckpt'):
-                row = run_case(method,batch,a.duration,a.timeout,a.python,logs,.01,host_limit,a.excitation,a.loss)
+            if method in torch_methods:
+                row = run_case(method,batch,a.duration,a.timeout,a.python,logs,.01,host_limit,a.excitation,a.loss,
+                               extra=compile_extra if method.endswith('_compiled') else ())
+                row.update(internal_rate=internal,output_rate=GRID.sample_rate,oversampling=GRID.oversampling,
+                           spatial_order=GRID.order,antialias_filter=GRID.oversampling>1,excitation=a.excitation,loss=a.loss)
+                result['rows'].append(row);save();print(json.dumps(row),flush=True)
+            elif method in jax_fdtd_methods:
+                row=native_case(batch,a.duration,a.timeout,a.python,logs,modes[0],internal,excitation=a.excitation,loss=a.loss,
+                                checkpoint_steps=256 if method.endswith('_ckpt') else None,scheme='fdtd',unroll=a.unroll,
+                                basis='sine' if '_sine' in method else 'grid')
                 row.update(internal_rate=internal,output_rate=GRID.sample_rate,oversampling=GRID.oversampling,
                            spatial_order=GRID.order,antialias_filter=GRID.oversampling>1,excitation=a.excitation,loss=a.loss)
                 result['rows'].append(row);save();print(json.dumps(row),flush=True)

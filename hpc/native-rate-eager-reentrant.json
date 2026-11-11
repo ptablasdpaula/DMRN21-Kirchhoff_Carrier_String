@@ -1,0 +1,50 @@
+[
+ {
+  "id": "kc-eager-reentrant-b1_2",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit.sh",
+   "fdtd_ckpt_reentrant",
+   "1,2",
+   "fdtd_ckpt_reentrant-b1_2",
+   "1"
+  ],
+  "estimated_seconds": 3200
+ },
+ {
+  "id": "kc-eager-reentrant-b4_8",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit.sh",
+   "fdtd_ckpt_reentrant",
+   "4,8",
+   "fdtd_ckpt_reentrant-b4_8",
+   "1"
+  ],
+  "estimated_seconds": 3200
+ },
+ {
+  "id": "kc-eager-reentrant-b16_32",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit.sh",
+   "fdtd_ckpt_reentrant",
+   "16,32",
+   "fdtd_ckpt_reentrant-b16_32",
+   "1"
+  ],
+  "estimated_seconds": 3200
+ },
+ {
+  "id": "kc-eager-reentrant-b64_128",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit.sh",
+   "fdtd_ckpt_reentrant",
+   "64,128",
+   "fdtd_ckpt_reentrant-b64_128",
+   "1"
+  ],
+  "estimated_seconds": 3200
+ }
+]

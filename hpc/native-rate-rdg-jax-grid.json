@@ -1,0 +1,20 @@
+[
+ {
+  "id": "kc-rdg-jax-grid-plain",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit-sweep.sh",
+   "fdtd_jax"
+  ],
+  "estimated_seconds": 1200
+ },
+ {
+  "id": "kc-rdg-jax-grid-ckpt",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit-sweep.sh",
+   "fdtd_jax_ckpt"
+  ],
+  "estimated_seconds": 1200
+ }
+]

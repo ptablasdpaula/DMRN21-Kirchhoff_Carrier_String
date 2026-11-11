@@ -1,0 +1,19 @@
+[
+ {
+  "id": "kc-rdg-replay",
+  "command": [
+   "bash",
+   "hpc/native-rate-replay.sh"
+  ],
+  "estimated_seconds": 600
+ },
+ {
+  "id": "kc-rdg-jax-sine-ckpt",
+  "command": [
+   "bash",
+   "hpc/native-rate-jit-sweep.sh",
+   "fdtd_jax_sine_ckpt"
+  ],
+  "estimated_seconds": 1000
+ }
+]
