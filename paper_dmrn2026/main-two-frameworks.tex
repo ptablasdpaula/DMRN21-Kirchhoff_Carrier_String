@@ -123,7 +123,7 @@ We compare eight implementations in Table~\ref{tab:benchmark}, in PyTorch
 and in JAX, each adding one ingredient to the row above. \emph{Auto} is the
 scheme's adjoint, derived by automatic differentiation. In PyTorch every state is stored, and
 every operation of every step incurs the overhead of a Python call;
-\emph{+~compiler} compiles blocks of 16 unrolled steps. JAX always
+\emph{+~compiled} compiles blocks of 16 unrolled steps. JAX always
 compiles: its \emph{Auto} is the scheme and its gradient as one program. \emph{+~checkpoints} stores the state only
 periodically and re-runs one segment at a time on the reverse pass.
 \emph{+~modes} applies a discrete sine transform, after which each stencil

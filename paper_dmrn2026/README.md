@@ -10,7 +10,7 @@ Pablo Tablas de Paula, Rodrigo Diaz, Emmanouil Benetos and Joshua D. Reiss;
 Rodrigo Diaz carries a second affiliation, Fraunhofer HHI, Berlin.
 
 `main-two-frameworks.tex` (with its PDF) is a test layout of 12 November 2026, not the submission: the table
-shows eight rows grouped by framework (PyTorch: Auto, + compiler, + checkpoints, + modes; JAX: Auto (compiled),
+shows eight rows grouped by framework (PyTorch: Auto, + compiled, + checkpoints, + modes; JAX: Auto (compiled),
 + checkpoints, + modes; Hand-written) and the text is rewritten around it. The left column ends with the
 Backpropagation paragraph and the acknowledgement (UKRI, Apocrita, Eloi Moliner); the four numbered footnotes
 (supplement, PyTorch, JAX, CUDA) are placed at the foot of the right column, the last three on one line, so

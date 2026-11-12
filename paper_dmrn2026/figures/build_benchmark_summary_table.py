@@ -20,7 +20,7 @@ keeps each framework's rows together. A narrow first column names the framework 
 sideways (the table needs \\usepackage{multirow}; a variant with the frameworks' logos was tried and dropped
 as less clear):
     PyTorch   Auto              fdtd                      eager autodiff
-              + compiler        fdtd_compiled             torch.compile blocks, every step kept
+              + compiled        fdtd_compiled             torch.compile blocks, every step kept
               + checkpoints     fdtd_ckpt_compiled        the same with a checkpoint every 256 steps
               + modes           fdtd_sine_ckpt_compiled   the same stepped in the discrete sine basis
     JAX       Auto (compiled)   fdtd_jax                  jax.jit (JAX always compiles), every step kept
@@ -61,7 +61,7 @@ PYTORCH = r'\rotatebox[origin=c]{90}{\scriptsize PyTorch}'
 JAX = r'\rotatebox[origin=c]{90}{\scriptsize JAX}'
 if TWO:
     groups = [(PYTORCH, [('Auto', 'fdtd'),
-                         (r'\step\,+ compiler', 'fdtd_compiled'),
+                         (r'\step\,+ compiled', 'fdtd_compiled'),
                          (r'\step\,+ checkpoints', 'fdtd_ckpt_compiled'),
                          (r'\step\,+ modes', 'fdtd_sine_ckpt_compiled')]),
               (JAX, [('Auto (compiled)', 'fdtd_jax'),

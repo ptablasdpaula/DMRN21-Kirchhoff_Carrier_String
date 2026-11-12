@@ -784,7 +784,7 @@ and `a100-jit-torch-sine-ckpt-reentrant-block64-b1_32-rdg-35837962-1s-mae-si10.j
 `paper_dmrn2026/figures/native-rate-two-frameworks-merged.json`.
 
 Test layout, not the submission: `paper_dmrn2026/main-two-frameworks.tex` shows eight rows grouped by
-framework (PyTorch: Auto, + compiler, + checkpoints, + modes; JAX: Auto, + checkpoints, + modes; Hand-written),
+framework (PyTorch: Auto, + compiled, + checkpoints, + modes; JAX: Auto (compiled), + checkpoints, + modes; Hand-written),
 from `build_benchmark_summary_table.py two-frameworks`. The table is 52 pt taller than the five-row one; the
 page holds it with the title gaps at 1.2, 1 and 1 em instead of the template's 2, 1.5 and 1.5 em.
 
