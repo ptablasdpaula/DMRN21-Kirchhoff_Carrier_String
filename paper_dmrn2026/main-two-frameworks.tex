@@ -150,13 +150,12 @@ at its centre with a 2 mm raised cosine of half-width $0.24L$, its
 displacement read at its midpoint; the batch perturbs every parameter by up to
 $\pm3\%$. The scheme divides the string into 176 equal segments and runs
 at 88.2 kHz, decimated to 44.1 kHz, on an A100 80 GB in float64, with a
-checkpoint every 256 steps. As seen in Table~\ref{tab:benchmark}, compiling
-makes PyTorch $\approx$15$\times$ faster; JAX is $\approx$4--5$\times$
-faster still, but exceeds the memory from batch 32. Checkpointing flattens
-memory in both, for a $\approx$1.1--1.4$\times$ slowdown. Mode-stepping is
-$\approx$3$\times$ faster in PyTorch and $\approx$1.3--1.5$\times$ in JAX,
-and our hand-written kernel is a further $\approx$5--9$\times$ faster than
-the best of them, with the least memory.
+checkpoint every 256 steps. In Table~\ref{tab:benchmark}, memory
+grows linearly with the batch without checkpoints, nearing or exceeding the
+A100\textquotesingle s 80\,GB, and stays around 2\,GB or less with them.
+Compiling cuts PyTorch\textquotesingle s time by an order of magnitude, and
+mode-stepping cuts it further. JAX is faster throughout, but heavier until
+checkpointed. Our kernel is faster and lighter than the fastest of them.
 
 \begin{table}[t]
  \centering
