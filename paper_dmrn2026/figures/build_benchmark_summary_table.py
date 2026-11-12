@@ -16,15 +16,17 @@ back to native-rate-sweep-merged.json. With ``draft``, a row that has not been m
 with question marks so that the page layout can be checked; without it a missing row is an error.
 
 With ``two-frameworks`` the script writes benchmark-table-two-frameworks.tex instead, a test layout that
-keeps each framework's rows together (it needs \\usepackage{multirow}):
-    PyTorch   Auto            fdtd                      eager autodiff
-              + compiler      fdtd_compiled             torch.compile blocks, every step kept
-              + checkpoints   fdtd_ckpt_compiled        the same with a checkpoint every 256 steps
-              + modes         fdtd_sine_ckpt_compiled   the same stepped in the discrete sine basis
-    JAX       Auto            fdtd_jax                  jax.jit (JAX always compiles), every step kept
-              + checkpoints   fdtd_jax_ckpt
-              + modes         fdtd_jax_sine_ckpt
-    Hand-written              replay
+keeps each framework's rows together. A narrow first column names the framework beside its rows, set
+sideways (the table needs \\usepackage{multirow}; a variant with the frameworks' logos was tried and dropped
+as less clear):
+    PyTorch   Auto              fdtd                      eager autodiff
+              + compiler        fdtd_compiled             torch.compile blocks, every step kept
+              + checkpoints     fdtd_ckpt_compiled        the same with a checkpoint every 256 steps
+              + modes           fdtd_sine_ckpt_compiled   the same stepped in the discrete sine basis
+    JAX       Auto (compiled)   fdtd_jax                  jax.jit (JAX always compiles), every step kept
+              + checkpoints     fdtd_jax_ckpt
+              + modes           fdtd_jax_sine_ckpt
+    Hand-written                replay
 Its source is native-rate-two-frameworks-merged.json; with ``draft`` and no such file it falls back to
 the one-host data and question marks. With ``draft``, further arguments ending in .json are sweep files
 whose rows are added as they are (a sweep that is still running, say), and a batch that has not been
@@ -54,15 +56,17 @@ for path in extra:
 meta = data['metadata']
 assert meta['status'] == 'complete' and not meta.get('source_changed_during_run')
 batches = meta['batch_sizes']
-# (group, rows): a named group gets its name rotated in a narrow first column.
+# (group label, rows): in the two-framework layout the label spans its rows in a narrow first column.
+PYTORCH = r'\rotatebox[origin=c]{90}{\scriptsize PyTorch}'
+JAX = r'\rotatebox[origin=c]{90}{\scriptsize JAX}'
 if TWO:
-    groups = [('PyTorch', [('Auto', 'fdtd'),
-                           (r'\step\,+ compiler', 'fdtd_compiled'),
-                           (r'\step\,+ checkpoints', 'fdtd_ckpt_compiled'),
-                           (r'\step\,+ modes', 'fdtd_sine_ckpt_compiled')]),
-              ('JAX', [('Auto', 'fdtd_jax'),
-                       (r'\step\,+ checkpoints', 'fdtd_jax_ckpt'),
-                       (r'\step\,+ modes', 'fdtd_jax_sine_ckpt')]),
+    groups = [(PYTORCH, [('Auto', 'fdtd'),
+                         (r'\step\,+ compiler', 'fdtd_compiled'),
+                         (r'\step\,+ checkpoints', 'fdtd_ckpt_compiled'),
+                         (r'\step\,+ modes', 'fdtd_sine_ckpt_compiled')]),
+              (JAX, [('Auto (compiled)', 'fdtd_jax'),
+                     (r'\step\,+ checkpoints', 'fdtd_jax_ckpt'),
+                     (r'\step\,+ modes', 'fdtd_jax_sine_ckpt')]),
               (None, [('Hand-written', 'replay')])]
 else:
     groups = [(None, [('Autodiff', 'fdtd'),
@@ -128,9 +132,7 @@ for label, field, factor in [('Peak memory (GB)', 'peak_gpu_bytes', 1e-9),
         elif group is None:
             head = r'\multicolumn{2}{@{}l}{' + name + '}'
         else:
-            # The framework's name, rotated, spans its rows in the narrow first column.
-            head = ((r'\multirow{' + str(size) + r'}{*}{\rotatebox[origin=c]{90}{\scriptsize ' + group + '}}')
-                    if first else '') + ' & ' + name
+            head = (r'\multirow{' + str(size) + '}{*}{' + group + '}' if first else '') + ' & ' + name
         if TWO and first and position:
             lines.append(r'\noalign{\vskip 1.5pt}')
         lines.append(head + ' & ' + ' & '.join(formatted) + r'\\')

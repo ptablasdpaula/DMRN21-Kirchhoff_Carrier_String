@@ -21,6 +21,7 @@ run "$PY" test/numerical_validation.py
 run "$PY" test/parameters_grid.py
 run "$PY" test/synthesis.py
 run "$PY" test/figure_fdtd.py
+run "$PY" test/adjoint_states.py
 run "$PY" test/accelerated.py --device cpu
 run "$PY" test/alpha_scan_math.py
 run "$PY" test/seeded.py

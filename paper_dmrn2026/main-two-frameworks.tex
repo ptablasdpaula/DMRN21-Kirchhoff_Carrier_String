@@ -14,8 +14,8 @@
 \setlength{\parskip}{0.1em}
 \captionsetup[figure]{font=footnotesize,labelfont=footnotesize}
 \captionsetup[table]{font=footnotesize,labelfont=footnotesize,skip=2pt}
-% LaTeX's default, as in main.tex. The page is full: this is the first value to reduce if text is added.
-\setlength{\textfloatsep}{20pt plus 2pt minus 4pt}
+% TEST LAYOUT: 6pt (main.tex has LaTeX's default 20pt), to make room for the two footnotes at the foot of the right column.
+\setlength{\textfloatsep}{6pt plus 2pt minus 4pt}
 \setlength{\belowcaptionskip}{0pt}
 \renewcommand{\thesection}{\Roman{section}}
 \newcommand{\head}[1]{\par\vspace{1pt}\noindent\textbf{#1.}\ \ignorespaces}
@@ -37,6 +37,8 @@
 \setlength{\textheight}{266truemm}\setlength{\footskip}{0.3in}
 \cfoot{\fontsize{7}{8}\selectfont\textsc{DMRN+21: DIGITAL MUSIC RESEARCH NETWORK ONE-DAY WORKSHOP 2026, KING'S COLLEGE LONDON, FRI 11 DECEMBER 2026}}
 \makeatletter
+% A footnote mark set by hand inside another footnote's text, in the style of the automatic ones.
+\newcommand{\inlinemark}[1]{{\def\@thefnmark{#1}\normalfont\footnotesize\@makefnmark}}
 \def\@maketitle{\newpage
  \null
  \begin{minipage}{0.5\textwidth}
@@ -56,7 +58,10 @@
 \makeatother
 
 \title{Efficient Backpropagation for\\Finite-Difference Nonlinear String Synthesis}
-\name{\normalfont Pablo Tablas de Paula$^{1}$, Rodrigo Diaz$^{1,2}$, Emmanouil Benetos$^{1}$ and Joshua D. Reiss$^{1}$\thanks{This work was supported by UKRI grant EP/S022694.}}
+% The acknowledgement is two lines, 8.89pt apart (9.36pt times the 0.95 line spread): the distance between the two
+% one-line footnotes at the foot of the right column, so that both footnote rules sit at the same height.
+% The DOI may break after its slash: unbroken, it pushes the acknowledgement to three lines.
+\name{\normalfont Pablo Tablas de Paula$^{1}$, Rodrigo Diaz$^{1,2}$, Emmanouil Benetos$^{1}$ and Joshua D. Reiss$^{1}$\thanks{\fontsize{7}{9.36}\selectfont Supported by UKRI grant EP/S022694 and QMUL's Apocrita HPC (doi:10.5281/\allowbreak zenodo.438045). We thank Eloi Moliner for advice on text-guided sound design.}}
 \address{\small $^{1}$Centre for Digital Music, Queen Mary University of London\quad $^{2}$Fraunhofer HHI, Berlin, Germany\quad p.tablasdepaula@qmul.ac.uk}
 
 \begin{document}
@@ -72,7 +77,7 @@ method that steps through the string's modes in parallel, with a backward
 pass derived by hand for the GPU, and show it is faster and lighter than
 automatic differentiation, even when compiled and checkpointed. An online
 supplement applies it to sound matching of recorded guitar and
-text-guided sound design.\footnote{\fontsize{6}{7}\selectfont\url{ptablasdpaula.github.io/DMRN21-Kirchhoff_Carrier_String}}
+text-guided sound design.\footnotemark
 \end{abstract}
 
 \section{Introduction}
@@ -85,7 +90,7 @@ with the adjoint method and checkpointing, now the default of
 differential-equation solvers~\cite{kidger2021}.
 We apply this recipe to a nonlinear FDTD string, propose stepping through
 its modes in parallel via a sine transform, and measure what each
-ingredient buys in PyTorch and in JAX.
+ingredient buys in PyTorch\footnotemark{} and in JAX.\footnotemark
 
 \section{Model and method}
 \head{Kirchhoff--Carrier string}
@@ -116,7 +121,7 @@ numerical dispersion.
 \head{Backpropagation}
 We compare eight implementations in Table~\ref{tab:benchmark}, in PyTorch
 and in JAX, each adding one ingredient to the row above. \emph{Auto} is the
-scheme differentiated automatically. In PyTorch every state is stored, and
+scheme's adjoint, derived by automatic differentiation. In PyTorch every state is stored, and
 every operation of every step incurs the overhead of a Python call;
 \emph{+~compiler} compiles blocks of 16 unrolled steps. JAX always
 compiles: its \emph{Auto} is the scheme and its gradient as one program. \emph{+~checkpoints} stores the state only
@@ -125,10 +130,16 @@ periodically and re-runs one segment at a time on the reverse pass.
 becomes one multiplication per mode and the modes interact only through the
 nonlinear tension term. \emph{Hand-written} is the same adjoint with the
 same checkpoints and modes, derived by hand and written as a single GPU
-(CUDA) kernel, parallel over modes and batch items. All eight return the
+(CUDA\footnotemark) kernel, parallel over modes and batch items. All eight return the
 gradient of the discrete scheme.
 
 \section{Evaluation}
+% The texts of footnotes 1 (abstract), 2 and 3 (Introduction) and 4 (Backpropagation) are placed here so that they sit
+% at the foot of the right column. Footnotes 2 to 4 share one line: 3 and 4 are set inside the text of footnote 2,
+% with their marks from \inlinemark, so the block stays two lines high. They sit at the foot of the
+% right column; the left column then holds the whole Backpropagation paragraph above the acknowledgement.
+\footnotetext[1]{\fontsize{6}{7}\selectfont\url{ptablasdpaula.github.io/DMRN21-Kirchhoff_Carrier_String}}%
+\footnotetext[2]{\fontsize{6}{7}\selectfont\url{pytorch.org}\quad\inlinemark{3}\url{docs.jax.dev}\quad\inlinemark{4}\url{developer.nvidia.com/cuda}}%
 Each evaluation is one sound matching step: a batch of strings is simulated
 for 1 s, the mean absolute error of each waveform against the target's is backpropagated to ten parameters:
 $\rho$, $T_0$, $r$ ($A=\pi r^2$, $I=\pi r^4/4$), $E$, $L$, $\sigma_0$,

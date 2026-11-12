@@ -787,3 +787,20 @@ Test layout, not the submission: `paper_dmrn2026/main-two-frameworks.tex` shows 
 framework (PyTorch: Auto, + compiler, + checkpoints, + modes; JAX: Auto, + checkpoints, + modes; Hand-written),
 from `build_benchmark_summary_table.py two-frameworks`. The table is 52 pt taller than the five-row one; the
 page holds it with the title gaps at 1.2, 1 and 1 em instead of the template's 2, 1.5 and 1.5 em.
+
+## Autodiff and the adjoint are one computation here (2026-11-12)
+
+Every row of the table computes the discrete adjoint of the scheme (discretise, then differentiate): the
+autodiff rows because reverse mode applies the transposed Jacobian of each time step in reverse order, which
+is the adjoint recurrence; the kernel because that recurrence is written out by hand. Checkpointing changes
+which states are stored, not what is computed. The continuous adjoint (derive an adjoint equation, then
+discretise it; `BacksolveAdjoint` in Diffrax, `odeint_adjoint` in torchdiffeq) is not used anywhere: it
+returns the gradient of the continuous problem up to discretisation error, not the gradient of the scheme.
+Diffrax's default, `RecursiveCheckpointAdjoint`, is the discrete form with checkpoints ("discretise-then-optimise",
+"backpropagation through the solver"; https://docs.kidger.site/diffrax/api/adjoints/, read 12 November 2026).
+
+`test/adjoint_states.py` checks this step by step rather than only in the final gradient: the forward and
+backward steps of `src/kc_adjoint.cu` transcribed into PyTorch (CPU, float64), against autograd's gradient of
+the loss with respect to every intermediate state. For 7, 15 and 175 modes over 1, 40 and 300 steps every
+adjoint state equals autograd's state gradient to 2.3e-15 of the largest adjoint, and the accumulated
+gradients of A, P, Q and m agree likewise (computeshort job 35844430).
