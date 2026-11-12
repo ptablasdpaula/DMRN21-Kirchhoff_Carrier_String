@@ -94,6 +94,33 @@ def test_checkpointed_chunks():
             raise AssertionError(f'checkpoint_steps={bad!r} accepted')
 
 
+def test_sine_basis():
+    """Stepping in the discrete sine basis reproduces the grid scheme: waveform and ten gradients, plain and chunked."""
+    torch.manual_seed(518)
+    params = reference_parameters()
+    theta = (material_multipliers(params) * params.new_tensor([1.]*8 + [.9, 1.1]))
+    batch = torch.stack((theta, theta * theta.new_tensor([1., 1.01, 1., 1., 1., .9, 1., 1., 1.02, .97])))
+    for intervals, excitation, order in ((176, 'raised_cosine', 4), (16, 'multimode', 4), (24, 'raised_cosine:0.2', 2),
+                                         (8, 'first_mode', 4)):
+        for steps, chunk in ((36, None), (36, 7), (5, 2), (0, None), (1, 1)):
+            a = batch.detach().clone().requires_grad_()
+            b = batch.detach().clone().requires_grad_()
+            grid = simulate(a, intervals, 132300, steps, excitation, order)
+            sine = simulate(b, intervals, 132300, steps, excitation, order, checkpoint_steps=chunk, basis='sine')
+            assert sine.shape == (2, steps + 2)
+            torch.testing.assert_close(sine, grid, rtol=1e-9, atol=1e-13)
+            weight = torch.randn_like(grid)
+            grad_grid, = torch.autograd.grad((grid * weight).sum(), a)
+            grad_sine, = torch.autograd.grad((sine * weight).sum(), b)
+            torch.testing.assert_close(grad_sine, grad_grid, rtol=5e-8, atol=1e-12)
+    try:
+        simulate(batch, 16, 132300, 4, basis='modal')
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("basis='modal' accepted")
+
+
 def test_batch_and_empty_steps():
     params = reference_parameters()
     theta = material_multipliers(params)
@@ -165,20 +192,21 @@ def test_cuda_compiled(modes=(None,)):
     scale = gradient_scales(device)
     for mode in modes:
         # 77 steps in 32-step chunks of 8-step blocks: whole blocks, a remainder block and a short last chunk.
-        for chunk, reentrant in ((None, False), (32, False), (32, True)):
+        for chunk, reentrant, basis in ((None, False, 'grid'), (32, False, 'grid'), (32, True, 'grid'),
+                                        (None, False, 'sine'), (32, True, 'sine')):
             a = values.detach().clone().requires_grad_()
             b = values.detach().clone().requires_grad_()
             eager = simulate(theta_from_physical(a), 176, 132300, 77, 'raised_cosine')
             compiled = simulate(theta_from_physical(b), 176, 132300, 77, 'raised_cosine', checkpoint_steps=chunk,
-                                compile_block=8, compile_mode=mode, checkpoint_reentrant=reentrant)
+                                compile_block=8, compile_mode=mode, checkpoint_reentrant=reentrant, basis=basis)
             weight = torch.randn_like(eager)
             grad_a, = torch.autograd.grad((eager * weight).sum(), a)
             # The reentrant checkpoint only supports .backward(), not autograd.grad().
             (compiled * weight).sum().backward()
             grad_b = b.grad
-            torch.testing.assert_close(compiled, eager, rtol=1e-10, atol=1e-13)
+            torch.testing.assert_close(compiled, eager, rtol=1e-9 if basis == 'sine' else 1e-10, atol=1e-13)
             torch.testing.assert_close(grad_b * scale, grad_a * scale, rtol=5e-8, atol=1e-12)
-            print(f'ok: mode={mode or "default"} checkpoint_steps={chunk} reentrant={reentrant}', flush=True)
+            print(f'ok: mode={mode or "default"} checkpoint_steps={chunk} reentrant={reentrant} basis={basis}', flush=True)
     print('PASS: torch.compile blocks agree with the eager spatial loop, waveform and ten physical gradients '
           f'(modes: {", ".join(m or "default" for m in modes)})')
 
@@ -186,6 +214,7 @@ def test_cuda_compiled(modes=(None,)):
 if __name__ == '__main__':
     test_dual_reference()
     test_checkpointed_chunks()
+    test_sine_basis()
     test_batch_and_empty_steps()
     test_physical_coordinates()
     print('PASS: plain spatial FDTD waveform and all ten material and six perceptual gradients match independent dual reference; '

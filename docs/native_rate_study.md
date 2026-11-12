@@ -696,3 +696,94 @@ faster; hand-written a further 5.1 to 9.1 times faster with the lowest memory
 at every batch size. The `rdg` jobs for `torch.compile` and
 `fdtd_ckpt_reentrant` (35746441 to 35746445) were cancelled: those rows are
 no longer in the abstract.
+
+## The hand-written adjoint without mode stepping (2026-11-11)
+
+Question: how much of the hand-written kernel's lead comes from being hand-written, and how much from mode
+stepping? `src/adjoint_grid.py` with `src/kc_adjoint_grid.cu` (method `replay_grid`) is the grid counterpart
+of `src/adjoint.py`: the same scheme, the same 256-step checkpoints and the same hand-derived adjoint in one
+CUDA kernel, with one thread per grid point. Where the mode kernel multiplies a mode by its eigenvalue, the
+grid kernel applies the five-point stencil through shared memory, twice per step in each direction
+(`l = 2 c1 u + c4 p - c5 D p + D (c2 u - c3 D u)`, and the transposed form for the adjoint, D being
+symmetric). It synchronises five times per step instead of three and tapes three values per point and step
+(u, D u, l) instead of one.
+
+Same workload as the paper's table (1 s, 176 intervals at 88.2 kHz, MAE, ten gradients, A100 80 GB). The
+worker validates every case against the mode kernel before timing: waveform to 2.9e-10 .. 4.1e-10 and
+scaled gradients to 4.9e-10 .. 1.4e-9 (relative l2).
+
+| batch | 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 |
+|---|---|---|---|---|---|---|---|---|
+| hand-written, grid, rdg3 (job 35757465), s | 0.475 | 0.477 | 0.478 | 0.479 | 0.483 | 0.499 | 0.518 | 0.660 |
+| hand-written, modes, rdg6 (job 35746439), s | 0.369 | 0.371 | 0.371 | 0.372 | 0.375 | 0.379 | 0.384 | 0.511 |
+| grid kernel, peak GB | 0.57 | 0.59 | 0.58 | 0.60 | 0.66 | 0.78 | 1.00 | 1.38 |
+| mode kernel, peak GB | 0.57 | 0.59 | 0.58 | 0.60 | 0.66 | 0.75 | 0.93 | 1.24 |
+
+The same-node pair on sbg4 (job 35757463, both kernels in one job) gives 0.478 .. 0.666 s for the grid
+kernel and 0.371 .. 0.517 s for the mode kernel.
+
+- Mode stepping buys 1.29 to 1.35 times inside the hand-written kernel, close to what it buys under JAX
+  (1.25 to 1.50 times, `fdtd_jax_ckpt` against `fdtd_jax_sine_ckpt`).
+- Hand-writing buys most of the lead: on the same grid, the kernel is 5.6 to 8.8 times faster than the
+  compiled, checkpointed autodiff (`fdtd_jax_ckpt`, 2.68 .. 4.56 s).
+- Memory is the same up to batch 16 and slightly higher above it (the larger tape).
+
+Results: `benchmarks/native_rate_results/a100-replay-grid-rdg-35757465-1s-mae-si10.json` and
+`a100-replay-grid-pair-sbg4-35757463-1s-mae-si10.json`. Job lists: `hpc/native-rate-replay-grid.json`,
+`hpc/native-rate-rdg-replay-grid.json`. The paper's table does not include this row.
+
+## PyTorch's compiler on the same host, and a table by framework (2026-11-12)
+
+Question (from a co-author): the ladder's first step changes framework and compiler at once (eager PyTorch to
+compiled JAX). What does each ingredient buy inside PyTorch? The three compiled PyTorch rows were measured on
+the `rdg` nodes, where the ladder's other rows ran, because `torch.compile` turned out to be bound by the host
+CPU like the eager loop (13.5 s here against 21.7 s on sbg4 for the same checkpointed row).
+
+- `fdtd_compiled`, `fdtd_ckpt_compiled`: as before (`torch.compile` blocks of 16 unrolled steps, default mode,
+  reentrant `torch.utils.checkpoint` over 256-step chunks).
+- `fdtd_sine_compiled`, `fdtd_sine_ckpt_compiled` (new): `experiments/figure_comparison/fdtd.py` gained
+  `basis='sine'`, the same change of coordinates as `fdtd_jax`'s (`second(state) = eigenvalues * state`, the
+  initial profile transformed once, the pickup read with modal weights). `test/figure_fdtd.py` checks it
+  against the grid loop on CPU (`test_sine_basis`: waveform to 1e-9, gradients to 5e-8, plain and chunked) and,
+  compiled, against the eager loop on CUDA (job 35837963: all five default-mode cases pass; `reduce-overhead`
+  fails under checkpoints as before).
+
+Same workload as the table (1 s, 176 intervals at 88.2 kHz, MAE, ten gradients, A100 80 GB, Xeon Gold 6442Y
+hosts). Every case is validated against the hand-written kernel before timing (waveform 2.9e-10 to 4.1e-10,
+scaled gradients 4.8e-10 to 1.4e-9). Seconds per evaluation and peak GPU memory in GB:
+
+| batch | 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 |
+|---|---|---|---|---|---|---|---|---|
+| PyTorch Auto `fdtd`, s (job 34855605, rdg11) | 169 | 169 | 171 | 171 | 174 | 177 | oom | oom |
+| GB | 2.3 | 3.8 | 6.3 | 11.8 | 22.8 | 44.9 | | |
+| + compiler `fdtd_compiled`, s (job 35837960, rdg4) | 10.7 | 11.0 | 11.2 | 11.3 | 11.8 | 11.8 | 12.1 | 12.4 |
+| GB | 1.4 | 2.3 | 3.3 | 5.4 | 9.6 | 18.1 | 34.9 | 71.9 |
+| + checkpoints `fdtd_ckpt_compiled`, s (job 35837959, rdg11) | 13.2 | 13.6 | 13.9 | 13.7 | 13.5 | 13.9 | 13.8 | 14.2 |
+| GB | 0.66 | 1.02 | 1.02 | 1.07 | 1.11 | 1.22 | 1.44 | 1.83 |
+| + modes `fdtd_sine_ckpt_compiled`, s (job 35837961, rdg5) | 4.31 | 4.52 | 4.52 | 4.59 | 4.54 | 4.60 | 4.55 | 4.68 |
+| GB | 0.57 | 0.59 | 0.59 | 0.62 | 0.66 | 0.77 | 0.94 | 1.33 |
+
+What each step buys in PyTorch, next to JAX (rows of the same-host table above):
+
+- Compiler: 14.8 to 15.8 times faster than the eager loop, with 0.40 to 0.59 times its memory, and every batch
+  size fits (71.9 GB at 128). JAX without checkpoints is 3.8 to 4.9 times faster than this row but uses 3.7 to
+  6.7 times its memory and runs out from batch 32.
+- Checkpoints: 1.14 to 1.25 times the time (JAX: 1.19 to 1.36). With them JAX is 3.1 to 5.1 times faster.
+- Modes: 2.98 to 3.08 times faster (JAX: 1.25 to 1.50), at 0.57 to 1.33 GB, close to the kernel's memory.
+  With modes JAX is 1.3 to 2.4 times faster than PyTorch.
+- Hand-written kernel: 9.2 to 12.3 times faster than PyTorch with modes; 5.1 to 9.1 times faster than JAX
+  with modes, the fastest autodiff row at every batch size.
+
+Block length for the modes row (job 35837962, rdg5, batches 1 and 32): 64-step blocks give 3.92 and 4.17 s
+against 4.31 and 4.60 s with 16, 9 to 10 % faster, for 1.89 and 1.48 GB against 0.57 and 0.77 GB and 212 and
+111 s of compilation against 69 and 41 s. The table keeps 16, as for the grid rows.
+
+Files: `benchmarks/native_rate_results/a100-jit-torch-{plain,ckpt-reentrant,sine-ckpt-reentrant}-rdg-3583796{0,59,1}-1s-mae-si10.json`
+and `a100-jit-torch-sine-ckpt-reentrant-block64-b1_32-rdg-35837962-1s-mae-si10.json`; job list
+`hpc/native-rate-rdg-torch-compiled.json`. Merged with the same-host rows into
+`paper_dmrn2026/figures/native-rate-two-frameworks-merged.json`.
+
+Test layout, not the submission: `paper_dmrn2026/main-two-frameworks.tex` shows eight rows grouped by
+framework (PyTorch: Auto, + compiler, + checkpoints, + modes; JAX: Auto, + checkpoints, + modes; Hand-written),
+from `build_benchmark_summary_table.py two-frameworks`. The table is 52 pt taller than the five-row one; the
+page holds it with the title gaps at 1.2, 1 and 1 em instead of the template's 2, 1.5 and 1.5 em.

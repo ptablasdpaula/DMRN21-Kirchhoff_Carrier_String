@@ -21,14 +21,21 @@ forward and backward are compiled once and then called block after block, so
 the per-operation dispatch of the eager loop is replaced by fused kernels.
 Compilation combines with ``checkpoint_steps`` (each chunk is a whole number
 of compiled blocks plus a compiled remainder) and changes no arithmetic.
+
+With ``basis='sine'`` the identical scheme is stepped in the discrete sine
+basis instead of on the grid, as ``fdtd_jax`` does under the same option: both
+difference operators are diagonal there, so each stencil becomes one
+multiplication per mode by the eigenvalue table and the pickup is read with
+modal weights. The states are the grid states under an orthonormal change of
+coordinates, so waveform and gradients are unchanged.
 """
 import functools
 import math
 import torch
 from torch.utils.checkpoint import checkpoint
 
-from src.kc_string_forward import (SPATIAL_ORDER, STENCILS, PARAMETER_COUNT, excitation_shape, nominal_parameters,
-                                   parse_excitation, sine_transform)
+from src.kc_string_forward import (SPATIAL_ORDER, STENCILS, PARAMETER_COUNT, discrete_eigenvalues, excitation_shape,
+                                   nominal_parameters, parse_excitation, sine_transform)
 
 
 def _second(state, inverse_h2, order=SPATIAL_ORDER):
@@ -76,18 +83,24 @@ def _pickup_weights(intervals, pickup):
     return modal @ sine_transform(intervals, pickup.device)
 
 
-def _advance(previous, current, readout, inv_h2, mass, tension_loss, bending, previous_mass, previous_loss,
-             q_scale, inverse_mass, *, steps, order):
+def _advance(previous, current, readout, operator, mass, tension_loss, bending, previous_mass, previous_loss,
+             q_scale, inverse_mass, *, steps, order, basis='grid'):
     """Run ``steps`` updates from (previous, current); returns the two final states and the (B, steps) pickup samples.
 
     Every differentiable tensor is an explicit argument so that the chunk can be
     rematerialised by ``torch.utils.checkpoint`` without closing over the graph.
+    ``operator`` is 1/h^2 of the stencil on the grid and the (B, N-1) table of
+    second-difference eigenvalues in the sine basis.
     """
+    if basis == 'sine':
+        second = lambda state: operator * state
+    else:
+        second = lambda state: _second(state, operator, order)
     samples = []
     for _ in range(steps):
-        d2 = _second(current, inv_h2, order)
-        d4 = _second(d2, inv_h2, order)
-        p2 = _second(previous, inv_h2, order)
+        d2 = second(current)
+        d4 = second(d2)
+        p2 = second(previous)
         linear = (2 * mass * current + tension_loss * d2 - bending * d4
                   + previous_mass * previous - previous_loss * p2)
         direction = q_scale * d2
@@ -103,16 +116,16 @@ def _advance(previous, current, readout, inv_h2, mass, tension_loss, bending, pr
 
 
 @functools.lru_cache(maxsize=None)
-def _compiled_block(steps, order, mode):
+def _compiled_block(steps, order, mode, basis):
     """``_advance`` over a fixed number of steps as one ``torch.compile`` graph (static shapes)."""
-    def block(previous, current, readout, inv_h2, mass, tension_loss, bending, previous_mass, previous_loss,
+    def block(previous, current, readout, operator, mass, tension_loss, bending, previous_mass, previous_loss,
               q_scale, inverse_mass):
-        return _advance(previous, current, readout, inv_h2, mass, tension_loss, bending, previous_mass,
-                        previous_loss, q_scale, inverse_mass, steps=steps, order=order)
+        return _advance(previous, current, readout, operator, mass, tension_loss, bending, previous_mass,
+                        previous_loss, q_scale, inverse_mass, steps=steps, order=order, basis=basis)
     return torch.compile(block, dynamic=False, mode=mode)
 
 
-def _advance_compiled(previous, current, *coefficients, steps, order, block, mode):
+def _advance_compiled(previous, current, *coefficients, steps, order, block, mode, basis='grid'):
     """``_advance`` as a sequence of compiled blocks of ``block`` steps and one compiled remainder.
 
     Under ``mode='reduce-overhead'`` the compiled graphs replay as CUDA graphs
@@ -121,7 +134,7 @@ def _advance_compiled(previous, current, *coefficients, steps, order, block, mod
     """
     samples = []
     for size in (block,) * (steps // block) + ((steps % block,) if steps % block else ()):
-        previous, current, piece = _compiled_block(size, order, mode)(previous, current, *coefficients)
+        previous, current, piece = _compiled_block(size, order, mode, basis)(previous, current, *coefficients)
         if mode == 'reduce-overhead':
             previous, current, piece = previous.clone(), current.clone(), piece.clone()
         samples.append(piece)
@@ -129,7 +142,8 @@ def _advance_compiled(previous, current, *coefficients, steps, order, block, mod
 
 
 def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimode', order=SPATIAL_ORDER,
-             checkpoint_steps=None, compile_block=None, compile_mode=None, checkpoint_reentrant=False):
+             checkpoint_steps=None, compile_block=None, compile_mode=None, checkpoint_reentrant=False,
+             basis='grid'):
     """Simulate a batch of independent strings using ordinary PyTorch AD.
 
     Args:
@@ -149,6 +163,8 @@ def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimo
         checkpoint_reentrant: use the reentrant form of
             ``torch.utils.checkpoint`` (forward under no_grad, a nested
             backward per chunk) instead of the non-reentrant one.
+        basis: 'grid' steps the nodes with the stencils; 'sine' steps the same
+            scheme in the discrete sine basis, where the stencils are diagonal.
 
     Returns:
         Pickup displacement of shape (steps+2,) or (B, steps+2).
@@ -173,6 +189,8 @@ def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimo
         raise ValueError('compile_block must be a positive integer or None')
     if compile_mode is not None and compile_block is None:
         raise ValueError('compile_mode requires compile_block')
+    if basis not in ('grid', 'sine'):
+        raise ValueError("basis must be 'grid' or 'sine'")
 
     # Values in each column are independent across batch items. Each material
     # parameter keeps a singleton spatial dimension to broadcast over nodes.
@@ -188,8 +206,17 @@ def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimo
     inv_h2 = h.reciprocal().square()
 
     previous = _pluck_profile(intervals, excitation, pluck) * amplitude
-    d2 = _second(previous, inv_h2, order)
-    d4 = _second(d2, inv_h2, order)
+    if basis == 'sine':
+        # Orthonormal discrete sine transform: both difference operators become
+        # the eigenvalue table, one multiplication per mode.
+        operator = discrete_eigenvalues(intervals, order, x.device).unsqueeze(0) * inv_h2
+        previous = previous @ sine_transform(intervals, x.device)
+        second = lambda state: operator * state
+    else:
+        operator = inv_h2
+        second = lambda state: _second(state, inv_h2, order)
+    d2 = second(previous)
+    d4 = second(d2)
     nonlinear = -(previous * d2).sum(dim=1, keepdim=True) * d2
     c2 = tension / mass
     k2 = modulus * inertia / mass
@@ -204,17 +231,21 @@ def simulate(theta, intervals=176, rate=132300, steps=13230, excitation='multimo
     previous_loss = 2 * mass * sigma1 * dt
     q_scale = 0.5 * dt * torch.sqrt(h * modulus * area / length)
 
-    readout = _pickup_weights(intervals, pickup)
+    if basis == 'sine':
+        indices = torch.arange(1, intervals, dtype=torch.float64, device=x.device)
+        readout = (2/intervals)**.5 * torch.sin(torch.pi*indices.unsqueeze(0)*pickup)
+    else:
+        readout = _pickup_weights(intervals, pickup)
     blocks = [torch.stack(((previous * readout).sum(dim=1), (current * readout).sum(dim=1)), dim=1)]
-    coefficients = (readout, inv_h2, mass, tension_loss, bending, previous_mass, previous_loss, q_scale, inverse_mass)
+    coefficients = (readout, operator, mass, tension_loss, bending, previous_mass, previous_loss, q_scale, inverse_mass)
     chunk = max(1, steps if checkpoint_steps is None else checkpoint_steps)
     for start in range(0, steps, chunk):
         count = min(chunk, steps - start)
         if compile_block is None:
-            operation = functools.partial(_advance, steps=count, order=order)
+            operation = functools.partial(_advance, steps=count, order=order, basis=basis)
         else:
             operation = functools.partial(_advance_compiled, steps=count, order=order, block=compile_block,
-                                          mode=compile_mode)
+                                          mode=compile_mode, basis=basis)
         if checkpoint_steps is None:
             previous, current, samples = operation(previous, current, *coefficients)
         else:

@@ -17,7 +17,7 @@ def emit(event, **values):
     print(json.dumps({'event': event, **values}, allow_nan=False), flush=True)
 
 
-COMPILED = ('fdtd_compiled', 'fdtd_ckpt_compiled')
+COMPILED = ('fdtd_compiled', 'fdtd_ckpt_compiled', 'fdtd_sine_compiled', 'fdtd_sine_ckpt_compiled')
 
 
 def torch_case(method, batch, duration, excitation='multimode', loss='mae', compile_block=64, compile_mode=None,
@@ -28,6 +28,7 @@ def torch_case(method, batch, duration, excitation='multimode', loss='mae', comp
     from experiments.figure_comparison.physical import physical_values, theta_from_physical, gradient_scales
     from experiments.loss_batch.grouped import grouped_loss_backward
     from src.adjoint import simulate as replay
+    from src.adjoint_grid import simulate as replay_grid
     from src.optimization import criterion_for
     from src.synthesis import Renderer
     if method in ('fdtd', 'fdtd_ckpt', 'fdtd_ckpt_reentrant') + COMPILED:
@@ -48,6 +49,7 @@ def torch_case(method, batch, duration, excitation='multimode', loss='mae', comp
         x = values.detach().clone().requires_grad_()
         args = (theta_from_physical(x), GRID.intervals, GRID.integration_rate, steps, excitation)
         if which == 'replay': raw = replay(*args, 256)
+        elif which == 'replay_grid': raw = replay_grid(*args, 256)
         elif which == 'fdtd': raw = simulate(*args)
         elif which == 'fdtd_ckpt': raw = simulate(*args, checkpoint_steps=256)
         elif which == 'fdtd_ckpt_reentrant': raw = simulate(*args, checkpoint_steps=256, checkpoint_reentrant=True)
@@ -55,6 +57,11 @@ def torch_case(method, batch, duration, excitation='multimode', loss='mae', comp
         elif which == 'fdtd_ckpt_compiled':
             raw = simulate(*args, checkpoint_steps=256, compile_block=compile_block, compile_mode=compile_mode,
                            checkpoint_reentrant=reentrant)
+        elif which == 'fdtd_sine_compiled':
+            raw = simulate(*args, compile_block=compile_block, compile_mode=compile_mode, basis='sine')
+        elif which == 'fdtd_sine_ckpt_compiled':
+            raw = simulate(*args, checkpoint_steps=256, compile_block=compile_block, compile_mode=compile_mode,
+                           checkpoint_reentrant=reentrant, basis='sine')
         else: raw = simulate(*args, 256, 3 if which == 'cached3' else 1)
         audio = filter_audio(raw, renderer)
         loss = grouped_loss_backward(audio, criterion, 16)
@@ -96,9 +103,10 @@ def torch_case(method, batch, duration, excitation='multimode', loss='mae', comp
             'validation': errors, 'validation_reference': 'self' if method == 'replay' else 'replay', 'gpu_name': torch.cuda.get_device_name(),
             'gpu_uuid': str(getattr(torch.cuda.get_device_properties(0), 'uuid', 'unavailable')),
             'torch_version': torch.__version__, 'cuda_runtime': torch.version.cuda,
-            'checkpoint_steps': None if method in ('fdtd', 'fdtd_compiled') else 256,
-            'rematerialisation': (f'torch.utils.checkpoint (use_reentrant={method == "fdtd_ckpt_reentrant" or (reentrant and method in COMPILED)}) over 256-step chunks of the spatial PyTorch loop'
-                                  if method in ('fdtd_ckpt', 'fdtd_ckpt_reentrant', 'fdtd_ckpt_compiled') else None),
+            'checkpoint_steps': None if method in ('fdtd', 'fdtd_compiled', 'fdtd_sine_compiled') else 256,
+            'rematerialisation': (f'torch.utils.checkpoint (use_reentrant={method == "fdtd_ckpt_reentrant" or (reentrant and method in COMPILED)}) over 256-step chunks of the PyTorch loop'
+                                  if method in ('fdtd_ckpt', 'fdtd_ckpt_reentrant', 'fdtd_ckpt_compiled', 'fdtd_sine_ckpt_compiled') else None),
+            'basis': 'sine' if '_sine' in method else 'grid' if method.startswith('fdtd') else None,
             'compilation': ({'compiler': 'torch.compile (TorchInductor)', 'block_steps': compile_block,
                              'mode': compile_mode or 'default',
                              'note': 'compilation happens in the untimed warm-up call (warmup_seconds)'}
@@ -108,7 +116,7 @@ def torch_case(method, batch, duration, excitation='multimode', loss='mae', comp
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--method', choices=('fdtd', 'fdtd_ckpt', 'fdtd_ckpt_reentrant', *COMPILED, 'replay', 'cached1', 'cached3', 'diaz'),
+    ap.add_argument('--method', choices=('fdtd', 'fdtd_ckpt', 'fdtd_ckpt_reentrant', *COMPILED, 'replay', 'replay_grid', 'cached1', 'cached3', 'diaz'),
                     required=True)
     ap.add_argument('--batch', type=int, required=True)
     ap.add_argument('--duration', type=float, default=4.)

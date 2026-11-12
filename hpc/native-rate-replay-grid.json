@@ -1,0 +1,13 @@
+[
+ {
+  "id": "kc-replay-grid",
+  "command": [
+   "bash",
+   "hpc/native-rate-replay-grid.sh",
+   "replay_grid,replay",
+   "1,2,4,8,16,32,64,128",
+   "replay-grid-pair"
+  ],
+  "estimated_seconds": 1500
+ }
+]

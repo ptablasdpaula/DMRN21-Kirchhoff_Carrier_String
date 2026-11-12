@@ -165,7 +165,8 @@ def main():
     sizes = [int(x) for x in a.batches.split(',')]
     methods = [internal_method if m == 'diaz_internal' else m for m in a.methods.split(',')]
     modes = [int(x) for x in a.modes.split(',')]
-    torch_methods = ('cached3','cached1','replay','fdtd','fdtd_ckpt','fdtd_ckpt_reentrant','fdtd_compiled','fdtd_ckpt_compiled')
+    torch_methods = ('cached3','cached1','replay','replay_grid','fdtd','fdtd_ckpt','fdtd_ckpt_reentrant','fdtd_compiled','fdtd_ckpt_compiled',
+                     'fdtd_sine_compiled','fdtd_sine_ckpt_compiled')
     jax_fdtd_methods = ('fdtd_jax','fdtd_jax_ckpt','fdtd_jax_sine','fdtd_jax_sine_ckpt')
     if any(m not in (*torch_methods,*jax_fdtd_methods,internal_method,'diaz_44100','diaz_44100_ckpt','diaz_44100_ckptro') for m in methods):
         raise ValueError('Unknown method')
@@ -193,6 +194,8 @@ def main():
               'baseline_compilation':{
                   'fdtd_compiled':f'torch.compile (TorchInductor, mode {a.compile_mode}) of the spatial PyTorch loop in blocks of {a.compile_block} unrolled steps; every step kept for the reverse pass',
                   'fdtd_ckpt_compiled':f'the same compiled blocks ({a.compile_block} steps, mode {a.compile_mode}) inside 256-step checkpointed chunks',
+                  'fdtd_sine_compiled':f'the PyTorch loop stepped in the discrete sine basis, torch.compile blocks of {a.compile_block} unrolled steps (mode {a.compile_mode}); every step kept',
+                  'fdtd_sine_ckpt_compiled':f'the sine-basis compiled blocks ({a.compile_block} steps, mode {a.compile_mode}) inside 256-step checkpointed chunks (use_reentrant={a.reentrant})',
                   'fdtd_jax':f'the same spatial scheme as a jax.lax.scan (unroll={a.unroll}) under jax.jit; every step kept for the reverse pass',
                   'fdtd_jax_ckpt':f'the same jax.jit scan (unroll={a.unroll}) with jax.checkpoint on each 256-step segment',
                   'fdtd_jax_sine':f'the same scheme stepped in the discrete sine basis (the CUDA adjoint\'s formulation) as a jax.jit scan (unroll={a.unroll}); every step kept',
