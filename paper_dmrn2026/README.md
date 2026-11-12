@@ -6,7 +6,15 @@ part of the one-page submission; it uses `references.bib` and documents the
 scalar-cached variant of the adjoint, which the abstract no longer presents.
 `main.tex` carries a hand-written bibliography (titles kept, venues abbreviated,
 e.g. `Front. Sig. Proc., v. 3, 1284100, 2024`). The author order is
-Pablo Tablas de Paula, Emmanouil D. Benetos and Joshua D. Reiss.
+Pablo Tablas de Paula, Rodrigo Diaz, Emmanouil Benetos and Joshua D. Reiss;
+Rodrigo Diaz carries a second affiliation, Fraunhofer HHI, Berlin.
+
+`main-two-frameworks.tex` (with its PDF) is a test layout of 12 November 2026, not the submission: the table
+shows eight rows grouped by framework (PyTorch: Auto, + compiler, + checkpoints, + modes; JAX: Auto,
++ checkpoints, + modes; Hand-written) and the text is rewritten around it. Its table comes from
+`python figures/build_benchmark_summary_table.py two-frameworks`
+(`figures/benchmark-table-two-frameworks.tex`, data in `figures/native-rate-two-frameworks-merged.json`); the
+measurements are in `docs/native_rate_study.md`.
 
 The abstract's subject (since 11 November 2026) is the established recipe
 rather than a bespoke technique: the adjoint method with checkpointing,

@@ -54,8 +54,8 @@
 \makeatother
 
 \title{Efficient Backpropagation for\\Finite-Difference Nonlinear String Synthesis}
-\name{\normalfont Pablo Tablas de Paula, Emmanouil Benetos and Joshua D. Reiss\thanks{This work was supported by UKRI grant EP/S022694.}}
-\address{\small Centre for Digital Music, Queen Mary University of London, p.tablasdepaula@qmul.ac.uk}
+\name{\normalfont Pablo Tablas de Paula$^{1}$, Rodrigo Diaz$^{1,2}$, Emmanouil Benetos$^{1}$ and Joshua D. Reiss$^{1}$\thanks{This work was supported by UKRI grant EP/S022694.}}
+\address{\small $^{1}$Centre for Digital Music, Queen Mary University of London\quad $^{2}$Fraunhofer HHI, Berlin, Germany\quad p.tablasdepaula@qmul.ac.uk}
 
 \begin{document}
 \ninept
@@ -74,14 +74,13 @@ text-guided sound design.\footnote{\fontsize{6}{7}\selectfont\url{ptablasdpaula.
 \end{abstract}
 
 \section{Introduction}
-Finite-difference time-domain (FDTD) string synthesis is increasingly lean~\cite{bilbao2024guitar} and runs on the GPU~\cite{lee2024string}, yet differentiable
+Finite-difference time-domain (FDTD) sound synthesis is increasingly lean~\cite{bilbao2024guitar} and runs on the GPU~\cite{lee2024string}, yet differentiable
 frameworks~\cite{hayes2024review} largely avoid it because
 backpropagating through a time-stepping scheme builds deep recurrent graphs. Hence, the literature has favoured
 digital waveguides~\cite{tablas2026sound} and modal
 synthesis~\cite{diaz2025}. Physics simulation has long met the same obstacle
 with the adjoint method and checkpointing, now the default of
-differential-equation solvers~\cite{kidger2021}, while adjoints have been
-successfully implemented for recursive audio filters~\cite{yu2024allpole}.
+differential-equation solvers~\cite{kidger2021}.
 We apply this recipe to a nonlinear FDTD string, propose stepping through
 its modes in parallel via a sine transform, and measure what each
 ingredient buys.
@@ -160,7 +159,6 @@ memory.
 \bibitem{tablas2026sound} P.~Tablas~de~Paula \emph{et~al.}, ``Sound matching with a differentiable Karplus-Strong algorithm,'' \emph{Proc. DAFx}, 2026.
 \bibitem{diaz2025} R.~Diaz and M.~Sandler, ``Fast differentiable modal simulation of non-linear strings, membranes, and plates,'' \emph{Proc. DAFx}, 2025.
 \bibitem{kidger2021} P.~Kidger, ``On neural differential equations,'' DPhil thesis, Oxford, 2021.
-\bibitem{yu2024allpole} C.-Y.~Yu \emph{et~al.}, ``Differentiable all-pole filters for time-varying audio systems,'' \emph{Proc. DAFx}, 2024.
 \bibitem{bilbao2009} S.~Bilbao, \emph{Numerical Sound Synthesis: Finite Difference Schemes and Simulation in Musical Acoustics}, Wiley, 2009.
 \bibitem{russo2026} R.~Russo \emph{et~al.}, ``Numerical convergence of the scalar auxiliary variable method applied to nonlinear stiff string models,'' \emph{Nonlinear Dyn.}, v.~114, 2026.
 \end{thebibliography}}

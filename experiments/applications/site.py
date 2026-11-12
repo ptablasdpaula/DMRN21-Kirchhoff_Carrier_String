@@ -201,7 +201,7 @@ def build(results_path, semantic_runs, docs_dir, base='supplement'):
     parts = [f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
              f'<title>{e(TITLE)}</title><style>{CSS}</style></head><body><div class="wrap">',
              f'<h1>{e(TITLE)}</h1>',
-             '<p class="muted">Companion to the DMRN+21 abstract by Pablo Tablas de Paula, Emmanouil Benetos and Joshua D. Reiss (Centre for Digital Music, Queen Mary University of London). '
+             '<p class="muted">Companion to the DMRN+21 abstract by Pablo Tablas de Paula, Rodrigo Diaz, Emmanouil Benetos and Joshua D. Reiss (Centre for Digital Music, Queen Mary University of London; Rodrigo Diaz also Fraunhofer HHI, Berlin). '
              f'Code: <a href="{REPO}">{REPO.replace("https://", "")}</a>.</p>',
              '<p>The abstract shows that a nonlinear FDTD Kirchhoff–Carrier string can be backpropagated quickly and in flat memory with the adjoint method and '
              'checkpointing, compiled into a CUDA kernel. '
