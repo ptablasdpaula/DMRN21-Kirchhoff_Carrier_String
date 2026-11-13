@@ -13,24 +13,16 @@
 \captionsetup[figure]{skip=2pt}\setlength{\intextsep}{3pt plus 1pt minus 1pt}
 \setlength{\parskip}{0.1em}
 \captionsetup[figure]{font=footnotesize,labelfont=footnotesize}
-\captionsetup[table]{font=footnotesize,labelfont=footnotesize,skip=2pt}
-% 6pt (LaTeX's default is 20pt), to make room for the footnotes at the foot of the right column.
-\setlength{\textfloatsep}{6pt plus 2pt minus 4pt}
-\setlength{\belowcaptionskip}{0pt}
+\captionsetup[table]{font=footnotesize,labelfont=footnotesize}
+% Spacing as in the official DMRN+21 template (template-source/template.tex) and LaTeX's defaults, restored on
+% 13 November 2026 where the page allows: the caption, the gap under the table, the displays and the references.
+% The 0.1em paragraph skip (template 0.5em), the 266 mm text block (250 mm), \ninept (10 pt) and the title gaps
+% stay tightened: the left column is full, and any of them moves Backpropagation's last lines to the right column.
+\setlength{\belowcaptionskip}{-10pt}
 \renewcommand{\thesection}{\Roman{section}}
 \newcommand{\head}[1]{\par\vspace{1pt}\noindent\textbf{#1.}\ \ignorespaces}
 % Step arrow: the row or stage builds on the one before it.
 \newcommand{\step}{\rotatebox[origin=c]{180}{$\Lsh$}}
-% Tighter display spacing. \ninept makes \normalsize an alias of \small, which
-% resets the display skips at every size switch, so the reduced values are
-% appended to \small itself.
-\makeatletter
-\g@addto@macro\small{\abovedisplayskip 4pt plus 1pt minus 1pt \belowdisplayskip 4pt plus 1pt minus 1pt
- \abovedisplayshortskip 2pt \belowdisplayshortskip 2pt plus 1pt}
-\makeatother
-% No extra space between reference entries.
-\let\oldthebibliography\thebibliography
-\renewcommand{\thebibliography}[1]{\oldthebibliography{#1}\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 % Layout economy after the DMRN+15 auraloss one-pager: a text block 16 mm taller than the
 % template's 250 mm. The title block gaps are 1.2em, 1em, 1em (the template's
 % are 2em, 1.5em, 1.5em), so that the left column holds Model and method; the footer distance (0.3in) is the template's.
@@ -163,7 +155,7 @@ the least memory.
 \begin{table}[t]
  \centering
  \setlength{\tabcolsep}{3.5pt}
- \renewcommand{\arraystretch}{0.86}
+ \renewcommand{\arraystretch}{1}
  \resizebox{\columnwidth}{!}{\input{figures/benchmark-table.tex}}
  \caption{Peak memory and time of one gradient step. \step: adds one ingredient to the row above; \textemdash: exceeds the A100\textquotesingle s 80\,GB.}
  \label{tab:benchmark}

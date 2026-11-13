@@ -41,7 +41,9 @@ template's intended Times font. Side and top margins, columns, the title block
 gaps and the footer distance are the template's. Deliberate departures, all set
 in the preamble of `main.tex`: the text block is 266 mm tall against the
 template's 250 mm, the body uses the style's optional `\ninept`, and the
-paragraph, display, caption, table-row and reference spacings are tightened.
+paragraph skip (0.1 em) and title gaps (1.2, 1, 1 em) are tightened; these fill the left column exactly. Since
+13 November 2026 the display, caption, table-row, under-table and reference spacings are the template's and
+LaTeX's defaults again.
 The fully tightened layout (title block and footer included) is
 `variants/main-layout-tight.tex`; `variants/main-layout-text-height-255.pdf`
 is the alternative that spends the spare room on a 255 mm text block instead.
