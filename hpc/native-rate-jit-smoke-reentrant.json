@@ -1,2 +1,0 @@
-[{"id": "kc-jit-smoke-torch-default-b16-reentrant", "command": ["bash", "hpc/native-rate-jit-smoke.sh", "torch", "default", "16", "reentrant"], "estimated_seconds": 900},
- {"id": "kc-jit-smoke-torch-test-2", "command": ["bash", "hpc/native-rate-jit-smoke.sh", "torch-test"], "estimated_seconds": 1200}]

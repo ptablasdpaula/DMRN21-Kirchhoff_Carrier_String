@@ -1,4 +1,0 @@
-[
-  {"id":"kc-paper-exact-long","command":["bash","hpc/paper-exact.sh","long"],"estimated_seconds":3000},
-  {"id":"kc-paper-exact-gradient","command":["bash","hpc/paper-exact.sh","gradients"],"estimated_seconds":900}
-]

@@ -1,5 +1,0 @@
-[
-  {"id":"kc-parallel-recon-k10","command":["bash","hpc/parallel-reconstruction-benchmark.sh","10"],"estimated_seconds":3600},
-  {"id":"kc-parallel-recon-k64","command":["bash","hpc/parallel-reconstruction-benchmark.sh","64"],"estimated_seconds":2400},
-  {"id":"kc-parallel-recon-k256","command":["bash","hpc/parallel-reconstruction-benchmark.sh","256"],"estimated_seconds":2400}
-]

@@ -1,3 +1,0 @@
-[
-  {"id":"kc-ampere-bench","command":["bash","hpc/benchmark.sh"],"estimated_seconds":2400}
-]

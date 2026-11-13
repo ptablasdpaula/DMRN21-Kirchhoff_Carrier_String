@@ -1,1 +1,0 @@
-[{"id":"kc-reconstruction-coordinates","command":["bash","hpc/reconstruction-coordinates.sh"],"estimated_seconds":900}]

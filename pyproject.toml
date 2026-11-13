@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kc-string"
+version = "1.0.0"
+description = "Efficient backpropagation for finite-difference nonlinear string synthesis (DMRN+21, 2026)"
+requires-python = ">=3.12"
+dependencies = ["torch>=2.14", "jax>=0.12", "numpy"]
+
+[project.optional-dependencies]
+applications = ["cels-audio", "transformers>=5", "matplotlib", "pillow"]
+dev = ["pytest", "ruff"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+kc_string = ["*.cu"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["nLinStringsConv-SAV", "paper_dmrn2026"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF"]
+ignore = [
+    "N803", "N806", "N802",  # physics names (A, K, B, EI) follow the paper's notation
+    "N812",  # torch.nn.functional as F, by convention
+    "RUF001", "RUF002", "RUF003",  # Greek letters and en dashes in docstrings and comments
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+markers = [
+    "octave: compares against Russo et al.'s Octave code (needs octave)",
+    "cuda: needs a CUDA GPU",
+]

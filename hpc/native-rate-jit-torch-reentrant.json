@@ -1,1 +1,0 @@
-[{"id": "kc-jit-torch-ckpt-reentrant", "command": ["bash", "hpc/native-rate-jit.sh", "fdtd_ckpt_compiled", "1,2,4,8,16,32,64,128", "fdtd_ckpt_compiled_reentrant-b1_2_4_8_16_32_64_128", "1", "--compile-block", "16", "--compile-mode", "default", "--reentrant"], "estimated_seconds": 2700}]

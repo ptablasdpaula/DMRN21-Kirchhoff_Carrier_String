@@ -1,27 +1,16 @@
-# pixi environments
+# Environments and caches
 .pixi/*
 !.pixi/config.toml
-
-# Python bytecode
 __pycache__/
 *.py[cod]
-
-# Notebook execution output
-.notebook-build/
-.ipynb_checkpoints/
-
-# OS metadata and generated experiment media
+*.egg-info/
 .DS_Store
-output/
 
-# Local copies of books/papers (copyrighted); never commit
+# Local, never committed: personal notes, copyrighted references, the DMRN kit, LaTeX by-products
+notes/
 references/
-
-# DMRN LaTeX kit archives, template sources and build logs
-paper_dmrn2026/*.zip
 paper_dmrn2026/template-source/
+paper_dmrn2026/*.zip
 paper_dmrn2026/*.log
-paper_dmrn2026/*.blg
 paper_dmrn2026/*.aux
-paper_dmrn2026/*.bbl
-paper_dmrn2026/*.out
+paper_dmrn2026/*.blg

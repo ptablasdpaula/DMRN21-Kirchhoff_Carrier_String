@@ -1,1 +1,0 @@
-[{"id":"kc-exact-fit-recompute","command":["bash","hpc/exact-fit.sh","cuda-recompute"],"estimated_seconds":3000}]

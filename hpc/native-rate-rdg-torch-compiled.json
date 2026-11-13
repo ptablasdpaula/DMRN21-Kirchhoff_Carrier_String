@@ -1,7 +1,0 @@
-[
- {"id": "kc-rdg-torch-compiled-plain", "command": ["bash", "hpc/native-rate-jit-sweep.sh", "fdtd_compiled"], "estimated_seconds": 3000},
- {"id": "kc-rdg-torch-compiled-ckpt", "command": ["bash", "hpc/native-rate-jit-sweep.sh", "fdtd_ckpt_compiled"], "estimated_seconds": 3000},
- {"id": "kc-rdg-torch-compiled-sine-ckpt", "command": ["bash", "hpc/native-rate-jit-sweep.sh", "fdtd_sine_ckpt_compiled"], "estimated_seconds": 3000},
- {"id": "kc-rdg-torch-compiled-sine-ckpt-block64", "command": ["bash", "-c", "BLOCK=64 TAG=fdtd_sine_ckpt_compiled-block64-b1_32 bash hpc/native-rate-jit-sweep.sh fdtd_sine_ckpt_compiled 1,32"], "estimated_seconds": 3000},
- {"id": "kc-rdg-torch-compiled-test", "command": ["bash", "hpc/native-rate-jit-smoke.sh", "torch-test"], "estimated_seconds": 1500}
-]

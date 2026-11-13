@@ -1,1 +1,0 @@
-[{"id":"kc-alpha-scan-check","command":["bash","hpc/alpha-scan-check.sh"],"estimated_seconds":900}]

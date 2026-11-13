@@ -1,1 +1,0 @@
-[{"id": "kc-jit-smoke-jax-sine", "command": ["bash", "hpc/native-rate-jit-smoke.sh", "jax-sine"], "estimated_seconds": 1200}]

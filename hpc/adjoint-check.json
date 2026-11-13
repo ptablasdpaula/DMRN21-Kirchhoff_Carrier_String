@@ -1,1 +1,0 @@
-[{"id":"kc-adjoint-check","command":["bash","hpc/adjoint-check.sh"],"estimated_seconds":600}]

@@ -1,2 +1,0 @@
-[{"id": "kc-jit-jax-sine-ckpt", "command": ["bash", "hpc/native-rate-jit-sweep.sh", "fdtd_jax_sine_ckpt"], "estimated_seconds": 2700},
- {"id": "kc-jit-jax-sine-plain", "command": ["bash", "hpc/native-rate-jit-sweep.sh", "fdtd_jax_sine"], "estimated_seconds": 2700}]

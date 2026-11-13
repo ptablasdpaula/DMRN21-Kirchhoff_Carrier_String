@@ -1,9 +1,11 @@
+# GPU environment on the cluster (hpc/setup.sh); the package itself is installed editable on top.
 torch==2.14.1
-ninja
+jax[cuda12]==0.12.0.1
 numpy
 matplotlib
-ipywidgets
-nbformat
-nbconvert
-ipykernel
+pillow
+transformers==5.22.1
 cels-audio @ git+https://github.com/ptablasdpaula/ICASSP27-Phrase.git@9fdbd60f5b67def8dd8884a006541e0ca4dbbf0d
+ninja
+pytest
+ruff
