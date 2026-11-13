@@ -9,6 +9,8 @@
 \usepackage{times,amsmath,amssymb,graphicx,url,dmrn2026}
 \usepackage{indentfirst}
 \usepackage[table]{xcolor}
+% Clickable links without coloured boxes; footnote marks stay as set by hand (\footnotemark, \inlinemark).
+\usepackage[hidelinks,hyperfootnotes=false]{hyperref}
 \definecolor{heatpurple}{HTML}{DDD0EE}
 \captionsetup[figure]{skip=2pt}\setlength{\intextsep}{3pt plus 1pt minus 1pt}
 \setlength{\parskip}{0.1em}
@@ -130,8 +132,8 @@ gradient of the discrete scheme.
 % at the foot of the right column. Footnotes 2 and 3 share one line: 3 is set inside the text of footnote 2,
 % with their marks from \inlinemark, so the block stays two lines high. They sit at the foot of the
 % right column; the left column then holds the whole Backpropagation paragraph above the acknowledgement.
-\footnotetext[1]{\fontsize{6}{7}\selectfont\url{ptablasdpaula.github.io/DMRN21-Kirchhoff_Carrier_String}}%
-\footnotetext[2]{\fontsize{6}{7}\selectfont\url{docs.jax.dev}\quad\inlinemark{3}\url{developer.nvidia.com/cuda}}%
+\footnotetext[1]{\fontsize{6}{7}\selectfont\href{https://ptablasdpaula.github.io/DMRN21-Kirchhoff_Carrier_String}{\nolinkurl{ptablasdpaula.github.io/DMRN21-Kirchhoff_Carrier_String}}}%
+\footnotetext[2]{\fontsize{6}{7}\selectfont\href{https://docs.jax.dev}{\nolinkurl{docs.jax.dev}}\quad\inlinemark{3}\href{https://developer.nvidia.com/cuda}{\nolinkurl{developer.nvidia.com/cuda}}}%
 Each evaluation is one sound matching step: a batch of strings is simulated
 for 1 s, the mean absolute error of each waveform against the target's is backpropagated to ten parameters:
 $\rho$, $T_0$, $r$ ($A=\pi r^2$, $I=\pi r^4/4$), $E$, $L$, $\sigma_0$,
