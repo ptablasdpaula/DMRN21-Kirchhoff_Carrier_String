@@ -783,10 +783,48 @@ and `a100-jit-torch-sine-ckpt-reentrant-block64-b1_32-rdg-35837962-1s-mae-si10.j
 `hpc/native-rate-rdg-torch-compiled.json`. Merged with the same-host rows into
 `paper_dmrn2026/figures/native-rate-two-frameworks-merged.json`.
 
-Test layout, not the submission: `paper_dmrn2026/main-two-frameworks.tex` shows eight rows grouped by
-framework (PyTorch: Auto, + compiled, + checkpoints, + modes; JAX: Auto (compiled), + checkpoints, + modes; Hand-written),
-from `build_benchmark_summary_table.py two-frameworks`. The table is 52 pt taller than the five-row one; the
-page holds it with the title gaps at 1.2, 1 and 1 em instead of the template's 2, 1.5 and 1.5 em.
+Test layout, not the submission: `paper_dmrn2026/main-two-frameworks.tex` shows nine rows grouped by
+framework (PyTorch: Auto, + compiled, + checkpoints, + modes; JAX: Auto, + compiled, + checkpoints, + modes;
+Hand-written), from `build_benchmark_summary_table.py two-frameworks`. The table is 52 pt taller than the
+five-row one; the page holds it with the title gaps at 1.2, 1 and 1 em instead of the template's 2, 1.5 and
+1.5 em, and (since the JAX Auto row) with the table's `\arraystretch` at 0.76 instead of 0.8.
+
+## Uncompiled JAX (2026-11-13)
+
+Rodrigo Diaz pointed out that JAX also runs without compilation, so the JAX group gained an Auto row like
+PyTorch's: `fdtd_jax_eager`, the same `fdtd_jax` scheme and `jax.value_and_grad`, called without `jax.jit`,
+its time loop a Python `for` loop (`renderer(..., python_loop=True)`), so every operation of every step is
+dispatched on its own and every state is kept. `jax.disable_jit()` around the `jax.lax.scan` version was
+measured too (rdg7, 0.005 and 0.01 s): 77 ms per step against 52, because it also splits jax.numpy's own
+jitted functions into primitives; the Python loop is the fairer analogue of an eager PyTorch loop.
+
+Cost: 57 to 59 ms per step at any batch (rdg, 1764 to 14112 steps), so about 90 min per 1 s evaluation.
+Host memory grows faster than linearly with the steps (2.0, 2.9, 4.8 and 9.5 GB at 1764, 3528, 7056 and
+14112 steps) and peaks at 115 to 117 GB for 1 s; the defaults of `native_rate_compare.py` (32 GB) and a 110 GB
+limit both stopped the first runs. `native_rate_compare.py` had never passed `--host-limit-gb` to the JAX
+cases (fixed). The sweep (`hpc/native-rate-jit-sweep.sh fdtd_jax_eager`) therefore runs one batch per job with
+12 CPUs and 240 GB (the most `sae` gives a one-GPU job), a 230 GB host limit and `KC_REPETITIONS=1`: one
+timed evaluation after the warm-up instead of the median of three (the warm-ups, 8368 to 8570 s, include the
+first dispatch of every operation).
+
+Jobs 35941837 to 35941843 (rdg3, 4, 7, 9, 10; batch 128 is job 35924368 on rdg9, which ran out of GPU
+memory before the host-limit fix and is unaffected by it). The first item's scaled gradients agree with the
+reference to 4e-12 to 4.5e-10. Seconds per evaluation and peak GPU memory in GB:
+
+| batch | 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 |
+|---|---|---|---|---|---|---|---|---|
+| JAX Auto `fdtd_jax_eager`, s | 5324 | 5355 | 5364 | 5315 | 5374 | 5315 | oom | oom |
+| GB | 6.0 | 6.0 | 10.3 | 18.9 | 36.1 | 65.6 | | |
+
+Uncompiled JAX is 30 to 32 times slower than eager PyTorch and uses 1.5 to 2.6 times its GPU memory; both run
+out at 64. Compiling (`fdtd_jax`) makes JAX 1700 to 2400 times faster, against 15 to 16 times for PyTorch,
+but the compiled program needs more memory than the uncompiled one from batch 2 (9.6 against 6.0 GB) and runs
+out at 32, where the uncompiled one still fits (65.6 GB).
+
+Files: `paper_dmrn2026/figures/native-rate-jit-jax-eager-b{1,2,4,8,16,32,64,128}-rdg-<job>.json`; job list
+`hpc/native-rate-rdg-jax-eager.json` (batch 128 marked complete; the other jobs were submitted with `sbatch`
+directly, 12 CPUs and 240G, because `hpc_sonic.py` requests 4 CPUs). Merged into
+`paper_dmrn2026/figures/native-rate-two-frameworks-merged.json`.
 
 ## Autodiff and the adjoint are one computation here (2026-11-12)
 

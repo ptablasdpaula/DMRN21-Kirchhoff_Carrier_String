@@ -119,18 +119,18 @@ stencil~\cite[Sec.~6.3.1]{bilbao2009} reduces
 numerical dispersion.
 
 \head{Backpropagation}
-We compare eight implementations in Table~\ref{tab:benchmark}, in PyTorch
+We compare nine implementations in Table~\ref{tab:benchmark}, in PyTorch
 and in JAX, each adding one ingredient to the row above. \emph{Auto} is the
-scheme's adjoint, derived by automatic differentiation. In PyTorch every state is stored, and
+scheme's adjoint, derived by automatic differentiation. Every state is stored, and
 every operation of every step incurs the overhead of a Python call;
-\emph{+~compiled} compiles blocks of 16 unrolled steps. JAX always
-compiles: its \emph{Auto} is the scheme and its gradient as one program. \emph{+~checkpoints} stores the state only
+\emph{+~compiled} compiles blocks of 16 unrolled steps in PyTorch, and the
+scheme and its gradient as one program in JAX. \emph{+~checkpoints} stores the state only
 periodically and re-runs one segment at a time on the reverse pass.
 \emph{+~modes} applies a discrete sine transform, after which each stencil
 becomes one multiplication per mode and the modes interact only through the
 nonlinear tension term. \emph{Hand-written} is the same adjoint with the
 same checkpoints and modes, derived by hand and written as a single GPU
-(CUDA\footnotemark) kernel, parallel over modes and batch items. All eight return the
+(CUDA\footnotemark) kernel, parallel over modes and batch items. All nine return the
 gradient of the discrete scheme.
 
 \section{Evaluation}
@@ -153,14 +153,13 @@ at 88.2 kHz, decimated to 44.1 kHz, on an A100 80 GB in float64, with a
 checkpoint every 256 steps. In Table~\ref{tab:benchmark}, memory
 grows linearly with the batch without checkpoints, nearing or exceeding the
 A100\textquotesingle s 80\,GB, and stays around 2\,GB or less with them.
-Compiling cuts PyTorch\textquotesingle s time by an order of magnitude, and
-mode-stepping cuts it further. JAX is faster throughout, but heavier until
-checkpointed. Our kernel is faster and lighter than the fastest of them.
+Compiling cuts PyTorch\textquotesingle s time by an order of magnitude and
+JAX\textquotesingle s by three, making JAX the faster; mode-stepping cuts both further. Our kernel is faster and lighter than the fastest of them.
 
 \begin{table}[t]
  \centering
  \setlength{\tabcolsep}{3.5pt}
- \renewcommand{\arraystretch}{0.8}
+ \renewcommand{\arraystretch}{0.76}
  \resizebox{\columnwidth}{!}{\input{figures/benchmark-table-two-frameworks.tex}}
  \caption{Peak memory and time of one gradient step. \step: adds one ingredient to the row above; \textemdash: exceeds the A100\textquotesingle s 80\,GB.}
  \label{tab:benchmark}

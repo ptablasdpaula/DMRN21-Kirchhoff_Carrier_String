@@ -23,7 +23,8 @@ as less clear):
               + compiled        fdtd_compiled             torch.compile blocks, every step kept
               + checkpoints     fdtd_ckpt_compiled        the same with a checkpoint every 256 steps
               + modes           fdtd_sine_ckpt_compiled   the same stepped in the discrete sine basis
-    JAX       Auto (compiled)   fdtd_jax                  jax.jit (JAX always compiles), every step kept
+    JAX       Auto              fdtd_jax_eager            the same as a Python loop, no jax.jit
+              + compiled        fdtd_jax                  jax.jit, every step kept
               + checkpoints     fdtd_jax_ckpt
               + modes           fdtd_jax_sine_ckpt
     Hand-written                replay
@@ -64,7 +65,8 @@ if TWO:
                          (r'\step\,+ compiled', 'fdtd_compiled'),
                          (r'\step\,+ checkpoints', 'fdtd_ckpt_compiled'),
                          (r'\step\,+ modes', 'fdtd_sine_ckpt_compiled')]),
-              (JAX, [('Auto (compiled)', 'fdtd_jax'),
+              (JAX, [('Auto', 'fdtd_jax_eager'),
+                     (r'\step\,+ compiled', 'fdtd_jax'),
                      (r'\step\,+ checkpoints', 'fdtd_jax_ckpt'),
                      (r'\step\,+ modes', 'fdtd_jax_sine_ckpt')]),
               (None, [('Hand-written', 'replay')])]

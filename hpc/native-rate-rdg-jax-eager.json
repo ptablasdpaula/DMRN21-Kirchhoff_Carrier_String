@@ -1,0 +1,75 @@
+[
+ {
+  "id": "kc-rdg-jax-eager-b1",
+  "command": [
+   "bash",
+   "-c",
+   "TIMEOUT=21600 bash hpc/native-rate-jit-sweep.sh fdtd_jax_eager 1"
+  ],
+  "estimated_seconds": 22000
+ },
+ {
+  "id": "kc-rdg-jax-eager-b2",
+  "command": [
+   "bash",
+   "-c",
+   "TIMEOUT=21600 bash hpc/native-rate-jit-sweep.sh fdtd_jax_eager 2"
+  ],
+  "estimated_seconds": 22000
+ },
+ {
+  "id": "kc-rdg-jax-eager-b4",
+  "command": [
+   "bash",
+   "-c",
+   "TIMEOUT=21600 bash hpc/native-rate-jit-sweep.sh fdtd_jax_eager 4"
+  ],
+  "estimated_seconds": 22000
+ },
+ {
+  "id": "kc-rdg-jax-eager-b8",
+  "command": [
+   "bash",
+   "-c",
+   "TIMEOUT=21600 bash hpc/native-rate-jit-sweep.sh fdtd_jax_eager 8"
+  ],
+  "estimated_seconds": 22000
+ },
+ {
+  "id": "kc-rdg-jax-eager-b16",
+  "command": [
+   "bash",
+   "-c",
+   "TIMEOUT=21600 bash hpc/native-rate-jit-sweep.sh fdtd_jax_eager 16"
+  ],
+  "estimated_seconds": 22000
+ },
+ {
+  "id": "kc-rdg-jax-eager-b32",
+  "command": [
+   "bash",
+   "-c",
+   "TIMEOUT=21600 bash hpc/native-rate-jit-sweep.sh fdtd_jax_eager 32"
+  ],
+  "estimated_seconds": 22000
+ },
+ {
+  "id": "kc-rdg-jax-eager-b64",
+  "command": [
+   "bash",
+   "-c",
+   "TIMEOUT=21600 bash hpc/native-rate-jit-sweep.sh fdtd_jax_eager 64"
+  ],
+  "estimated_seconds": 22000
+ },
+ {
+  "id": "kc-rdg-jax-eager-b128",
+  "command": [
+   "bash",
+   "-c",
+   "TIMEOUT=21600 bash hpc/native-rate-jit-sweep.sh fdtd_jax_eager 128"
+  ],
+  "estimated_seconds": 22000,
+  "complete": true
+ }
+]

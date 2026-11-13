@@ -24,6 +24,10 @@ waveform and gradients are unchanged; only the arithmetic per step is
 cheaper. Inputs are the ten physical coordinates (not multipliers), as for the other
 JAX renderers; the output is the internal-rate pickup waveform including the
 two initial samples.
+
+With ``python_loop`` the time loop is a Python ``for`` loop instead of
+``jax.lax.scan``: called outside ``jax.jit``, every operation of every step
+is then dispatched on its own, the JAX counterpart of eager PyTorch.
 """
 import math
 
@@ -73,7 +77,7 @@ def _pickup_weights(intervals, pickup, dtype):
     return modal @ transform
 
 
-def _single(values, intervals, rate, steps, excitation, order, checkpoint_steps, unroll, basis):
+def _single(values, intervals, rate, steps, excitation, order, checkpoint_steps, unroll, basis, python_loop=False):
     density, tension, radius, modulus, length, amplitude, sigma0, sigma1, pluck, pickup = values
     dtype = values.dtype
     dt = 1.0 / rate
@@ -129,6 +133,11 @@ def _single(values, intervals, rate, steps, excitation, order, checkpoint_steps,
         return (now, following), jnp.sum(following * readout)
 
     def run(state, length_):
+        if python_loop:
+            samples = []
+            for _ in range(length_):
+                state, sample = step(state, None); samples.append(sample)
+            return state, jnp.stack(samples)
         return jax.lax.scan(step, state, None, length=length_, unroll=unroll)
 
     state = (previous, current)
@@ -150,7 +159,7 @@ def _single(values, intervals, rate, steps, excitation, order, checkpoint_steps,
 
 
 def renderer(values, steps, intervals=176, rate=132300, excitation='multimode', order=SPATIAL_ORDER,
-             checkpoint_steps=None, unroll=8, basis='grid'):
+             checkpoint_steps=None, unroll=8, basis='grid', python_loop=False):
     """(batch, steps+2) internal-rate pickup audio of the spatial FDTD scheme.
 
     Args:
@@ -168,6 +177,8 @@ def renderer(values, steps, intervals=176, rate=132300, excitation='multimode', 
         unroll: time steps unrolled into one iteration of the compiled loop.
         basis: 'grid' steps the nodes with the stencils; 'sine' steps the same
             scheme in the discrete sine basis, where the stencils are diagonal.
+        python_loop: step in a Python loop instead of jax.lax.scan (for eager,
+            uncompiled runs; inside jax.jit it would unroll every step).
     """
     if values.ndim != 2 or values.shape[1] != 10:
         raise ValueError('Expected physical parameters with shape (batch, 10)')
@@ -182,7 +193,9 @@ def renderer(values, steps, intervals=176, rate=132300, excitation='multimode', 
         raise ValueError('checkpoint_steps must be a positive integer or None')
     if not isinstance(unroll, int) or isinstance(unroll, bool) or unroll < 1:
         raise ValueError('unroll must be a positive integer')
+    if python_loop and checkpoint_steps is not None:
+        raise ValueError('python_loop keeps every step; it does not take checkpoint_steps')
     if basis not in ('grid', 'sine'):
         raise ValueError("basis must be 'grid' or 'sine'")
     return jax.vmap(lambda row: _single(row, intervals, rate, steps, excitation, order, checkpoint_steps, unroll,
-                                        basis))(values)
+                                        basis, python_loop))(values)

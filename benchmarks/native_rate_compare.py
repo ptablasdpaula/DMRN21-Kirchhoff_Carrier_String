@@ -31,10 +31,10 @@ def fingerprints():
 
 def native_case(batch, duration, timeout, python, outdir, modes, rate, interval=.01, host_limit=32*10**9,
                 excitation='multimode', loss='mae', checkpoint_steps=None, readout_in_scan=False, scheme='modal',
-                unroll=8, basis='grid'):
+                unroll=8, basis='grid', eager=False):
     outdir.mkdir(parents=True, exist_ok=True)
     tag = '-ckptro' if checkpoint_steps and readout_in_scan else '-ckpt' if checkpoint_steps else ''
-    stem = f'fdtd-jax-{basis}-{rate}-b{batch}{tag}' if scheme == 'fdtd' else f'diaz-{rate}-m{modes}-b{batch}{tag}'
+    stem = f'fdtd-jax-{basis}-{rate}-b{batch}{tag}{"-eager" if eager else ""}' if scheme == 'fdtd' else f'diaz-{rate}-m{modes}-b{batch}{tag}'
     logpath = outdir/f'{stem}.log'
     artifact = outdir/f'{stem}.npz'
     command = [python, str(ROOT/'benchmarks/native_rate_worker.py'), '--batch', str(batch), '--duration', str(duration),
@@ -43,6 +43,7 @@ def native_case(batch, duration, timeout, python, outdir, modes, rate, interval=
     if checkpoint_steps: command += ['--checkpoint-steps', str(checkpoint_steps)]
     if readout_in_scan: command += ['--readout-in-scan']
     if scheme == 'fdtd': command += ['--scheme', 'fdtd', '--unroll', str(unroll), '--basis', basis]
+    if eager: command += ['--eager']
     proc = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             text=True, bufsize=1, start_new_session=True)
     lines = queue.Queue()
@@ -83,7 +84,7 @@ def native_case(batch, duration, timeout, python, outdir, modes, rate, interval=
         text = ''.join(captured).lower()
         status = ('timeout' if timed_out else 'host_memory_limit' if host_limit_hit else
                   'oom' if 'out of memory' in text or 'resource_exhausted' in text else 'error')
-        result = {'method':(f'fdtd_jax{"_sine" if basis == "sine" else ""}{"_ckpt" if checkpoint_steps else ""}' if scheme == 'fdtd' else
+        result = {'method':(f'fdtd_jax{"_sine" if basis == "sine" else ""}{"_ckpt" if checkpoint_steps else ""}{"_eager" if eager else ""}' if scheme == 'fdtd' else
                             f'diaz_{rate}{"_ckptro" if checkpoint_steps and readout_in_scan else "_ckpt" if checkpoint_steps else ""}'),
                   'batch':batch, 'modes':None if scheme == 'fdtd' else modes,
                   'status':status, 'error':f'exit={proc.returncode}; see {logpath}'}
@@ -167,7 +168,7 @@ def main():
     modes = [int(x) for x in a.modes.split(',')]
     torch_methods = ('cached3','cached1','replay','replay_grid','fdtd','fdtd_ckpt','fdtd_ckpt_reentrant','fdtd_compiled','fdtd_ckpt_compiled',
                      'fdtd_sine_compiled','fdtd_sine_ckpt_compiled')
-    jax_fdtd_methods = ('fdtd_jax','fdtd_jax_ckpt','fdtd_jax_sine','fdtd_jax_sine_ckpt')
+    jax_fdtd_methods = ('fdtd_jax','fdtd_jax_ckpt','fdtd_jax_sine','fdtd_jax_sine_ckpt','fdtd_jax_eager')
     if any(m not in (*torch_methods,*jax_fdtd_methods,internal_method,'diaz_44100','diaz_44100_ckpt','diaz_44100_ckptro') for m in methods):
         raise ValueError('Unknown method')
     compile_extra = ['--compile-block', str(a.compile_block), '--compile-mode', a.compile_mode] + (['--reentrant'] if a.reentrant else [])
@@ -196,6 +197,7 @@ def main():
                   'fdtd_ckpt_compiled':f'the same compiled blocks ({a.compile_block} steps, mode {a.compile_mode}) inside 256-step checkpointed chunks',
                   'fdtd_sine_compiled':f'the PyTorch loop stepped in the discrete sine basis, torch.compile blocks of {a.compile_block} unrolled steps (mode {a.compile_mode}); every step kept',
                   'fdtd_sine_ckpt_compiled':f'the sine-basis compiled blocks ({a.compile_block} steps, mode {a.compile_mode}) inside 256-step checkpointed chunks (use_reentrant={a.reentrant})',
+                  'fdtd_jax_eager':'the same spatial scheme and jax.lax.scan as fdtd_jax, its time loop a Python loop called without jax.jit: every operation dispatched separately, no program compiled; every step kept for the reverse pass',
                   'fdtd_jax':f'the same spatial scheme as a jax.lax.scan (unroll={a.unroll}) under jax.jit; every step kept for the reverse pass',
                   'fdtd_jax_ckpt':f'the same jax.jit scan (unroll={a.unroll}) with jax.checkpoint on each 256-step segment',
                   'fdtd_jax_sine':f'the same scheme stepped in the discrete sine basis (the CUDA adjoint\'s formulation) as a jax.jit scan (unroll={a.unroll}); every step kept',
@@ -225,9 +227,9 @@ def main():
                            spatial_order=GRID.order,antialias_filter=GRID.oversampling>1,excitation=a.excitation,loss=a.loss)
                 result['rows'].append(row);save();print(json.dumps(row),flush=True)
             elif method in jax_fdtd_methods:
-                row=native_case(batch,a.duration,a.timeout,a.python,logs,modes[0],internal,excitation=a.excitation,loss=a.loss,
-                                checkpoint_steps=256 if method.endswith('_ckpt') else None,scheme='fdtd',unroll=a.unroll,
-                                basis='sine' if '_sine' in method else 'grid')
+                row=native_case(batch,a.duration,a.timeout,a.python,logs,modes[0],internal,host_limit=host_limit,
+                                excitation=a.excitation,loss=a.loss,checkpoint_steps=256 if '_ckpt' in method else None,scheme='fdtd',unroll=a.unroll,
+                                basis='sine' if '_sine' in method else 'grid',eager=method.endswith('_eager'))
                 row.update(internal_rate=internal,output_rate=GRID.sample_rate,oversampling=GRID.oversampling,
                            spatial_order=GRID.order,antialias_filter=GRID.oversampling>1,excitation=a.excitation,loss=a.loss)
                 result['rows'].append(row);save();print(json.dumps(row),flush=True)

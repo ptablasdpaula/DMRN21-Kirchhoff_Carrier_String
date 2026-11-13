@@ -6,6 +6,7 @@
 #   fdtd_compiled, fdtd_ckpt_compiled   torch.compile blocks (--compile-block, --compile-mode, --reentrant)
 #   fdtd_jax, fdtd_jax_ckpt             the same scheme as a jax.jit scan (--unroll)
 #   fdtd_jax_sine, fdtd_jax_sine_ckpt   the same scan in the discrete sine basis
+#   fdtd_jax_eager                      fdtd_jax as a Python loop without jax.jit
 #   fdtd_ckpt_reentrant                 eager fdtd_ckpt with the reentrant form of torch.utils.checkpoint
 # The _ckpt variants rematerialise 256-step segments, as fdtd_ckpt and the CUDA
 # adjoint do. Batches can be split across tasks (one JSON each) and merged with

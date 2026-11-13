@@ -5,6 +5,12 @@ FDTD internal rate. ``--scheme fdtd`` is ``experiments.figure_comparison.
 fdtd_jax``: the spatial FDTD scheme of the PyTorch baseline, compiled by XLA,
 at the FDTD internal rate; being the same scheme as the reference, its first
 item must reproduce the reference waveform and gradient, which is asserted.
+With ``--eager`` the same function and gradient are called without
+``jax.jit`` and the time loop is a Python loop (``python_loop``), so every
+operation of every step is dispatched on its own, the JAX counterpart of eager
+PyTorch (method ``fdtd_jax_eager``). ``jax.disable_jit()`` was measured too
+and is about 1.5 times slower still (77 against 52 ms per step on rdg7): it
+also splits jax.numpy's own jitted functions into their primitives.
 """
 import argparse
 import hashlib
@@ -26,13 +32,14 @@ def emit(event, **kwargs):
     print(json.dumps({'event': event, **kwargs}, allow_nan=False), flush=True)
 
 
-def method_name(scheme, rate, checkpoint_steps, readout_in_scan, basis='grid'):
-    if scheme == 'fdtd': return 'fdtd_jax' + ('_sine' if basis == 'sine' else '') + ('_ckpt' if checkpoint_steps else '')
+def method_name(scheme, rate, checkpoint_steps, readout_in_scan, basis='grid', eager=False):
+    if scheme == 'fdtd': return ('fdtd_jax' + ('_sine' if basis == 'sine' else '') + ('_ckpt' if checkpoint_steps else '')
+                                 + ('_eager' if eager else ''))
     return f'diaz_{rate}' + ('_ckptro' if checkpoint_steps and readout_in_scan else '_ckpt' if checkpoint_steps else '')
 
 
 def run_case(batch, duration, modes, rate, artifact, excitation='multimode', loss='mae', checkpoint_steps=None,
-             readout_in_scan=False, scheme='modal', unroll=8, basis='grid'):
+             readout_in_scan=False, scheme='modal', unroll=8, basis='grid', eager=False):
     import jax
     import jax.numpy as jnp
     import numpy as np
@@ -53,6 +60,7 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
         raise ValueError(f'Only the native rate and the FDTD internal rate ({GRID.integration_rate} Hz) are supported')
     if scheme == 'fdtd' and (rate != GRID.integration_rate or rate == 44100 or readout_in_scan):
         raise ValueError('The FDTD scheme runs at the oversampled FDTD internal rate and always reads the pickup in the scan')
+    if eager and scheme != 'fdtd': raise ValueError('--eager is for the FDTD scheme only')
     count = round(duration * 44100)
     internal_samples = round(duration*rate)
     if loss == 'cel' and count < 1024: raise ValueError('Target is too short for the CeL STFT')
@@ -70,7 +78,7 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
         samples = internal_samples + 2 if rate != 44100 else internal_samples
         if scheme == 'fdtd':
             raw = fdtd_renderer(v, internal_samples, GRID.intervals, rate, excitation, GRID.order, checkpoint_steps, unroll,
-                                basis)
+                                basis, python_loop=eager)
         else:
             raw = renderer(v, samples, rate, modes, GRID.intervals, excitation, checkpoint_steps, readout_in_scan)
         audio = anti_alias(raw, kernel, count, GRID.oversampling) if rate != 44100 else raw
@@ -78,9 +86,15 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
                     for i in range(0, batch, 16))
         return value, audio
 
-    start = time.perf_counter()
-    executable = jax.jit(jax.value_and_grad(loss_and_audio, has_aux=True)).lower(x).compile()
-    compile_seconds = time.perf_counter()-start
+    if eager:
+        # No jax.jit around the program: the Python time loop dispatches every
+        # operation of the forward and reverse passes separately.
+        executable = jax.value_and_grad(loss_and_audio, has_aux=True)
+        compile_seconds = None
+    else:
+        start = time.perf_counter()
+        executable = jax.jit(jax.value_and_grad(loss_and_audio, has_aux=True)).lower(x).compile()
+        compile_seconds = time.perf_counter()-start
     start = time.perf_counter()
     (value, audio), gradient = executable(x)
     jax.block_until_ready((value, audio, gradient))
@@ -132,17 +146,20 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
 
     emit('measure_begin')
     samples = []
-    for _ in range(3):
+    # KC_REPETITIONS=1 for the eager row, whose single evaluation takes about 90 min.
+    for _ in range(int(os.environ.get('KC_REPETITIONS', '3'))):
         start = time.perf_counter(); result = executable(x); jax.block_until_ready(result)
         samples.append(time.perf_counter()-start); del result
     emit('measure_end')
     device = jax.devices()[0]
     memory = device.memory_stats() or {}
     direct_url = Path(integrators.__file__).parent.parent / 'jaxdiffmodal-0.1.0.dist-info' / 'direct_url.json'
-    name = method_name(scheme, rate, checkpoint_steps, readout_in_scan, basis)
+    name = method_name(scheme, rate, checkpoint_steps, readout_in_scan, basis, eager)
     integrator = ('experiments.figure_comparison.fdtd_jax.renderer: the spatial FDTD scheme of the PyTorch baseline '
-                  + ('stepped in the discrete sine basis ' if basis == 'sine' else 'on the grid ') +
-                  f'as a jax.lax.scan (unroll={unroll}) under jax.jit, pickup read inside the scan'
+                  + ('stepped in the discrete sine basis ' if basis == 'sine' else 'on the grid ')
+                  + ('as a Python loop without jax.jit (every operation dispatched on its own), '
+                     'pickup read inside the loop' if eager else
+                     f'as a jax.lax.scan (unroll={unroll}) under jax.jit, pickup read inside the scan')
                   + (f', jax.checkpoint on every {checkpoint_steps}-step segment' if checkpoint_steps else
                      ', every step kept for the reverse pass') if scheme == 'fdtd' else
                   'jaxdiffmodal.time_integrators.solve_tf' if not checkpoint_steps else
@@ -152,7 +169,7 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
                      ', full modal trajectory and velocities returned as upstream'))
     return {'method':name, 'batch':batch, 'status':'ok', 'duration_seconds':duration, 'checkpoint_steps':checkpoint_steps,
             'readout_in_scan':bool(readout_in_scan),
-            'median_seconds':statistics.median(samples), 'repetitions_seconds':samples,
+            'median_seconds':statistics.median(samples), 'repetitions_seconds':samples, 'repetitions':len(samples),
             'compile_seconds':compile_seconds, 'warmup_seconds':warmup,
             'peak_framework_allocated_bytes':memory.get('peak_bytes_in_use'),
             'framework_memory_stats_scope':'JAX cumulative device stats including compilation/warm-up',
@@ -160,9 +177,9 @@ def run_case(batch, duration, modes, rate, artifact, excitation='multimode', los
             'internal_rate':rate, 'output_rate':44100, 'output_samples':count,
             'oversampling':rate//44100, 'antialias_filter':rate!=44100, 'modes':None if scheme == 'fdtd' else modes,
             'scheme':scheme, 'basis':basis if scheme == 'fdtd' else None,
-            'compilation':({'compiler':'jax.jit (XLA)', 'unroll':unroll,
+            'compilation':(None if eager else {'compiler':'jax.jit (XLA)', 'unroll':unroll,
                                              'note':'compile_seconds is separate from the timed repetitions'}
-                                            if scheme == 'fdtd' else None), 'excitation':excitation,
+                                            if scheme == 'fdtd' else None), 'eager':bool(eager), 'excitation':excitation,
             'fdtd_spatial_order':GRID.order,
             'initial_shape_note':f'{excitation} displacement sampled on the fixed {GRID.intervals}-interval grid and projected by h*(basis @ shape)',
             'first_item_diagnostic_artifact':str(artifact) if artifact is not None else None,
@@ -189,14 +206,16 @@ def main():
     p.add_argument('--unroll', type=int, default=8, help='--scheme fdtd: time steps unrolled per compiled loop iteration')
     p.add_argument('--basis', default='grid', choices=('grid', 'sine'),
                    help='--scheme fdtd: step on the grid with the stencils, or in the discrete sine basis')
+    p.add_argument('--eager', action='store_true',
+                   help='--scheme fdtd: a Python time loop called without jax.jit instead of a compiled scan')
     a = p.parse_args()
     try:
         row = run_case(a.batch, a.duration, a.modes, a.rate, a.artifact, a.excitation, a.loss, a.checkpoint_steps,
-                       a.readout_in_scan, a.scheme, a.unroll, a.basis)
+                       a.readout_in_scan, a.scheme, a.unroll, a.basis, a.eager)
     except Exception as exc:
         traceback.print_exc(); s = str(exc).lower()
         status = 'oom' if 'out of memory' in s or 'resource_exhausted' in s else 'error'
-        row = {'method':method_name(a.scheme, a.rate, a.checkpoint_steps, a.readout_in_scan, a.basis),
+        row = {'method':method_name(a.scheme, a.rate, a.checkpoint_steps, a.readout_in_scan, a.basis, a.eager),
                'batch':a.batch, 'status':status,
                'excitation':a.excitation, 'loss':a.loss, 'checkpoint_steps':a.checkpoint_steps,
                'modes':None if a.scheme == 'fdtd' else a.modes, 'duration_seconds':a.duration,

@@ -16,6 +16,11 @@ TAG="${TAG:-${METHOD}-b${BATCHES//,/_}}"
 case "$METHOD" in
   fdtd_jax|fdtd_jax_ckpt)
     bash hpc/native-rate-jit.sh "$METHOD" "$BATCHES" "$TAG" 1 --unroll "$UNROLL_GRID" ;;
+  fdtd_jax_eager)
+    # Python loop without jax.jit: about 57-59 ms per step (about 90 min per gradient at any batch);
+    # host memory grows faster than linearly (9.5 GB at 14112 steps; 110 GB was exceeded during the
+    # first 1 s gradient), so the host limit is 230 GB (an rdg job with one GPU gets at most 12 CPUs x 20 GB), and one timed repetition follows the warm-up.
+    KC_REPETITIONS=1 bash hpc/native-rate-jit.sh "$METHOD" "$BATCHES" "$TAG" 1 --host-limit-gb 230 ;;
   fdtd_jax_sine|fdtd_jax_sine_ckpt)
     bash hpc/native-rate-jit.sh "$METHOD" "$BATCHES" "$TAG" 1 --unroll "$UNROLL_SINE" ;;
   fdtd_ckpt_reentrant)
