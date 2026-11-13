@@ -73,9 +73,10 @@ Although realistic, finite-difference time-domain schemes are a rare choice
 in differentiable sound synthesis due to their slow and memory-hungry
 backpropagation. We compare ways to reduce this cost for a string whose
 tension rises as it vibrates, the Kirchhoff--Carrier model. We propose a
-method that steps through the string's modes in parallel, with a backward
-pass derived by hand for the GPU, and show it is faster and lighter than
-automatic differentiation, even when compiled and checkpointed. An online
+method that steps through the string's modes in parallel and show it is
+faster than stepping on the spatial grid. We also show that a backward pass
+derived by hand as a GPU kernel is faster and lighter than automatic
+differentiation, even when compiled and checkpointed. An online
 supplement applies it to sound matching of recorded guitar and
 text-guided sound design.\footnotemark
 \end{abstract}
@@ -89,8 +90,8 @@ synthesis~\cite{diaz2025}. Physics simulation has long met the same obstacle
 with the adjoint method and checkpointing, now the default of
 differential-equation solvers~\cite{kidger2021}.
 We apply this recipe to a nonlinear FDTD string, propose stepping through
-its modes in parallel via a sine transform, and measure what each
-ingredient buys in JAX.\footnotemark
+its modes in parallel via a sine transform, write the backward pass by hand
+as a GPU kernel, and measure what each ingredient buys in JAX.\footnotemark
 
 \section{Model and method}
 \head{Kirchhoff--Carrier string}
@@ -151,9 +152,10 @@ at 88.2 kHz, decimated to 44.1 kHz, on an A100 80 GB in float64, with a
 checkpoint every 256 steps. In Table~\ref{tab:benchmark}, memory
 grows linearly with the batch without checkpoints, exceeding the
 A100\textquotesingle s 80\,GB from a batch of 32, and stays around 2\,GB or less
-with them, for a $\approx$1.2--1.4$\times$ slowdown. Mode-stepping is
-$\approx$1.3--1.5$\times$ faster, and our hand-written kernel speeds up
-computation a further $\approx$5--9$\times$ with the least memory.
+with them, for a $\approx$1.2--1.4$\times$ slowdown. With the same
+checkpoints, stepping through the modes is $\approx$1.3--1.5$\times$ faster
+than stepping on the grid, and the hand-written kernel is a further
+$\approx$5--9$\times$ faster with the least memory.
 
 \begin{table}[t]
  \centering
