@@ -1,0 +1,3 @@
+[
+  {"id":"kc-guitar-box-octave","command":["bash","hpc/paper-guitar-box-octave.sh"],"estimated_seconds":300}
+]

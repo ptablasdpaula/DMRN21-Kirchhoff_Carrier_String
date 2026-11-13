@@ -1,0 +1,1 @@
+[{"id": "kc-ckpt-diaz-readout", "command": ["bash", "hpc/native-rate-checkpointed-readout.sh"], "estimated_seconds": 1500}]

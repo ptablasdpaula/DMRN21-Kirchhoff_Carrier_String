@@ -1,0 +1,10 @@
+[
+  {
+    "id": "kc-gpu-setup",
+    "command": [
+      "bash",
+      "hpc/setup.sh"
+    ],
+    "estimated_seconds": 1200
+  }
+]

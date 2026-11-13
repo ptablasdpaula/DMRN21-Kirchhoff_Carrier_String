@@ -1,0 +1,1 @@
+[{"id":"kc-adjoint-check","command":["bash","hpc/exact-benchmark.sh","cuda-adjoint-check"],"estimated_seconds":1800}]

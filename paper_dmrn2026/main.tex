@@ -89,7 +89,10 @@ digital waveguides~\cite{tablas2026sound} and modal
 synthesis~\cite{diaz2025}. Physics simulation has long met the same obstacle
 with the adjoint method and checkpointing, now the default of
 differential-equation solvers~\cite{kidger2021}.
-We apply this recipe to a nonlinear FDTD string, apply checkpointing, propose stepping through its modes in parallel via a sine transform and measure what each ingredient buys in JAX versus a newly developed hand-written GPU kernel in CUDA.
+We apply this recipe to a nonlinear FDTD string, propose stepping through
+its modes in parallel via a sine transform, and measure what each ingredient
+buys with automatic differentiation in JAX\footnotemark{} and with a backward
+pass written by hand as a GPU kernel.
 
 \section{Model and method}
 \head{Kirchhoff--Carrier string}

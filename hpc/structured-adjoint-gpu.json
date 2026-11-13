@@ -1,0 +1,1 @@
+[{"id":"kc-structured-adjoint","command":["bash","hpc/structured-adjoint-gpu.sh"],"estimated_seconds":1800}]

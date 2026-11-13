@@ -1,0 +1,1 @@
+[{"id":"kc-guitar-high-rate","command":["bash","hpc/guitar-high-rate-smoke.sh"],"estimated_seconds":900}]

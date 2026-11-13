@@ -1,0 +1,59 @@
+{
+ "sources": {
+  "daddario": "D'Addario, 'A complete technical reference for fretted instrument string tensions' (Catalog Supplement / String Tension Specifications, item 13934), unit weights in lb/in and tensions in lb; T = UW*(2*L*F)^2/386.4 with L in inches and F in Hz; guitar tables use a 25.5 in scale, the loop-end plain-steel table reproduces with 26.5 in. Archived copy: https://web.archive.org/web/2023/https://www.daddario.com/globalassets/pdfs/accessories/tension_chart_13934.pdf",
+  "woodhouse2012": "J. Woodhouse, E. K. Y. Manuel, L. A. Smith, A. J. C. Wheble and C. Fritz, 'Perceptual thresholds for acoustical guitar models', Acta Acustica united with Acustica 98 (2012), Table I: measured tension, mass per length, bending stiffness EI and inharmonicity B of (a) D'Addario Pro Arte Composites hard-tension nylon strings and (b) new Martin 80/20 bronze steel strings on a 0.65 m scale.",
+  "materials": "Plain-steel density 7800 kg/m^3 and nylon monofilament density 1140 kg/m^3 are used only to cross-check unit weights against gauges; stiffness comes from Woodhouse's measured EI, interpolated in mass per length within each construction class."
+ },
+ "classes": {
+  "plain_steel": {"woodhouse_set": "b", "strings": [1, 2], "density_kg_m3": 7800},
+  "steel_wound": {"woodhouse_set": "b", "strings": [3, 4, 5, 6]},
+  "nylon_plain": {"woodhouse_set": "a", "strings": [1, 2, 3], "density_kg_m3": 1140},
+  "nylon_wound": {"woodhouse_set": "a", "strings": [4, 5, 6]}
+ },
+ "woodhouse_table1": {
+  "frequency_hz": [329.6, 246.9, 196.0, 146.8, 110.0, 82.4],
+  "a": {"tension_n": [70.3, 53.4, 58.3, 71.2, 73.9, 71.6], "mass_g_per_m": [0.38, 0.52, 0.90, 1.95, 3.61, 6.24],
+        "EI_1e-6_Nm2": [130, 160, 310, 51, 40, 57], "B_1e-6": [43, 70, 124, 17, 13, 19]},
+  "b": {"tension_n": [121, 135, 182, 185, 169, 147], "mass_g_per_m": [0.57, 1.13, 2.42, 4.37, 7.13, 11.02],
+        "EI_1e-6_Nm2": [108, 336, 234, 255, 327, 667], "B_1e-6": [21, 58, 30, 32, 45, 106]}
+ },
+ "chart_scale_in": {"guitar": 25.5, "loop_end": 26.5},
+ "entries": [
+  {"code": "PL009", "chart_row": "LE009", "class": "plain_steel", "diameter_in": 0.009, "unit_weight_lb_in": 0.00001794, "chart_check": {"pitch_hz": 329.6, "table": "loop_end", "tension_lb": 14.2}},
+  {"code": "PL010", "chart_row": "LE010", "class": "plain_steel", "diameter_in": 0.010, "unit_weight_lb_in": 0.00002215, "chart_check": {"pitch_hz": 329.6, "table": "loop_end", "tension_lb": 17.5}},
+  {"code": "PL011", "chart_row": "LE011", "class": "plain_steel", "diameter_in": 0.011, "unit_weight_lb_in": 0.00002680, "chart_check": {"pitch_hz": 329.6, "table": "loop_end", "tension_lb": 21.2}},
+  {"code": "PL012", "chart_row": "LE012", "class": "plain_steel", "diameter_in": 0.012, "unit_weight_lb_in": 0.00003190, "chart_check": {"pitch_hz": 329.6, "table": "loop_end", "tension_lb": 25.2}},
+  {"code": "PL013", "chart_row": "LE013", "class": "plain_steel", "diameter_in": 0.013, "unit_weight_lb_in": 0.00003744, "chart_check": {"pitch_hz": 246.9, "table": "loop_end", "tension_lb": 16.6}},
+  {"code": "PL014", "chart_row": "LE014", "class": "plain_steel", "diameter_in": 0.014, "unit_weight_lb_in": 0.00004342, "chart_check": {"pitch_hz": 246.9, "table": "loop_end", "tension_lb": 19.2}},
+  {"code": "PL016", "chart_row": "LE016", "class": "plain_steel", "diameter_in": 0.016, "unit_weight_lb_in": 0.00005671, "chart_check": {"pitch_hz": 246.9, "table": "loop_end", "tension_lb": 25.1}},
+  {"code": "PL017", "chart_row": "LE017", "class": "plain_steel", "diameter_in": 0.017, "unit_weight_lb_in": 0.00006402, "chart_check": {"pitch_hz": 246.9, "table": "loop_end", "tension_lb": 28.4}},
+  {"code": "PL018", "chart_row": "LE018", "class": "plain_steel", "diameter_in": 0.018, "unit_weight_lb_in": 0.00007177, "chart_check": {"pitch_hz": 246.9, "table": "loop_end", "tension_lb": 31.8}},
+  {"code": "PB020", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.020, "unit_weight_lb_in": 0.00008106, "chart_check": {"pitch_hz": 220.0, "table": "guitar", "tension_lb": 26.4}},
+  {"code": "PB022", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.022, "unit_weight_lb_in": 0.00009876, "chart_check": {"pitch_hz": 196.0, "table": "guitar", "tension_lb": 25.5}},
+  {"code": "PB024", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.024, "unit_weight_lb_in": 0.00011682, "chart_check": {"pitch_hz": 196.0, "table": "guitar", "tension_lb": 30.2}},
+  {"code": "PB026", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.026, "unit_weight_lb_in": 0.00013640, "chart_check": {"pitch_hz": 196.0, "table": "guitar", "tension_lb": 35.3}},
+  {"code": "PB027", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.027, "unit_weight_lb_in": 0.00014834, "chart_check": {"pitch_hz": 196.0, "table": "guitar", "tension_lb": 38.4}},
+  {"code": "PB030", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.030, "unit_weight_lb_in": 0.00018660, "chart_check": {"pitch_hz": 146.8, "table": "guitar", "tension_lb": 27.1}},
+  {"code": "PB032", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.032, "unit_weight_lb_in": 0.00021018, "chart_check": {"pitch_hz": 146.8, "table": "guitar", "tension_lb": 30.5}},
+  {"code": "PB035", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.035, "unit_weight_lb_in": 0.00025365, "chart_check": {"pitch_hz": 146.8, "table": "guitar", "tension_lb": 36.8}},
+  {"code": "PB036", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.036, "unit_weight_lb_in": 0.00026830, "chart_check": {"pitch_hz": 146.8, "table": "guitar", "tension_lb": 38.9}},
+  {"code": "PB042", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.042, "unit_weight_lb_in": 0.00036722, "chart_check": {"pitch_hz": 110.0, "table": "guitar", "tension_lb": 29.9}},
+  {"code": "PB045", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.045, "unit_weight_lb_in": 0.00041751, "chart_check": {"pitch_hz": 110.0, "table": "guitar", "tension_lb": 34.0}},
+  {"code": "PB052", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.052, "unit_weight_lb_in": 0.00055223, "chart_check": {"pitch_hz": 82.4, "table": "guitar", "tension_lb": 25.2}},
+  {"code": "PB053", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.053, "unit_weight_lb_in": 0.00056962, "chart_check": {"pitch_hz": 82.4, "table": "guitar", "tension_lb": 26.0}},
+  {"code": "PB056", "chart_row": "PB056D", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.056, "unit_weight_lb_in": 0.00063477, "chart_check": {"pitch_hz": 82.4, "table": "guitar", "tension_lb": 29.0}},
+  {"code": "PB059", "class": "steel_wound", "material": "phosphor bronze wound", "diameter_in": 0.059, "unit_weight_lb_in": 0.00070535, "chart_check": {"pitch_hz": 82.4, "table": "guitar", "tension_lb": 32.2}},
+  {"code": "J4501", "set": "EJ45 normal tension, 1st", "class": "nylon_plain", "material": "clear nylon", "diameter_in": 0.0280, "unit_weight_lb_in": 0.00002092, "chart_check": {"pitch_hz": 329.6, "table": "guitar", "tension_lb": 15.3}},
+  {"code": "J4502", "set": "EJ45 normal tension, 2nd", "class": "nylon_plain", "material": "clear nylon", "diameter_in": 0.0322, "unit_weight_lb_in": 0.00002827, "chart_check": {"pitch_hz": 246.9, "table": "guitar", "tension_lb": 11.6}},
+  {"code": "J4503", "set": "EJ45 normal tension, 3rd", "class": "nylon_plain", "material": "clear nylon", "diameter_in": 0.0403, "unit_weight_lb_in": 0.00004679, "chart_check": {"pitch_hz": 196.0, "table": "guitar", "tension_lb": 12.1}},
+  {"code": "J4601", "set": "EJ46 hard tension, 1st", "class": "nylon_plain", "material": "clear nylon", "diameter_in": 0.0285, "unit_weight_lb_in": 0.00002161, "chart_check": {"pitch_hz": 329.6, "table": "guitar", "tension_lb": 15.8}},
+  {"code": "J4602", "set": "EJ46 hard tension, 2nd", "class": "nylon_plain", "material": "clear nylon", "diameter_in": 0.0327, "unit_weight_lb_in": 0.00002924, "chart_check": {"pitch_hz": 246.9, "table": "guitar", "tension_lb": 12.0}},
+  {"code": "J4603", "set": "EJ46 hard tension, 3rd", "class": "nylon_plain", "material": "clear nylon", "diameter_in": 0.0410, "unit_weight_lb_in": 0.00004795, "chart_check": {"pitch_hz": 196.0, "table": "guitar", "tension_lb": 12.4}},
+  {"code": "J4504", "set": "EJ45 normal tension, 4th", "class": "nylon_wound", "material": "silverplated copper wound on nylon", "diameter_in": 0.029, "unit_weight_lb_in": 0.00010754, "chart_check": {"pitch_hz": 146.8, "table": "guitar", "tension_lb": 15.6}},
+  {"code": "J4505", "set": "EJ45 normal tension, 5th", "class": "nylon_wound", "material": "silverplated copper wound on nylon", "diameter_in": 0.035, "unit_weight_lb_in": 0.00018416, "chart_check": {"pitch_hz": 110.0, "table": "guitar", "tension_lb": 15.0}},
+  {"code": "J4506", "set": "EJ45 normal tension, 6th", "class": "nylon_wound", "material": "silverplated copper wound on nylon", "diameter_in": 0.043, "unit_weight_lb_in": 0.00030632, "chart_check": {"pitch_hz": 82.4, "table": "guitar", "tension_lb": 14.0}},
+  {"code": "J4604", "set": "EJ46 hard tension, 4th", "class": "nylon_wound", "material": "silverplated copper wound on nylon", "diameter_in": 0.030, "unit_weight_lb_in": 0.00011237, "chart_check": {"pitch_hz": 146.8, "table": "guitar", "tension_lb": 16.3}},
+  {"code": "J4605", "set": "EJ46 hard tension, 5th", "class": "nylon_wound", "material": "silverplated copper wound on nylon", "diameter_in": 0.036, "unit_weight_lb_in": 0.00019521, "chart_check": {"pitch_hz": 110.0, "table": "guitar", "tension_lb": 15.9}},
+  {"code": "J4606", "set": "EJ46 hard tension, 6th", "class": "nylon_wound", "material": "silverplated copper wound on nylon", "diameter_in": 0.044, "unit_weight_lb_in": 0.00031726, "chart_check": {"pitch_hz": 82.4, "table": "guitar", "tension_lb": 14.5}}
+ ]
+}

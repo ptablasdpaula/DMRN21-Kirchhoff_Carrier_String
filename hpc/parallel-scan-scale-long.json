@@ -1,0 +1,1 @@
+[{"id":"kc-parallel-scan-scale-long","command":["bash","hpc/parallel-scan-scale-long.sh"],"estimated_seconds":1200}]

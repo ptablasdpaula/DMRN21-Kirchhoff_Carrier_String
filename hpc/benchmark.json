@@ -1,0 +1,10 @@
+[
+  {
+    "id": "kc-hopper-bench",
+    "command": [
+      "bash",
+      "hpc/benchmark.sh"
+    ],
+    "estimated_seconds": 2400
+  }
+]

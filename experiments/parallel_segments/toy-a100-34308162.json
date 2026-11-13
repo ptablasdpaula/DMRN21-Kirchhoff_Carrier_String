@@ -1,0 +1,482 @@
+{
+  "metadata": {
+    "source_sha256": "351efe73188d8d4726e9ccc7ee85b389f3e7a180e6142171e924a2260baed717",
+    "host": "sbg4",
+    "torch": "2.14.1+cu130",
+    "job": "34308162",
+    "device": "cuda",
+    "gpu": "NVIDIA A100 80GB PCIe",
+    "dtype": "float64",
+    "note": "eager PyTorch toy, not an optimized CUDA kernel; trajectory checkpoint generation excluded",
+    "source_changed_during_run": false
+  },
+  "rows": [
+    {
+      "modes": 4,
+      "batch": 1,
+      "steps": 256,
+      "chunk": 8,
+      "segments": 32,
+      "median_seconds": 0.012987512163817883,
+      "repetitions": [
+        0.013493386097252369,
+        0.012810572981834412,
+        0.012987512163817883
+      ],
+      "peak_cuda_bytes": 17211904,
+      "relative_boundary_error": 1.5703045557896534e-15,
+      "segment_count": 32,
+      "state_dim": 8,
+      "segment_map_bytes": 16384,
+      "parameter_map_bytes": 16384
+    },
+    {
+      "modes": 4,
+      "batch": 1,
+      "steps": 256,
+      "chunk": 32,
+      "segments": 8,
+      "median_seconds": 0.045603909995406866,
+      "repetitions": [
+        0.04572977824136615,
+        0.045603909995406866,
+        0.045376292895525694
+      ],
+      "peak_cuda_bytes": 17096192,
+      "relative_boundary_error": 7.672158088373971e-15,
+      "segment_count": 8,
+      "state_dim": 8,
+      "segment_map_bytes": 4096,
+      "parameter_map_bytes": 4096
+    },
+    {
+      "modes": 4,
+      "batch": 1,
+      "steps": 256,
+      "chunk": 128,
+      "segments": 2,
+      "median_seconds": 0.1753722787834704,
+      "repetitions": [
+        0.17619515396654606,
+        0.17510140594094992,
+        0.1753722787834704
+      ],
+      "peak_cuda_bytes": 17073152,
+      "relative_boundary_error": 1.0463830178366448e-14,
+      "segment_count": 2,
+      "state_dim": 8,
+      "segment_map_bytes": 1024,
+      "parameter_map_bytes": 1024
+    },
+    {
+      "modes": 4,
+      "batch": 4,
+      "steps": 256,
+      "chunk": 8,
+      "segments": 32,
+      "median_seconds": 0.012901651207357645,
+      "repetitions": [
+        0.013004598207771778,
+        0.01283100200816989,
+        0.012901651207357645
+      ],
+      "peak_cuda_bytes": 17694208,
+      "relative_boundary_error": 3.7644409117454304e-15,
+      "segment_count": 32,
+      "state_dim": 8,
+      "segment_map_bytes": 65536,
+      "parameter_map_bytes": 65536
+    },
+    {
+      "modes": 4,
+      "batch": 4,
+      "steps": 256,
+      "chunk": 32,
+      "segments": 8,
+      "median_seconds": 0.0459031262435019,
+      "repetitions": [
+        0.045802053064107895,
+        0.04623838234692812,
+        0.0459031262435019
+      ],
+      "peak_cuda_bytes": 17218048,
+      "relative_boundary_error": 2.0652900844746586e-14,
+      "segment_count": 8,
+      "state_dim": 8,
+      "segment_map_bytes": 16384,
+      "parameter_map_bytes": 16384
+    },
+    {
+      "modes": 4,
+      "batch": 4,
+      "steps": 256,
+      "chunk": 128,
+      "segments": 2,
+      "median_seconds": 0.17718994012102485,
+      "repetitions": [
+        0.17718994012102485,
+        0.17639921000227332,
+        0.17959739500656724
+      ],
+      "peak_cuda_bytes": 17102336,
+      "relative_boundary_error": 1.6839674642566445e-14,
+      "segment_count": 2,
+      "state_dim": 8,
+      "segment_map_bytes": 4096,
+      "parameter_map_bytes": 4096
+    },
+    {
+      "modes": 16,
+      "batch": 1,
+      "steps": 256,
+      "chunk": 8,
+      "segments": 32,
+      "median_seconds": 0.012961984146386385,
+      "repetitions": [
+        0.013172140810638666,
+        0.012820023111999035,
+        0.012961984146386385
+      ],
+      "peak_cuda_bytes": 18631168,
+      "relative_boundary_error": 2.0759657373398574e-15,
+      "segment_count": 32,
+      "state_dim": 32,
+      "segment_map_bytes": 262144,
+      "parameter_map_bytes": 65536
+    },
+    {
+      "modes": 16,
+      "batch": 1,
+      "steps": 256,
+      "chunk": 32,
+      "segments": 8,
+      "median_seconds": 0.045848092064261436,
+      "repetitions": [
+        0.04619883606210351,
+        0.045771128963679075,
+        0.045848092064261436
+      ],
+      "peak_cuda_bytes": 17443840,
+      "relative_boundary_error": 5.60433365901232e-15,
+      "segment_count": 8,
+      "state_dim": 32,
+      "segment_map_bytes": 65536,
+      "parameter_map_bytes": 16384
+    },
+    {
+      "modes": 16,
+      "batch": 1,
+      "steps": 256,
+      "chunk": 128,
+      "segments": 2,
+      "median_seconds": 0.1771036689169705,
+      "repetitions": [
+        0.1771036689169705,
+        0.176629435736686,
+        0.17888196930289268
+      ],
+      "peak_cuda_bytes": 17151488,
+      "relative_boundary_error": 1.811681667177619e-14,
+      "segment_count": 2,
+      "state_dim": 32,
+      "segment_map_bytes": 16384,
+      "parameter_map_bytes": 4096
+    },
+    {
+      "modes": 16,
+      "batch": 4,
+      "steps": 256,
+      "chunk": 8,
+      "segments": 32,
+      "median_seconds": 0.012981881853193045,
+      "repetitions": [
+        0.013212185818701982,
+        0.012981881853193045,
+        0.012969979085028172
+      ],
+      "peak_cuda_bytes": 23374848,
+      "relative_boundary_error": 4.5338120259290106e-15,
+      "segment_count": 32,
+      "state_dim": 32,
+      "segment_map_bytes": 1048576,
+      "parameter_map_bytes": 262144
+    },
+    {
+      "modes": 16,
+      "batch": 4,
+      "steps": 256,
+      "chunk": 32,
+      "segments": 8,
+      "median_seconds": 0.04620571620762348,
+      "repetitions": [
+        0.046244076918810606,
+        0.0461765150539577,
+        0.04620571620762348
+      ],
+      "peak_cuda_bytes": 18622464,
+      "relative_boundary_error": 1.1589392730594123e-14,
+      "segment_count": 8,
+      "state_dim": 32,
+      "segment_map_bytes": 262144,
+      "parameter_map_bytes": 65536
+    },
+    {
+      "modes": 16,
+      "batch": 4,
+      "steps": 256,
+      "chunk": 128,
+      "segments": 2,
+      "median_seconds": 0.1797284479252994,
+      "repetitions": [
+        0.1797284479252994,
+        0.1810540179722011,
+        0.17939741304144263
+      ],
+      "peak_cuda_bytes": 17435136,
+      "relative_boundary_error": 1.9686180912166992e-14,
+      "segment_count": 2,
+      "state_dim": 32,
+      "segment_map_bytes": 65536,
+      "parameter_map_bytes": 16384
+    },
+    {
+      "modes": 32,
+      "batch": 1,
+      "steps": 256,
+      "chunk": 8,
+      "segments": 32,
+      "median_seconds": 0.013088187202811241,
+      "repetitions": [
+        0.013088187202811241,
+        0.013132722117006779,
+        0.012929122895002365
+      ],
+      "peak_cuda_bytes": 22803968,
+      "relative_boundary_error": 2.847176146222505e-15,
+      "segment_count": 32,
+      "state_dim": 64,
+      "segment_map_bytes": 1048576,
+      "parameter_map_bytes": 131072
+    },
+    {
+      "modes": 32,
+      "batch": 1,
+      "steps": 256,
+      "chunk": 32,
+      "segments": 8,
+      "median_seconds": 0.04609308112412691,
+      "repetitions": [
+        0.04609308112412691,
+        0.04608839610591531,
+        0.04678306495770812
+      ],
+      "peak_cuda_bytes": 18470912,
+      "relative_boundary_error": 1.0062101780152123e-14,
+      "segment_count": 8,
+      "state_dim": 64,
+      "segment_map_bytes": 262144,
+      "parameter_map_bytes": 32768
+    },
+    {
+      "modes": 32,
+      "batch": 1,
+      "steps": 256,
+      "chunk": 128,
+      "segments": 2,
+      "median_seconds": 0.1773876422084868,
+      "repetitions": [
+        0.17777117108926177,
+        0.17735153203830123,
+        0.1773876422084868
+      ],
+      "peak_cuda_bytes": 17389568,
+      "relative_boundary_error": 2.2231355655518313e-14,
+      "segment_count": 2,
+      "state_dim": 64,
+      "segment_map_bytes": 65536,
+      "parameter_map_bytes": 8192
+    },
+    {
+      "modes": 32,
+      "batch": 4,
+      "steps": 256,
+      "chunk": 8,
+      "segments": 32,
+      "median_seconds": 0.013019053265452385,
+      "repetitions": [
+        0.013019053265452385,
+        0.013143301010131836,
+        0.012878688052296638
+      ],
+      "peak_cuda_bytes": 40071680,
+      "relative_boundary_error": 3.0042327131006606e-15,
+      "segment_count": 32,
+      "state_dim": 64,
+      "segment_map_bytes": 4194304,
+      "parameter_map_bytes": 524288
+    },
+    {
+      "modes": 32,
+      "batch": 4,
+      "steps": 256,
+      "chunk": 32,
+      "segments": 8,
+      "median_seconds": 0.046545826364308596,
+      "repetitions": [
+        0.048016197979450226,
+        0.046545826364308596,
+        0.04647426400333643
+      ],
+      "peak_cuda_bytes": 22736384,
+      "relative_boundary_error": 1.0477687286727579e-14,
+      "segment_count": 8,
+      "state_dim": 64,
+      "segment_map_bytes": 1048576,
+      "parameter_map_bytes": 131072
+    },
+    {
+      "modes": 32,
+      "batch": 4,
+      "steps": 256,
+      "chunk": 128,
+      "segments": 2,
+      "median_seconds": 0.18006702326238155,
+      "repetitions": [
+        0.18006702326238155,
+        0.18018320994451642,
+        0.17946998216211796
+      ],
+      "peak_cuda_bytes": 18403328,
+      "relative_boundary_error": 1.9708790309175398e-14,
+      "segment_count": 2,
+      "state_dim": 64,
+      "segment_map_bytes": 262144,
+      "parameter_map_bytes": 32768
+    },
+    {
+      "modes": 64,
+      "batch": 1,
+      "steps": 256,
+      "chunk": 8,
+      "segments": 32,
+      "median_seconds": 0.013161920942366123,
+      "repetitions": [
+        0.013161920942366123,
+        0.013053769711405039,
+        0.01325015863403678
+      ],
+      "peak_cuda_bytes": 38965248,
+      "relative_boundary_error": 4.6427936475521086e-15,
+      "segment_count": 32,
+      "state_dim": 128,
+      "segment_map_bytes": 4194304,
+      "parameter_map_bytes": 262144
+    },
+    {
+      "modes": 64,
+      "batch": 1,
+      "steps": 256,
+      "chunk": 32,
+      "segments": 8,
+      "median_seconds": 0.046154688112437725,
+      "repetitions": [
+        0.046154688112437725,
+        0.04612676706165075,
+        0.04622408701106906
+      ],
+      "peak_cuda_bytes": 22442496,
+      "relative_boundary_error": 8.949097109627744e-15,
+      "segment_count": 8,
+      "state_dim": 128,
+      "segment_map_bytes": 1048576,
+      "parameter_map_bytes": 65536
+    },
+    {
+      "modes": 64,
+      "batch": 1,
+      "steps": 256,
+      "chunk": 128,
+      "segments": 2,
+      "median_seconds": 0.17932873964309692,
+      "repetitions": [
+        0.17932873964309692,
+        0.17994702607393265,
+        0.1789765157736838
+      ],
+      "peak_cuda_bytes": 18313728,
+      "relative_boundary_error": 2.2171194654993287e-14,
+      "segment_count": 2,
+      "state_dim": 128,
+      "segment_map_bytes": 262144,
+      "parameter_map_bytes": 16384
+    },
+    {
+      "modes": 64,
+      "batch": 4,
+      "steps": 256,
+      "chunk": 8,
+      "segments": 32,
+      "median_seconds": 0.01303576398640871,
+      "repetitions": [
+        0.01314346119761467,
+        0.01303576398640871,
+        0.012980324216187
+      ],
+      "peak_cuda_bytes": 104726016,
+      "relative_boundary_error": 3.385186030336149e-15,
+      "segment_count": 32,
+      "state_dim": 128,
+      "segment_map_bytes": 16777216,
+      "parameter_map_bytes": 1048576
+    },
+    {
+      "modes": 64,
+      "batch": 4,
+      "steps": 256,
+      "chunk": 32,
+      "segments": 8,
+      "median_seconds": 0.04649343900382519,
+      "repetitions": [
+        0.04649343900382519,
+        0.046098644845187664,
+        0.04658323898911476
+      ],
+      "peak_cuda_bytes": 38894080,
+      "relative_boundary_error": 1.1167353501686763e-14,
+      "segment_count": 8,
+      "state_dim": 128,
+      "segment_map_bytes": 4194304,
+      "parameter_map_bytes": 262144
+    },
+    {
+      "modes": 64,
+      "batch": 4,
+      "steps": 256,
+      "chunk": 128,
+      "segments": 2,
+      "median_seconds": 0.18076875898987055,
+      "repetitions": [
+        0.18037442676723003,
+        0.18226683232933283,
+        0.18076875898987055
+      ],
+      "peak_cuda_bytes": 22109184,
+      "relative_boundary_error": 2.3349682278871364e-14,
+      "segment_count": 2,
+      "state_dim": 128,
+      "segment_map_bytes": 1048576,
+      "parameter_map_bytes": 65536
+    }
+  ],
+  "full_grid_memory": {
+    "b1_chunk64": 8312528016,
+    "b1_chunk256": 2078885952,
+    "b1_chunk1024": 519721488,
+    "b8_chunk64": 66500224128,
+    "b8_chunk256": 16631087616,
+    "b8_chunk1024": 4157771904,
+    "b128_chunk64": 1064003586048,
+    "b128_chunk256": 266097401856,
+    "b128_chunk1024": 66524350464
+  }
+}

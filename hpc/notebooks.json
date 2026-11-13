@@ -1,0 +1,3 @@
+[
+  {"id":"kc-notebooks","command":["bash","hpc/notebooks.sh"],"estimated_seconds":1500}
+]

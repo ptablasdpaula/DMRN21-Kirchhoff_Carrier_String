@@ -1,0 +1,1 @@
+[{"id":"kc-parallel-one-second","command":["bash","hpc/parallel-reconstruction-one-second.sh"],"estimated_seconds":1200}]

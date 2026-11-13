@@ -1,0 +1,7 @@
+[
+ {"id":"kc-exact-modal","command":["bash","hpc/exact-benchmark.sh","cuda-modal"],"estimated_seconds":2400},
+ {"id":"kc-exact-recompute","command":["bash","hpc/exact-benchmark.sh","cuda-recompute"],"estimated_seconds":2400},
+ {"id":"kc-exact-register","command":["bash","hpc/exact-benchmark.sh","cuda-register"],"estimated_seconds":1200},
+ {"id":"kc-exact-seeded","command":["bash","hpc/exact-benchmark.sh","cuda-seeded"],"estimated_seconds":2400},
+ {"id":"kc-exact-adjoint","command":["bash","hpc/exact-benchmark.sh","cuda-adjoint"],"estimated_seconds":3600}
+]

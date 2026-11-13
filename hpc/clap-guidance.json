@@ -1,0 +1,4 @@
+[{"id": "kc-clap-metallic-dull", "command": ["bash", "hpc/clap-guidance.sh", "metallic_dull"], "estimated_seconds": 4200},
+ {"id": "kc-clap-bright-warm", "command": ["bash", "hpc/clap-guidance.sh", "bright_warm"], "estimated_seconds": 4200},
+ {"id": "kc-clap-sustain-muted", "command": ["bash", "hpc/clap-guidance.sh", "sustain_muted"], "estimated_seconds": 4200},
+ {"id": "kc-clap-thin-thick", "command": ["bash", "hpc/clap-guidance.sh", "thin_thick"], "estimated_seconds": 4200}]

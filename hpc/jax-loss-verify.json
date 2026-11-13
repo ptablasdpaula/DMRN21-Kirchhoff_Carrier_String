@@ -1,0 +1,1 @@
+[{"id":"kc-jax-loss-reference","command":["bash","hpc/jax-loss-verify.sh"],"estimated_seconds":600}]
