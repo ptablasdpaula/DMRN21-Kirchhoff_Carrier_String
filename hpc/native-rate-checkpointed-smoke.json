@@ -1,1 +1,0 @@
-[{"id": "kc-ckpt-smoke", "command": ["bash", "hpc/native-rate-checkpointed-smoke.sh"], "estimated_seconds": 1500}]

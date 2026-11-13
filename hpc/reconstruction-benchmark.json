@@ -1,4 +1,0 @@
-[
-  {"id":"kc-reconstruction-bench","command":["bash","hpc/reconstruction-benchmark.sh","smoke"],"estimated_seconds":2400},
-  {"id":"kc-reconstruction-checkpoints","command":["bash","hpc/reconstruction-benchmark.sh","checkpoints"],"estimated_seconds":2400}
-]

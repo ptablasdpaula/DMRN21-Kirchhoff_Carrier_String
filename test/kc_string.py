@@ -13,7 +13,7 @@ import torch
 project_root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(project_root / "src"))
 import kc_string
-from kc_string_forward import ForwardString, PARAMETER_COUNT
+from kc_string_forward import ForwardString
 
 
 class KirchhoffCarrierStringTest(unittest.TestCase):
@@ -116,11 +116,9 @@ class KirchhoffCarrierStringTest(unittest.TestCase):
             atol=1e-12,
         )
         # Use the original dt rather than its floored, reported sample rate.
-        # Unit multipliers for all ten parameters, so the nominal centred pluck
-        # and midpoint readout reproduce the reference node for node.
         intervals, _, time_step, _ = kc_string.simulation_grid(oversampling_factor_for_test)
         forward = ForwardString(intervals=intervals, sample_rate=1 / time_step)
-        native_output = forward(torch.ones(PARAMETER_COUNT, dtype=torch.float64),
+        native_output = forward(torch.ones(8, dtype=torch.float64),
                                 (python_output.numel() - 2) * time_step)
         torch.testing.assert_close(native_output, reference_output, rtol=1e-9, atol=1e-12)
 

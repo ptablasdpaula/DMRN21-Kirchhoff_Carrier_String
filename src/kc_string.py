@@ -23,8 +23,6 @@ tension = 75  # T0, N
 radius = 3.5560e-4  # r, m (0.016 gauge)
 young_modulus = 174e9  # E, Pa
 length = 1  # L, m
-pluck_position = 0.5  # raised-cosine centre as a fraction of L (the reference's centred pluck)
-pickup_position = 0.5  # output position as a fraction of L (the reference's midpoint node)
 
 area = math.pi * radius**2  # A, m^2
 linear_mass_density = material_density * area  # rho*A, kg/m

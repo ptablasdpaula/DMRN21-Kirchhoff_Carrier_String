@@ -1,1 +1,0 @@
-[{"id": "kc-sm-diagnose", "command": ["bash", "hpc/sound-matching-diagnose.sh"], "estimated_seconds": 900}]

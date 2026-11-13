@@ -1,1 +1,0 @@
-[{"id":"kc-parallel-all-segments","command":["bash","hpc/parallel-reconstruction-all-segments.sh"],"estimated_seconds":2400}]

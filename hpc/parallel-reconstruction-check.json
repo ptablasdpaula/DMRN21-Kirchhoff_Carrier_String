@@ -1,1 +1,0 @@
-[{"id":"kc-parallel-reconstruction-check","command":["bash","hpc/parallel-reconstruction-check.sh"],"estimated_seconds":1200}]

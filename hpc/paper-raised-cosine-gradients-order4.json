@@ -1,3 +1,0 @@
-[
-  {"id":"kc-raised-gradients-order4","command":["bash","hpc/paper-raised-cosine.sh","gradients","4","3"],"estimated_seconds":900}
-]

@@ -4,38 +4,13 @@ import time
 import json
 from dataclasses import asdict
 from pathlib import Path
-import types
 import torch
 from cels import STFTCumulativeEnergyLoss
 
 LOSS_COMMIT = '9fdbd60f5b67def8dd8884a006541e0ca4dbbf0d'
-LOSSES = ('cel', 'mae')
 
 
-class WaveformMAE(torch.nn.Module):
-    """Mean absolute error of waveforms against one bound target.
-
-    Per item the mean of |audio - target| over the samples, then the mean over
-    the leading batch axis: the same bound/mean-reduction contract as the CeL,
-    so ``grouped_loss_backward`` can turn it into a sum of per-item losses.
-    """
-    def __init__(self, target):
-        super().__init__()
-        self.bound = types.SimpleNamespace(reference=target.detach().reshape(1, -1), reduction='mean')
-
-    def forward(self, audio):
-        rows = audio.reshape(-1, audio.shape[-1])
-        if rows.shape[-1] != self.bound.reference.shape[-1]:
-            raise ValueError('Audio and target must have the same number of samples.')
-        return (rows - self.bound.reference).abs().mean(dim=-1).mean()
-
-
-def criterion_for(target, sample_rate, loss='cel'):
-    """Bound loss for one target: the STFT cumulative-energy loss or the waveform MAE."""
-    if loss not in LOSSES:
-        raise ValueError(f'Choose a loss among {LOSSES}.')
-    if loss == 'mae':
-        return WaveformMAE(target)
+def criterion_for(target, sample_rate):
     if target.numel() < 1024:
         raise ValueError('Default CeL requires at least 1024 audio samples.')
     return STFTCumulativeEnergyLoss(sample_rate=sample_rate).bind(target.detach())
@@ -49,19 +24,13 @@ def should_stop(history):
 
 
 def fit(renderer, target, initial, mask=None, optimizer_name='adam',
-        learning_rate=None, max_steps=500, progress=None, criterion=None, sensitivity='material'):
+        learning_rate=None, max_steps=500, progress=None, criterion=None):
     """First-order fit in bounded coordinates. No adaptive grid or feasibility loop.
 
     Endpoint values of selected parameters are nudged inside the box to obtain
     finite logits. Frozen parameters retain their exact supplied values.
-    ``sensitivity='seeded'`` is an experimental path propagating only the
-    selected physical-coordinate directions through the same recurrence.
     """
-    if sensitivity not in ('material','seeded'):
-        raise ValueError('Choose material or seeded sensitivity.')
     box=renderer.grid.box
-    target=target.to(renderer.device)
-    initial=initial.to(renderer.device)
     box.validate(initial)
     if mask is None: mask=(True,)*len(box.names)
     if len(mask)!=len(box.names) or optimizer_name not in ('adam','lbfgs'):
@@ -74,20 +43,18 @@ def fit(renderer, target, initial, mask=None, optimizer_name='adam',
     if target.shape != (renderer.samples,) or not bool(torch.isfinite(target).all()):
         raise ValueError('Target must be finite and match the full render duration.')
     criterion=criterion_for(target,renderer.grid.sample_rate) if criterion is None else criterion
-    if isinstance(criterion, torch.nn.Module): criterion=criterion.to(renderer.device)
     initial=initial.detach().clone()
-    indices=torch.tensor([i for i,selected in enumerate(mask) if selected],dtype=torch.long,device=initial.device)
+    indices=torch.tensor([i for i,selected in enumerate(mask) if selected],dtype=torch.long)
     base_logits=box.encode(initial)
     z=torch.nn.Parameter(base_logits[indices].clone())
     def parameters():
         decoded=box.decode(base_logits.scatter(0,indices,z))
-        return torch.where(torch.tensor(mask,dtype=torch.bool,device=initial.device),decoded,initial)
+        return torch.where(torch.tensor(mask,dtype=torch.bool),decoded,initial)
     optimizer=None
     if indices.numel():
         if optimizer_name=='adam': optimizer=torch.optim.Adam([z],lr=learning_rate)
         else: optimizer=torch.optim.LBFGS([z],lr=learning_rate,max_iter=1,max_eval=25,
                         history_size=20,line_search_fn='strong_wolfe',tolerance_grad=1e-12,tolerance_change=1e-14)
-    if renderer.device.type=='cuda': torch.cuda.synchronize(renderer.device)
     started=time.perf_counter();calls=0;history=[];best_loss=math.inf;best=initial.clone();cache={}
     effective_initial=parameters().detach()
     def evaluate():
@@ -95,8 +62,7 @@ def fit(renderer, target, initial, mask=None, optimizer_name='adam',
         calls+=1
         if optimizer is not None: optimizer.zero_grad()
         p=parameters()
-        audio=renderer.forward_seeded(p,mask) if sensitivity=='seeded' and optimizer is not None else renderer(p)
-        value=criterion(audio)
+        value=criterion(renderer(p))
         if not bool(torch.isfinite(value)): raise RuntimeError('Nonfinite objective; fit stopped.')
         if optimizer is not None:
             value.backward()
@@ -127,17 +93,15 @@ def fit(renderer, target, initial, mask=None, optimizer_name='adam',
     return dict(name=optimizer_name,best_physical=best,best_loss=best_loss,history=history,
                 iterations=len(history)-1,evaluations=calls,seconds=time.perf_counter()-started,
                 stop_reason=reason,mask=list(mask),requested_initial=initial,
-                effective_initial=effective_initial,learning_rate=learning_rate,
-                loss_name=type(criterion).__name__)
+                effective_initial=effective_initial,learning_rate=learning_rate)
 
 
 def save_result(path, result, renderer, target_parameters):
     """Portable experiment evidence without embedding audio or executable objects."""
-    target_parameters=target_parameters.to(result['best_physical'].device)
     payload={k:(v.tolist() if isinstance(v,torch.Tensor) else v) for k,v in result.items() if k!='audio'}
-    payload.update(device=str(renderer.device),backend=renderer.backend,coordinate_system=renderer.grid.box.coordinate_system,parameter_names=renderer.grid.box.names,target=target_parameters.tolist(),grid=asdict(renderer.grid),
+    payload.update(coordinate_system=renderer.grid.box.coordinate_system,parameter_names=renderer.grid.box.names,target=target_parameters.tolist(),grid=asdict(renderer.grid),
                    duration=renderer.duration,excitation=renderer.excitation,
-                   loss=dict(name=result.get('loss_name','STFTCumulativeEnergyLoss'),source_commit=LOSS_COMMIT,
+                   loss=dict(name='STFTCumulativeEnergyLoss',source_commit=LOSS_COMMIT,
                              sample_rate=renderer.grid.sample_rate,n_fft=1024,hop_length=256,log_weighting=False),
                    absolute_error=(result['best_physical']-target_parameters).tolist(),
                    relative_error=[float((estimate-truth)/truth) if truth != 0 else None

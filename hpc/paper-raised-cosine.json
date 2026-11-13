@@ -1,6 +1,0 @@
-[
-  {"id":"kc-raised-long-order2","command":["bash","hpc/paper-raised-cosine.sh","long","2"],"estimated_seconds":900},
-  {"id":"kc-raised-gradients-order2","command":["bash","hpc/paper-raised-cosine.sh","gradients","2"],"estimated_seconds":900},
-  {"id":"kc-raised-long-order4","command":["bash","hpc/paper-raised-cosine.sh","long","4"],"estimated_seconds":900},
-  {"id":"kc-raised-gradients-order4","command":["bash","hpc/paper-raised-cosine.sh","gradients","4","3"],"estimated_seconds":900}
-]

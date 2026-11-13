@@ -1,1 +1,0 @@
-[{"id":"kc-structured-k32-b1","command":["bash","hpc/structured-adjoint-full-k32.sh","1"],"estimated_seconds":2700},{"id":"kc-structured-k32-b128","command":["bash","hpc/structured-adjoint-full-k32.sh","128"],"estimated_seconds":2700}]

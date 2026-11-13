@@ -1,1 +1,0 @@
-[{"id":"kc-jax-reverse","command":["bash","hpc/jax-reverse-compare.sh"],"estimated_seconds":2400}]

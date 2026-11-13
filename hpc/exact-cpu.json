@@ -1,4 +1,0 @@
-[
- {"id":"kc-exact-native","command":["bash","hpc/exact-benchmark.sh","cpu-native"],"estimated_seconds":28000},
- {"id":"kc-exact-cpu-modal","command":["bash","hpc/exact-benchmark.sh","cpu-modal"],"estimated_seconds":14000}
-]

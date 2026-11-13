@@ -1,9 +1,0 @@
-torch==2.14.1
-ninja
-numpy
-matplotlib
-ipywidgets
-nbformat
-nbconvert
-ipykernel
-cels-audio @ git+https://github.com/ptablasdpaula/ICASSP27-Phrase.git@9fdbd60f5b67def8dd8884a006541e0ca4dbbf0d

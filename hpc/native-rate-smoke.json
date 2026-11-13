@@ -1,1 +1,0 @@
-[{"id":"kc-native-rate-smoke","command":["bash","hpc/native-rate-smoke.sh"],"estimated_seconds":1500}]

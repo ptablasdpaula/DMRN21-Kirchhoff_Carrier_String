@@ -1,1 +1,0 @@
-[{"id": "kc-clap-smoke", "command": ["bash", "hpc/clap-smoke.sh"], "estimated_seconds": 1500}]

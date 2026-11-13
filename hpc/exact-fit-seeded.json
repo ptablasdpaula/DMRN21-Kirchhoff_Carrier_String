@@ -1,1 +1,0 @@
-[{"id":"kc-exact-fit-seeded","command":["bash","hpc/exact-fit.sh","cuda-seeded"],"estimated_seconds":3000}]

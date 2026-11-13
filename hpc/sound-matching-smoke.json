@@ -1,1 +1,0 @@
-[{"id": "kc-sound-matching-smoke", "command": ["bash", "hpc/sound-matching-smoke.sh"], "estimated_seconds": 1200}]
