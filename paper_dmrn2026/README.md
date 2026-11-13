@@ -9,6 +9,11 @@ e.g. `Front. Sig. Proc., v. 3, 1284100, 2024`). The author order is
 Pablo Tablas de Paula, Rodrigo Diaz, Emmanouil Benetos and Joshua D. Reiss;
 Rodrigo Diaz carries a second affiliation, Fraunhofer HHI, Berlin.
 
+Since 13 November 2026 `main.tex` is the two-framework layout below with a JAX-only table, as Rodrigo Diaz
+suggested (every autodiff row in one framework): Auto (compiled), + checkpoints, + modes, Hand-written. Its
+footnotes are the supplement, JAX and CUDA. The previous `main.tex`, with an eager PyTorch Autodiff row first,
+is `variants/main-five-rows.tex`.
+
 `main-two-frameworks.tex` (with its PDF) is a test layout of 12 November 2026, not the submission: the table
 shows nine rows grouped by framework (PyTorch: Auto, + compiled, + checkpoints, + modes; JAX: Auto (uncompiled,
 added 13 November 2026), + compiled, + checkpoints, + modes; Hand-written) and the text is rewritten around it. The left column ends with the
@@ -62,18 +67,19 @@ backpropagated to all ten parameters (`benchmarks/exact_methods.py:varied_materi
 
 `figures/build_benchmark_summary_table.py` writes `figures/benchmark-table.tex`,
 the abstract's Table 1: peak GPU memory and time of one gradient step against
-batch size for five implementations of the same gradient, each adding one
-ingredient to the one before (the rows marked with the step arrow):
+batch size for four implementations of the same gradient, each adding one
+ingredient to the one before (the rows marked with the step arrow). Until 13 November 2026 it also had an
+eager PyTorch Autodiff row (`fdtd`) first:
 
 | Row | Code name | What it is |
 |---|---|---|
-| Autodiff | `fdtd` | eager PyTorch autodiff of the scheme on the grid (`experiments/figure_comparison/fdtd.py`) |
-| + compiler | `fdtd_jax` | the same arithmetic, operation for operation, as a `jax.jit` scan that keeps every step (`experiments/figure_comparison/fdtd_jax.py`, `basis='grid'`) |
+| Auto (compiled) | `fdtd_jax` | JAX autodiff of the scheme as a `jax.jit` scan that keeps every step (`experiments/figure_comparison/fdtd_jax.py`, `basis='grid'`) |
 | + checkpoints | `fdtd_jax_ckpt` | the same with `jax.checkpoint` on 256-step segments |
 | + modes | `fdtd_jax_sine_ckpt` | the same stepped in the discrete sine basis (`basis='sine'`), in which the stencils are diagonal |
 | Hand-written | `replay` | `src/adjoint.py` and `src/kc_adjoint.cu`: the hand-derived adjoint with the same checkpoints and modes in one CUDA kernel |
 
-The script reads `figures/native-rate-one-host-merged.json`, which
+Since 13 November 2026 the script reads `figures/native-rate-two-frameworks-merged.json`, the data of
+`main-two-frameworks.tex` (all `rdg` hosts). Before, it read `figures/native-rate-one-host-merged.json`, which
 `figures/merge_sweeps.py` builds from job 34855605 (Autodiff), job 35747154
 (+ compiler), job 35747153 (+ checkpoints), job 35746438 (+ modes) and job
 35746439 (Hand-written). All five ran on the cluster's `rdg` hosts (Xeon Gold

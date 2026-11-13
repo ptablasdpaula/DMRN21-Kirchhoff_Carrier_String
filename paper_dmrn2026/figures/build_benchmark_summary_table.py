@@ -1,14 +1,15 @@
-"""Build the paper's memory and time table: five implementations of one gradient, each adding one ingredient.
+"""Build the paper's memory and time table: four implementations of one gradient, each adding one ingredient.
 
 Usage: build_benchmark_summary_table.py [draft] [two-frameworks]
 
-Rows, from the merged sweep data:
-    Autodiff        fdtd                 eager PyTorch autodiff of the scheme on the grid
-    + compiler      fdtd_jax             the same arithmetic compiled by JAX (jax.jit), every step kept
-    + checkpoints   fdtd_jax_ckpt        the same with a checkpoint every 256 steps
-    + modes         fdtd_jax_sine_ckpt   the same stepped in the discrete sine basis (mode by mode)
-    Hand-written    replay               the hand-derived adjoint, same checkpoints and modes, in one CUDA kernel
-The three middle rows are prefixed with the paper's \\step arrow: each builds on the row above.
+Rows of the paper's table (benchmark-table.tex), all in JAX apart from the kernel:
+    Auto (compiled)  fdtd_jax             JAX autodiff of the scheme, compiled (jax.jit), every step kept
+    + checkpoints    fdtd_jax_ckpt        the same with a checkpoint every 256 steps
+    + modes          fdtd_jax_sine_ckpt   the same stepped in the discrete sine basis (mode by mode)
+    Hand-written     replay               the hand-derived adjoint, same checkpoints and modes, in one CUDA kernel
+The two middle rows are prefixed with the paper's \\step arrow: each builds on the row above.
+Until 13 November 2026 the table also had an eager PyTorch "Autodiff" row first (commit 14cca5a and before);
+it was dropped so that every autodiff row uses one framework.
 
 The preferred source is native-rate-one-host-merged.json (every row measured on one host type, because
 the eager and the host-driven compiled loops are bound by the host CPU); until it exists the script falls
@@ -45,7 +46,8 @@ folder = Path(__file__).resolve().parent
 one_host = folder / 'native-rate-one-host-merged.json'
 source = one_host if one_host.exists() else folder / 'native-rate-sweep-merged.json'
 two_frameworks = folder / 'native-rate-two-frameworks-merged.json'
-if TWO and two_frameworks.exists():
+# Both layouts prefer the two-framework sweep: every row on rdg (sae) hosts.
+if two_frameworks.exists():
     source = two_frameworks
 elif TWO:
     assert DRAFT, 'native-rate-two-frameworks-merged.json is missing; pass draft to lay the table out without it'
@@ -71,8 +73,7 @@ if TWO:
                      (r'\step\,+ modes', 'fdtd_jax_sine_ckpt')]),
               (None, [('Hand-written', 'replay')])]
 else:
-    groups = [(None, [('Autodiff', 'fdtd'),
-                      (r'\step\,+ compiler', 'fdtd_jax'),
+    groups = [(None, [('Auto (compiled)', 'fdtd_jax'),
                       (r'\step\,+ checkpoints', 'fdtd_jax_ckpt'),
                       (r'\step\,+ modes', 'fdtd_jax_sine_ckpt'),
                       ('Hand-written', 'replay')])]
